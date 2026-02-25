@@ -1,5 +1,6 @@
 // Header.jsx
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import '../styles/header.css';
 
 const Header = ({ 
@@ -10,10 +11,16 @@ const Header = ({
   onSearch,
   onUserClick
 }) => {
+  const navigate = useNavigate();
+
   const handleSearch = (e) => {
     if (onSearch) {
       onSearch(e.target.value);
     }
+  };
+
+  const handleWalletClick = () => {
+    navigate('/wallet');
   };
 
   // Obtener iniciales del nombre
@@ -71,7 +78,11 @@ const Header = ({
       {/* Header Actions */}
       <div className="header-actions">
         {/* Wallet */}
-        <div className="wallet">
+        <button 
+          className="wallet" 
+          onClick={handleWalletClick}
+          aria-label="Ir a billetera"
+        >
           <svg 
             className="wallet-icon" 
             fill="none" 
@@ -86,7 +97,7 @@ const Header = ({
             />
           </svg>
           <span>${userBalance}</span>
-        </div>
+        </button>
 
         {/* User Button */}
         <button className="user-button" onClick={onUserClick}>

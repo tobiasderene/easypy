@@ -156,9 +156,6 @@ const Catalog = () => {
       {/* Header */}
       <div className="catalog-header">
         <h1 className="catalog-title">Catálogo de Productos</h1>
-        <p className="catalog-subtitle">
-          Descubre productos populares perfectos para dropshipping
-        </p>
       </div>
 
       {/* Filters */}

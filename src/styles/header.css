@@ -2,7 +2,7 @@
 .header {
   background: white;
   border-bottom: 2px solid #e5e7eb;
-  padding: 0px 24px;
+  padding: 2rem 24px;
   display: flex;
   align-items: center;
   gap: 20px;
@@ -19,6 +19,8 @@
   flex-direction: column;
   gap: 4px;
   transition: all 0.3s ease;
+  margin-left: 1rem; /* ← Agrega esto */
+
 }
 
 .burger-button:hover {
@@ -127,6 +129,7 @@
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.3s ease;
+  margin-right: 1rem;
 }
 
 .user-button:hover {

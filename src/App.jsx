@@ -5,15 +5,14 @@ import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import LoginMinimal from './pages/Login';
 import Signup from './pages/SignUp';
-import Dashboard from './pages/Dashboard';
 import Catalog from './pages/Catalog';
 import Proveedor from './pages/Supplier';
+import Providers from './pages/Providers';
 import ProductPage from './pages/ProductPage';
 import Transactions from './pages/Transactions';
+import Wallet from './pages/Wallet';
 import OrderForm from './components/OrderForm';
 import './App.css';
-
-
 
 // Layout Component - Envuelve las páginas que necesitan Header y Sidebar
 const Layout = ({ children }) => {
@@ -124,14 +123,6 @@ function App() {
         />
 
         {/* Rutas Protegidas - Con Header y Sidebar */}
-        <Route 
-          path="/dashboard" 
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          } 
-        />
 
         <Route 
           path="/catalogo" 
@@ -151,12 +142,32 @@ function App() {
           } 
         />
 
+        {/* Ruta de Proveedores - Con Header y Sidebar */}
+        <Route 
+          path="/proveedores" 
+          element={
+            <ProtectedRoute>
+              <Providers />
+            </ProtectedRoute>
+          } 
+        />
+
         {/* Ruta de Transacciones - Con Header y Sidebar */}
         <Route 
           path="/transacciones" 
           element={
             <ProtectedRoute>
               <Transactions />
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* Ruta de Wallet - Con Header y Sidebar */}
+        <Route 
+          path="/wallet" 
+          element={
+            <ProtectedRoute>
+              <Wallet />
             </ProtectedRoute>
           } 
         />
