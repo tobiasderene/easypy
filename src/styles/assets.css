@@ -1,0 +1,85 @@
+.login-icon {
+  width: 64px;
+  height: 64px;
+  background: #056EB7;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  color: white;
+}
+
+.input-wrapper {
+  position: relative;
+}
+
+.input-wrapper input {
+  width: 100%;
+  padding: 12px 44px;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.input-wrapper input:focus {
+  outline: none;
+  border-color: #056EB7;
+}
+
+.input-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.icon-button {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  padding: 4px;
+  cursor: pointer;
+  color: #9ca3af;
+}
+
+.icon-button:hover {
+  color: #056EB7;
+}
+
+.primary-button {
+  width: 100%;
+  background: #056EB7;
+  color: white;
+  padding: 12px;
+  border-radius: 10px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.primary-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.primary-button:hover:not(:disabled) {
+  background: #045A94;
+}
+
+.error-box {
+  background: #fef2f2;
+  border: 2px solid #fecaca;
+  padding: 12px;
+  border-radius: 10px;
+  color: #dc2626;
+  font-size: 14px;
+  box-sizing: border-box;
+}
