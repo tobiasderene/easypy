@@ -1,6 +1,6 @@
     import React from 'react';
 import { X, CheckCircle, XCircle, Package, Truck, MapPin, User, Phone, MessageSquare } from 'lucide-react';
-import '../styles/OrderDetailsModal.css';
+import '../styles/orderdetailsmodal.css';
 
 const OrderDetailsModal = ({ order, onClose, onUpdateStatus, statusConfig, formatCurrency, formatDate }) => {
   
