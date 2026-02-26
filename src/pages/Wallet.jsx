@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { TrendingUp, TrendingDown, DollarSign, ArrowUpRight, ArrowDownLeft, Wallet as WalletIcon, Calendar } from 'lucide-react';
 import DepositModal from '../components/DepositModal';
+import WithdrawModal from '../components/WithdrawModal';
 import '../styles/wallet.css';
 
 const Wallet = () => {
@@ -306,16 +307,12 @@ const Wallet = () => {
         onClose={() => setShowDepositModal(false)}
       />
 
-      {/* Withdraw Modal (placeholder) */}
-      {showWithdrawModal && (
-        <div className="modal-overlay" onClick={() => setShowWithdrawModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h3>Retirar Dinero</h3>
-            <p>Funcionalidad de retiro en desarrollo</p>
-            <button onClick={() => setShowWithdrawModal(false)}>Cerrar</button>
-          </div>
-        </div>
-      )}
+      {/* Withdraw Modal */}
+      <WithdrawModal 
+        isOpen={showWithdrawModal}
+        onClose={() => setShowWithdrawModal(false)}
+        availableBalance={balance}
+      />
     </div>
   );
 };

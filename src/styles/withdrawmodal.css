@@ -1,0 +1,292 @@
+/* WithdrawModal.css */
+
+:root {
+  --primary: #056EB7;
+  --primary-hover: #045A94;
+  --primary-light: #aacdfe;
+  --success: #16a34a;
+  --success-light: #f0fdf4;
+  --warning: #d97706;
+  --warning-light: #fffbeb;
+  --danger: #dc2626;
+  --danger-light: #fef2f2;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-600: #6b7280;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+}
+
+/* Modal Icon - Withdraw variant */
+.modal-icon.withdraw {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  color: white;
+}
+
+/* Balance Display */
+.balance-display {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
+  border-radius: 12px;
+  margin-bottom: 24px;
+}
+
+.balance-label {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+}
+
+.balance-amount {
+  font-size: 20px;
+  font-weight: 800;
+  color: white;
+}
+
+/* Bank Input */
+.bank-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.bank-input-wrapper .input-icon {
+  position: absolute;
+  left: 14px;
+  color: var(--gray-400);
+  pointer-events: none;
+}
+
+.bank-input {
+  width: 100%;
+  padding: 14px 14px 14px 46px;
+  border: 2px solid var(--gray-200);
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--gray-900);
+  transition: all 0.2s ease;
+}
+
+.bank-input:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.bank-input::placeholder {
+  color: var(--gray-400);
+  font-weight: 500;
+}
+
+.bank-input.error {
+  border-color: #ef4444;
+}
+
+/* Quick Amounts */
+.quick-amounts {
+  margin-bottom: 20px;
+}
+
+.quick-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray-700);
+  margin-bottom: 8px;
+}
+
+.quick-buttons {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.quick-btn {
+  padding: 10px;
+  background: var(--gray-100);
+  border: 2px solid var(--gray-200);
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--gray-700);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.quick-btn:hover {
+  background: var(--primary-light);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.quick-btn:active {
+  transform: scale(0.95);
+}
+
+/* Info Box Warning variant */
+.info-box.warning {
+  background: var(--warning-light);
+  border-color: #fde68a;
+}
+
+.info-box.warning svg {
+  color: var(--warning);
+}
+
+.info-title {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--gray-900);
+  margin: 0 0 8px 0;
+}
+
+.info-list {
+  margin: 0;
+  padding-left: 18px;
+  list-style: disc;
+}
+
+.info-list li {
+  font-size: 12px;
+  color: var(--gray-700);
+  line-height: 1.6;
+  margin-bottom: 4px;
+}
+
+.info-list li:last-child {
+  margin-bottom: 0;
+}
+
+/* Cost Summary */
+.cost-summary {
+  background: var(--gray-50);
+  border: 2px solid var(--gray-100);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+
+.cost-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  font-size: 14px;
+}
+
+.cost-row span:first-child {
+  color: var(--gray-600);
+  font-weight: 500;
+}
+
+.cost-row span:last-child {
+  color: var(--gray-900);
+  font-weight: 700;
+}
+
+.cost-fee {
+  color: #dc2626 !important;
+}
+
+.cost-row.total {
+  border-top: 2px solid var(--gray-200);
+  margin-top: 8px;
+  padding-top: 12px;
+  font-size: 15px;
+}
+
+.cost-row.total span {
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.cost-row.total span:last-child {
+  color: var(--success);
+}
+
+/* Button Withdraw variant */
+.btn-primary.withdraw {
+  background: #dc2626;
+}
+
+.btn-primary.withdraw:hover {
+  background: #b91c1c;
+}
+
+/* Status Badge - Processing variant */
+.status-badge.processing {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+/* Confirmation Row Highlight */
+.confirmation-row.highlight {
+  background: var(--success-light);
+  margin: 0 -20px;
+  padding: 12px 20px !important;
+  border-radius: 8px;
+}
+
+.confirmation-row.highlight .confirmation-label {
+  color: var(--success);
+}
+
+.confirmation-row.highlight .confirmation-value {
+  color: var(--success);
+  font-size: 18px;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .balance-display {
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+  }
+
+  .quick-buttons {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .cost-summary {
+    padding: 12px;
+  }
+
+  .cost-row {
+    font-size: 13px;
+  }
+
+  .cost-row.total {
+    font-size: 14px;
+  }
+
+  .cost-row.total span {
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .balance-amount {
+    font-size: 18px;
+  }
+
+  .quick-buttons {
+    gap: 6px;
+  }
+
+  .quick-btn {
+    padding: 8px;
+    font-size: 12px;
+  }
+
+  .bank-input {
+    font-size: 14px;
+    padding: 12px 12px 12px 42px;
+  }
+}
