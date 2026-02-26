@@ -11,6 +11,7 @@ import Providers from './pages/Providers';
 import ProductPage from './pages/ProductPage';
 import Transactions from './pages/Transactions';
 import Wallet from './pages/Wallet';
+import ProviderOrders from './pages/ProviderOrders';
 import OrderForm from './components/OrderForm';
 import './App.css';
 
@@ -76,7 +77,7 @@ const PublicRoute = ({ children }) => {
   const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
   
   if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/catalogo" replace />;
   }
   
   return children;
@@ -168,6 +169,16 @@ function App() {
           element={
             <ProtectedRoute>
               <Wallet />
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* Ruta de Provider Orders - Con Header y Sidebar */}
+        <Route 
+          path="/provider-orders" 
+          element={
+            <ProtectedRoute>
+              <ProviderOrders />
             </ProtectedRoute>
           } 
         />

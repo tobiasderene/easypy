@@ -24,22 +24,34 @@ export default function LoginMinimal() {
     }
 
     // Mockup de autenticación
-    // Usuario: admin
-    // Contraseña: 123
     setTimeout(() => {
+      // Usuario vendedor
       if (email === 'admin' && password === '123') {
-        // Login exitoso
         localStorage.setItem('isAuthenticated', 'true');
+        localStorage.setItem('userType', 'seller');
         localStorage.setItem('userName', 'Administrador');
         localStorage.setItem('userEmail', 'admin@easystore.com');
         
         setLoading(false);
         
-        // Redirigir al catálogo
+        // Redirigir al catálogo (vendedor)
         navigate('/catalogo');
-      } else {
+      } 
+      // Usuario proveedor
+      else if (email === 'provider' && password === '123') {
+        localStorage.setItem('isAuthenticated', 'true');
+        localStorage.setItem('userType', 'provider');
+        localStorage.setItem('userName', 'Proveedor Global');
+        localStorage.setItem('userEmail', 'provider@easystore.com');
+        
+        setLoading(false);
+        
+        // Redirigir a gestión de pedidos (proveedor)
+        navigate('/provider-orders');
+      }
+      else {
         // Login fallido
-        setError('Usuario o contraseña incorrectos. Prueba con: admin / 123');
+        setError('Usuario o contraseña incorrectos. Prueba con: admin/123 o provider/123');
         setLoading(false);
       }
     }, 1000);
@@ -75,7 +87,7 @@ export default function LoginMinimal() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder="admin"
+                  placeholder="admin o provider"
                   disabled={loading}
                 />
               </div>
@@ -120,6 +132,29 @@ export default function LoginMinimal() {
             >
               {loading ? 'Ingresando...' : 'Iniciar Sesión'}
             </button>
+          </div>
+
+          {/* Info de usuarios de prueba */}
+          <div className="login-info">
+            <p style={{ fontSize: '13px', color: '#6b7280', margin: '0 0 8px 0' }}>
+              <strong>Usuarios de prueba:</strong>
+            </p>
+            <p style={{ fontSize: '12px', color: '#6b7280', margin: '4px 0' }}>
+              🛒 Vendedor: <code style={{ 
+                background: '#f3f4f6', 
+                padding: '2px 6px', 
+                borderRadius: '4px',
+                fontFamily: 'monospace'
+              }}>admin / 123</code>
+            </p>
+            <p style={{ fontSize: '12px', color: '#6b7280', margin: '4px 0' }}>
+              📦 Proveedor: <code style={{ 
+                background: '#f3f4f6', 
+                padding: '2px 6px', 
+                borderRadius: '4px',
+                fontFamily: 'monospace'
+              }}>provider / 123</code>
+            </p>
           </div>
 
           <div className="login-footer">
