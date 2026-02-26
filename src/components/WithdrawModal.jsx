@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { CheckCircle, X, AlertCircle, CreditCard } from 'lucide-react';
-import '../styles/withdrawmodal.css';
+import './WithdrawModal.css';
 
 const WithdrawModal = ({ isOpen, onClose, availableBalance = 1250000 }) => {
   const [step, setStep] = useState(1); // 1: form, 2: confirmation
   const [amount, setAmount] = useState('');
+  const [bankEntity, setBankEntity] = useState('');
   const [bankAccount, setBankAccount] = useState('');
   const [error, setError] = useState('');
 
@@ -15,6 +16,11 @@ const WithdrawModal = ({ isOpen, onClose, availableBalance = 1250000 }) => {
       setAmount(value);
       setError('');
     }
+  };
+
+  const handleBankEntityChange = (e) => {
+    setBankEntity(e.target.value);
+    setError('');
   };
 
   const handleBankAccountChange = (e) => {
@@ -45,6 +51,12 @@ const WithdrawModal = ({ isOpen, onClose, availableBalance = 1250000 }) => {
       return;
     }
 
+    // Validación de entidad bancaria
+    if (!bankEntity || bankEntity.trim().length < 3) {
+      setError('Por favor ingresa el nombre de la entidad bancaria');
+      return;
+    }
+
     // Validación de cuenta bancaria
     if (!bankAccount || bankAccount.length < 10) {
       setError('Por favor ingresa un número de cuenta válido');
@@ -59,6 +71,7 @@ const WithdrawModal = ({ isOpen, onClose, availableBalance = 1250000 }) => {
     // Reset al cerrar
     setStep(1);
     setAmount('');
+    setBankEntity('');
     setBankAccount('');
     setError('');
     onClose();
@@ -101,6 +114,7 @@ const WithdrawModal = ({ isOpen, onClose, availableBalance = 1250000 }) => {
 
               {/* Balance disponible */}
               <div className="balance-display">
+                <span className="balance-label">Saldo disponible</span>
                 <span className="balance-amount">{formatCurrency(availableBalance)}</span>
               </div>
 
@@ -125,6 +139,25 @@ const WithdrawModal = ({ isOpen, onClose, availableBalance = 1250000 }) => {
                       {formatCurrency(amount)}
                     </div>
                   )}
+                </div>
+
+                {/* Entidad bancaria */}
+                <div className="form-group">
+                  <label htmlFor="bankEntity">Entidad bancaria</label>
+                  <div className="bank-input-wrapper">
+                    <svg className="input-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="12" y1="1" x2="12" y2="23"></line>
+                      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+                    </svg>
+                    <input
+                      type="text"
+                      id="bankEntity"
+                      className={`bank-input ${error && !bankEntity ? 'error' : ''}`}
+                      placeholder="Ej: Banco Nacional, Itaú, BBVA..."
+                      value={bankEntity}
+                      onChange={handleBankEntityChange}
+                    />
+                  </div>
                 </div>
 
                 {/* Cuenta bancaria */}
@@ -267,6 +300,10 @@ const WithdrawModal = ({ isOpen, onClose, availableBalance = 1250000 }) => {
                   <div className="confirmation-row highlight">
                     <span className="confirmation-label">Monto a recibir:</span>
                     <span className="confirmation-value">{formatCurrency(parseInt(amount) * 0.98)}</span>
+                  </div>
+                  <div className="confirmation-row">
+                    <span className="confirmation-label">Entidad bancaria:</span>
+                    <span className="confirmation-value">{bankEntity}</span>
                   </div>
                   <div className="confirmation-row">
                     <span className="confirmation-label">Cuenta destino:</span>
