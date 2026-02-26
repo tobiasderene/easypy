@@ -114,7 +114,6 @@ const WithdrawModal = ({ isOpen, onClose, availableBalance = 1250000 }) => {
 
               {/* Balance disponible */}
               <div className="balance-display">
-                <span className="balance-label">Saldo disponible</span>
                 <span className="balance-amount">{formatCurrency(availableBalance)}</span>
               </div>
 
