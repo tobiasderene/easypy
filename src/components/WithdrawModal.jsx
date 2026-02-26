@@ -95,16 +95,7 @@ const WithdrawModal = ({ isOpen, onClose, availableBalance = 1250000 }) => {
         {/* Step 1: Form */}
         {step === 1 && (
           <>
-            {/* Header */}
-            <div className="modal-header">
-              <div className="modal-icon withdraw">
-                <CreditCard size={24} />
-              </div>
-              <h2>Solicitud de Retiro</h2>
-              <button className="modal-close" onClick={handleClose}>
-                <X size={20} />
-              </button>
-            </div>
+          
 
             {/* Body */}
             <div className="modal-body">
