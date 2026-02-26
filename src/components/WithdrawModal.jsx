@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { CheckCircle, X, AlertCircle, CreditCard } from 'lucide-react';
-import '../styles/WithdrawModal.css';
+import '../styles/withdrawmodal.css';
 
 const WithdrawModal = ({ isOpen, onClose, availableBalance = 1250000 }) => {
   const [step, setStep] = useState(1); // 1: form, 2: confirmation
