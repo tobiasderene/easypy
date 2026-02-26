@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { TrendingUp, TrendingDown, DollarSign, ArrowUpRight, ArrowDownLeft, Wallet as WalletIcon, Calendar } from 'lucide-react';
 import DepositModal from '../components/DepositModal';
-import './Wallet.css';
+import '../styles/wallet.css';
 
 const Wallet = () => {
   const [activeTab, setActiveTab] = useState('all'); // all, income, expense
