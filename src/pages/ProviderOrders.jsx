@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Package, Eye, CheckCircle, XCircle, Truck, Clock, AlertCircle, Search, Filter } from 'lucide-react';
 import OrderDetailsModal from '../components/Orderdetailsmodal';
-import '../styles/ProviderOrders.css';
+import '../styles/providerorders.css';
 
 // Mock data de órdenes
 const mockOrders = [
