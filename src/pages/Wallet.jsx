@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { TrendingUp, TrendingDown, DollarSign, ArrowUpRight, ArrowDownLeft, Wallet as WalletIcon, Calendar } from 'lucide-react';
-import '../styles/wallet.css';
+import DepositModal from '../components/DepositModal';
+import './Wallet.css';
 
 const Wallet = () => {
   const [activeTab, setActiveTab] = useState('all'); // all, income, expense
@@ -140,6 +141,16 @@ const Wallet = () => {
     <div className="wallet-page">
       <div className="wallet-container">
         
+        {/* Header */}
+        <div className="wallet-header">
+          <div className="header-content">
+            <WalletIcon size={32} />
+            <div>
+              <h1>Mi Billetera</h1>
+              <p>Gestiona tus ingresos y egresos</p>
+            </div>
+          </div>
+        </div>
 
         {/* Balance & Chart Section */}
         <div className="balance-chart-section">
@@ -289,17 +300,13 @@ const Wallet = () => {
 
       </div>
 
-      {/* Modals (puedes implementar la lógica completa después) */}
-      {showDepositModal && (
-        <div className="modal-overlay" onClick={() => setShowDepositModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <h3>Ingresar Dinero</h3>
-            <p>Funcionalidad de depósito en desarrollo</p>
-            <button onClick={() => setShowDepositModal(false)}>Cerrar</button>
-          </div>
-        </div>
-      )}
+      {/* Deposit Modal */}
+      <DepositModal 
+        isOpen={showDepositModal}
+        onClose={() => setShowDepositModal(false)}
+      />
 
+      {/* Withdraw Modal (placeholder) */}
       {showWithdrawModal && (
         <div className="modal-overlay" onClick={() => setShowWithdrawModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
