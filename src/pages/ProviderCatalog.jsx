@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Package, TrendingUp, Edit, Trash2, Plus, Search, Filter, Eye, EyeOff } from 'lucide-react';
-import './providercatalog.css';
+import '../styles/providercatalog.css';
 
 // Mock data de productos del proveedor
 const mockProducts = [
