@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
+import ProviderSidebar from './components/ProviderSidebar';
 import LoginMinimal from './pages/Login';
 import Signup from './pages/SignUp';
 import Catalog from './pages/Catalog';
@@ -12,6 +13,7 @@ import ProductPage from './pages/ProductPage';
 import Transactions from './pages/Transactions';
 import Wallet from './pages/Wallet';
 import ProviderOrders from './pages/ProviderOrders';
+import ProviderCatalog from './pages/ProviderCatalog';
 import OrderForm from './components/OrderForm';
 import './App.css';
 
@@ -35,7 +37,8 @@ const Layout = ({ children }) => {
     console.log('User profile clicked');
   };
 
-  // Obtener nombre de usuario del localStorage
+  // Obtener tipo de usuario y nombre del localStorage
+  const userType = localStorage.getItem('userType') || 'seller';
   const userName = localStorage.getItem('userName') || 'Usuario';
 
   return (
@@ -49,10 +52,18 @@ const Layout = ({ children }) => {
         onUserClick={handleUserClick}
       />
       
-      <Sidebar 
-        isOpen={isSidebarOpen}
-        onClose={handleCloseSidebar}
-      />
+      {/* Renderizar sidebar según tipo de usuario */}
+      {userType === 'provider' ? (
+        <ProviderSidebar 
+          isOpen={isSidebarOpen}
+          onClose={handleCloseSidebar}
+        />
+      ) : (
+        <Sidebar 
+          isOpen={isSidebarOpen}
+          onClose={handleCloseSidebar}
+        />
+      )}
       
       <main>
         {children}
@@ -179,6 +190,16 @@ function App() {
           element={
             <ProtectedRoute>
               <ProviderOrders />
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* Ruta de Provider Catalog - Con Header y Sidebar */}
+        <Route 
+          path="/provider-catalog" 
+          element={
+            <ProtectedRoute>
+              <ProviderCatalog />
             </ProtectedRoute>
           } 
         />
