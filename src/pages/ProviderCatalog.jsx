@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Package, TrendingUp, Edit, Trash2, Plus, Search, Filter, Eye, EyeOff } from 'lucide-react';
 import '../styles/providercatalog.css';
 
@@ -103,6 +104,7 @@ const mockProducts = [
 ];
 
 const ProviderCatalog = () => {
+  const navigate = useNavigate();
   const [products, setProducts] = useState(mockProducts);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -161,7 +163,7 @@ const ProviderCatalog = () => {
                 <p>Gestiona tu inventario y monitorea ventas</p>
               </div>
             </div>
-            <button className="btn-add-product">
+            <button className="btn-add-product" onClick={() => navigate('/add-product')}>
               <Plus size={20} />
               <span>Agregar Producto</span>
             </button>

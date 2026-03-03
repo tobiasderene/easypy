@@ -14,6 +14,7 @@ import Transactions from './pages/Transactions';
 import Wallet from './pages/Wallet';
 import ProviderOrders from './pages/ProviderOrders';
 import ProviderCatalog from './pages/ProviderCatalog';
+import AddProductForm from './pages/AddProductForm';
 import OrderForm from './components/OrderForm';
 import './App.css';
 
@@ -200,6 +201,16 @@ function App() {
           element={
             <ProtectedRoute>
               <ProviderCatalog />
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* Ruta de Add Product - Con Header y Sidebar */}
+        <Route 
+          path="/add-product" 
+          element={
+            <ProtectedRoute>
+              <AddProductForm />
             </ProtectedRoute>
           } 
         />
