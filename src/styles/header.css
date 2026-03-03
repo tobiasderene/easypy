@@ -2,7 +2,7 @@
 .header {
   background: white;
   border-bottom: 2px solid #e5e7eb;
-  padding: 2rem 24px;
+  padding: 2rem 0px;
   display: flex;
   align-items: center;
   gap: 20px;
