@@ -11,6 +11,7 @@ export default function LoginMinimal() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = () => {
@@ -25,36 +26,40 @@ export default function LoginMinimal() {
 
     // Mockup de autenticación
     setTimeout(() => {
-      // Usuario vendedor
       if (email === 'admin' && password === '123') {
         localStorage.setItem('isAuthenticated', 'true');
         localStorage.setItem('userType', 'seller');
         localStorage.setItem('userName', 'Administrador');
         localStorage.setItem('userEmail', 'admin@easystore.com');
-        
         setLoading(false);
-        
-        // Redirigir al catálogo (vendedor)
         navigate('/catalogo');
       } 
-      // Usuario proveedor
       else if (email === 'provider' && password === '123') {
         localStorage.setItem('isAuthenticated', 'true');
         localStorage.setItem('userType', 'provider');
         localStorage.setItem('userName', 'Proveedor Global');
         localStorage.setItem('userEmail', 'provider@easystore.com');
-        
         setLoading(false);
-        
-        // Redirigir a gestión de pedidos (proveedor)
         navigate('/provider-orders');
       }
       else {
-        // Login fallido
         setError('Usuario o contraseña incorrectos. Prueba con: admin/123 o provider/123');
         setLoading(false);
       }
     }, 1000);
+  };
+
+  const handleGoogleLogin = async () => {
+    setGoogleLoading(true);
+    setError('');
+    try {
+      const res = await fetch('http://localhost:8000/auth/google');
+      const data = await res.json();
+      window.location.href = data.url;
+    } catch (e) {
+      setError('No se pudo conectar con Google. Intentá de nuevo.');
+      setGoogleLoading(false);
+    }
   };
 
   const handleKeyPress = (e) => {
@@ -68,16 +73,12 @@ export default function LoginMinimal() {
 
           {/* Header */}
           <div className="login-header">
-            <div className="login-icon">
-              <Lock />
-            </div>
             <h1>Bienvenido</h1>
             <p>Ingresa tus credenciales para continuar</p>
           </div>
 
           {/* Form */}
           <div className="login-form">
-
             <div className="form-group">
               <label>Usuario</label>
               <div className="input-wrapper">
@@ -87,7 +88,7 @@ export default function LoginMinimal() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder="admin o provider"
+                  placeholder="Usuario"
                   disabled={loading}
                 />
               </div>
@@ -132,29 +133,47 @@ export default function LoginMinimal() {
             >
               {loading ? 'Ingresando...' : 'Iniciar Sesión'}
             </button>
-          </div>
 
-          {/* Info de usuarios de prueba */}
-          <div className="login-info">
-            <p style={{ fontSize: '13px', color: '#6b7280', margin: '0 0 8px 0' }}>
-              <strong>Usuarios de prueba:</strong>
-            </p>
-            <p style={{ fontSize: '12px', color: '#6b7280', margin: '4px 0' }}>
-              🛒 Vendedor: <code style={{ 
-                background: '#f3f4f6', 
-                padding: '2px 6px', 
-                borderRadius: '4px',
-                fontFamily: 'monospace'
-              }}>admin / 123</code>
-            </p>
-            <p style={{ fontSize: '12px', color: '#6b7280', margin: '4px 0' }}>
-              📦 Proveedor: <code style={{ 
-                background: '#f3f4f6', 
-                padding: '2px 6px', 
-                borderRadius: '4px',
-                fontFamily: 'monospace'
-              }}>provider / 123</code>
-            </p>
+            {/* Divisor */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: '16px 0' }}>
+              <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }} />
+              <span style={{ fontSize: '13px', color: '#9ca3af', whiteSpace: 'nowrap' }}>o continúa con</span>
+              <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }} />
+            </div>
+
+            {/* Botón Google */}
+            <button
+              onClick={handleGoogleLogin}
+              disabled={googleLoading}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '10px',
+                padding: '10px 16px',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px',
+                background: '#fff',
+                cursor: googleLoading ? 'not-allowed' : 'pointer',
+                fontSize: '14px',
+                fontWeight: '500',
+                color: '#374151',
+                transition: 'background 0.2s',
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'}
+              onMouseLeave={e => e.currentTarget.style.background = '#fff'}
+            >
+              {/* Google SVG icon */}
+              <svg width="18" height="18" viewBox="0 0 48 48">
+                <path fill="#FFC107" d="M43.6 20H24v8h11.3C33.6 33.1 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.5 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20c11 0 19.7-8 19.7-20 0-1.3-.1-2.7-.1-4z"/>
+                <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 16 19 13 24 13c3 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.5 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/>
+                <path fill="#4CAF50" d="M24 44c5.2 0 9.9-1.8 13.5-4.7l-6.2-5.2C29.4 35.6 26.8 36 24 36c-5.2 0-9.6-2.9-11.3-7.1l-6.6 4.8C9.6 39.6 16.3 44 24 44z"/>
+                <path fill="#1976D2" d="M43.6 20H24v8h11.3c-.9 2.4-2.5 4.4-4.6 5.8l6.2 5.2C40.7 35.7 44 30.3 44 24c0-1.3-.1-2.7-.4-4z"/>
+              </svg>
+              {googleLoading ? 'Redirigiendo...' : 'Continuar con Google'}
+            </button>
+
           </div>
 
           <div className="login-footer">
