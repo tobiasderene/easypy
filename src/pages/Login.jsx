@@ -53,7 +53,7 @@ export default function LoginMinimal() {
     setGoogleLoading(true);
     setError('');
     try {
-      const res = await fetch('http://localhost:8000/auth/google');
+      const res = await fetch('https://easypy-backend-430520813248.us-central1.run.app/auth/google');
       const data = await res.json();
       window.location.href = data.url;
     } catch (e) {
