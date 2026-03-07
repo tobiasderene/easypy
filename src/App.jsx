@@ -1,5 +1,4 @@
-// App.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect, createContext, useContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
@@ -16,239 +15,123 @@ import ProviderOrders from './pages/ProviderOrders';
 import ProviderCatalog from './pages/ProviderCatalog';
 import AddProductForm from './pages/AddProductForm';
 import OrderForm from './components/OrderForm';
+import { getMe } from './services/api';
 import './App.css';
 
-// Layout Component - Envuelve las páginas que necesitan Header y Sidebar
+// ─── Context de usuario ───────────────────────────────
+export const UserContext = createContext(null);
+export const useUser = () => useContext(UserContext);
+
+// ─── Layout ───────────────────────────────────────────
 const Layout = ({ children }) => {
+  const { user } = useUser();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-  const handleMenuClick = () => {
-    setIsSidebarOpen(true);
-  };
-
-  const handleCloseSidebar = () => {
-    setIsSidebarOpen(false);
-  };
-
-  const handleSearch = (value) => {
-    console.log('Searching:', value);
-  };
-
-  const handleUserClick = () => {
-    console.log('User profile clicked');
-  };
-
-  // Obtener tipo de usuario y nombre del localStorage
-  const userType = localStorage.getItem('userType') || 'seller';
-  const userName = localStorage.getItem('userName') || 'Usuario';
 
   return (
     <>
-      <Header 
-        userName={userName}
+      <Header
+        userName={user?.user_nickname || 'Usuario'}
         userBalance="1,250.00"
         userAvatar={null}
-        onMenuClick={handleMenuClick}
-        onSearch={handleSearch}
-        onUserClick={handleUserClick}
+        onMenuClick={() => setIsSidebarOpen(true)}
+        onSearch={(v) => console.log('Searching:', v)}
+        onUserClick={() => console.log('User profile clicked')}
       />
-      
-      {/* Renderizar sidebar según tipo de usuario */}
-      {userType === 'provider' ? (
-        <ProviderSidebar 
-          isOpen={isSidebarOpen}
-          onClose={handleCloseSidebar}
-        />
+
+      {user?.user_role === 'provider' ? (
+        <ProviderSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
       ) : (
-        <Sidebar 
-          isOpen={isSidebarOpen}
-          onClose={handleCloseSidebar}
-        />
+        <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
       )}
-      
-      <main>
-        {children}
-      </main>
+
+      <main>{children}</main>
     </>
   );
 };
 
-// Componente de ruta protegida
-const ProtectedRoute = ({ children }) => {
-  const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
-  
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
-  }
-  
-  return <Layout>{children}</Layout>;
+// ─── Ruta protegida ───────────────────────────────────
+const ProtectedRoute = ({ children, withLayout = true }) => {
+  const { user, loading } = useUser();
+
+  if (loading) return <div className="loading-screen">Cargando...</div>;
+  if (!user) return <Navigate to="/login" replace />;
+
+  return withLayout ? <Layout>{children}</Layout> : children;
 };
 
-// Componente de ruta pública (Login y Signup)
+// ─── Ruta pública ─────────────────────────────────────
 const PublicRoute = ({ children }) => {
-  const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
-  
-  if (isAuthenticated) {
-    return <Navigate to="/catalogo" replace />;
+  const { user, loading } = useUser();
+
+  if (loading) return <div className="loading-screen">Cargando...</div>;
+  if (user) {
+    return <Navigate to={user.user_role === 'provider' ? '/provider-orders' : '/catalogo'} replace />;
   }
-  
+
   return children;
 };
 
-const ProtectedRoutePlain = ({ children }) => {
-  const isAuthenticated = localStorage.getItem('isAuthenticated') === 'true';
-  if (!isAuthenticated) return <Navigate to="/login" replace />;
-  return children;  // ← sin <Layout>
+// ─── Dashboard: maneja redirect de Google ─────────────
+const Dashboard = () => {
+  const { user } = useUser();
+  if (!user) return <Navigate to="/login" replace />;
+  return <Navigate to={user.user_role === 'provider' ? '/provider-orders' : '/catalogo'} replace />;
 };
 
+// ─── App ──────────────────────────────────────────────
 function App() {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getMe()
+      .then(setUser)
+      .catch(() => setUser(null))
+      .finally(() => setLoading(false));
+  }, []);
+
   return (
-    <Router>
-      <Routes>
-        {/* Ruta de Login - Sin Header */}
-        <Route 
-          path="/login" 
-          element={
-            <PublicRoute>
-              <LoginMinimal />
-            </PublicRoute>
-          } 
-        />
+    <UserContext.Provider value={{ user, setUser, loading }}>
+      <Router>
+        <Routes>
 
-        {/* Ruta de Signup - Sin Header */}
-        <Route 
-          path="/signup" 
-          element={
-            <PublicRoute>
-              <Signup />
-            </PublicRoute>
-          } 
-        />
+          {/* Públicas */}
+          <Route path="/login" element={<PublicRoute><LoginMinimal /></PublicRoute>} />
+          <Route path="/signup" element={<PublicRoute><Signup /></PublicRoute>} />
 
-        {/* Ruta de Nueva Orden - Sin Header ni Sidebar */}
-        <Route 
-          path="/order/new" 
-          element={
-            <ProtectedRoutePlain>
-              <OrderForm />
-            </ProtectedRoutePlain>
-          } 
-        />
+          {/* Dashboard: redirect según rol (usado por Google OAuth) */}
+          <Route path="/dashboard" element={<Dashboard />} />
 
-        {/* Rutas Protegidas - Con Header y Sidebar */}
+          {/* Sin layout */}
+          <Route path="/order/new" element={<ProtectedRoute withLayout={false}><OrderForm /></ProtectedRoute>} />
 
-        <Route 
-          path="/catalogo" 
-          element={
-            <ProtectedRoute>
-              <Catalog />
-            </ProtectedRoute>
-          } 
-        />
+          {/* Con layout */}
+          <Route path="/catalogo"        element={<ProtectedRoute><Catalog /></ProtectedRoute>} />
+          <Route path="/proveedor"       element={<ProtectedRoute><Proveedor /></ProtectedRoute>} />
+          <Route path="/proveedores"     element={<ProtectedRoute><Providers /></ProtectedRoute>} />
+          <Route path="/transacciones"   element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
+          <Route path="/wallet"          element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
+          <Route path="/provider-orders" element={<ProtectedRoute><ProviderOrders /></ProtectedRoute>} />
+          <Route path="/provider-catalog"element={<ProtectedRoute><ProviderCatalog /></ProtectedRoute>} />
+          <Route path="/add-product"     element={<ProtectedRoute><AddProductForm /></ProtectedRoute>} />
+          <Route path="/product/:id"     element={<ProtectedRoute><ProductPage /></ProtectedRoute>} />
 
-        <Route 
-          path="/proveedor" 
-          element={
-            <ProtectedRoute>
-              <Proveedor />
-            </ProtectedRoute>
-          } 
-        />
+          {/* Raíz */}
+          <Route path="/" element={<Dashboard />} />
 
-        {/* Ruta de Proveedores - Con Header y Sidebar */}
-        <Route 
-          path="/proveedores" 
-          element={
-            <ProtectedRoute>
-              <Providers />
-            </ProtectedRoute>
-          } 
-        />
-
-        {/* Ruta de Transacciones - Con Header y Sidebar */}
-        <Route 
-          path="/transacciones" 
-          element={
-            <ProtectedRoute>
-              <Transactions />
-            </ProtectedRoute>
-          } 
-        />
-
-        {/* Ruta de Wallet - Con Header y Sidebar */}
-        <Route 
-          path="/wallet" 
-          element={
-            <ProtectedRoute>
-              <Wallet />
-            </ProtectedRoute>
-          } 
-        />
-
-        {/* Ruta de Provider Orders - Con Header y Sidebar */}
-        <Route 
-          path="/provider-orders" 
-          element={
-            <ProtectedRoute>
-              <ProviderOrders />
-            </ProtectedRoute>
-          } 
-        />
-
-        {/* Ruta de Provider Catalog - Con Header y Sidebar */}
-        <Route 
-          path="/provider-catalog" 
-          element={
-            <ProtectedRoute>
-              <ProviderCatalog />
-            </ProtectedRoute>
-          } 
-        />
-
-        {/* Ruta de Add Product - Con Header y Sidebar */}
-        <Route 
-          path="/add-product" 
-          element={
-            <ProtectedRoute>
-              <AddProductForm />
-            </ProtectedRoute>
-          } 
-        />
-
-        {/* Ruta de Producto - Con Header y Sidebar */}
-        <Route 
-          path="/product/:id" 
-          element={
-            <ProtectedRoute>
-              <ProductPage />
-            </ProtectedRoute>
-          } 
-        />
-
-        {/* Ruta raíz - Redirige según autenticación */}
-        <Route 
-          path="/" 
-          element={
-            localStorage.getItem('isAuthenticated') === 'true' 
-              ? <Navigate to="/catalogo" replace /> 
-              : <Navigate to="/login" replace />
-          } 
-        />
-
-        {/* Ruta 404 - Página no encontrada */}
-        <Route 
-          path="*" 
-          element={
+          {/* 404 */}
+          <Route path="*" element={
             <ProtectedRoute>
               <div style={{ padding: '40px', textAlign: 'center' }}>
                 <h1>404 - Página no encontrada</h1>
                 <p>La página que buscas no existe.</p>
               </div>
             </ProtectedRoute>
-          } 
-        />
-      </Routes>
-    </Router>
+          } />
+
+        </Routes>
+      </Router>
+    </UserContext.Provider>
   );
 }
 

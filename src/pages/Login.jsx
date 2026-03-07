@@ -2,6 +2,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Lock, Mail, Eye, EyeOff } from 'lucide-react';
+import { loginLocal, getGoogleAuthUrl, getMe } from '../services/api';
+import { useUser } from '../App';
 import '../styles/login.css';
 import '../styles/assets.css';
 
@@ -13,48 +15,33 @@ export default function LoginMinimal() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const navigate = useNavigate();
+  const { setUser } = useUser();
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setError('');
-    setLoading(true);
-
     if (!email || !password) {
       setError('Por favor completa todos los campos');
-      setLoading(false);
       return;
     }
 
-    // Mockup de autenticación
-    setTimeout(() => {
-      if (email === 'admin' && password === '123') {
-        localStorage.setItem('isAuthenticated', 'true');
-        localStorage.setItem('userType', 'seller');
-        localStorage.setItem('userName', 'Administrador');
-        localStorage.setItem('userEmail', 'admin@easystore.com');
-        setLoading(false);
-        navigate('/catalogo');
-      } 
-      else if (email === 'provider' && password === '123') {
-        localStorage.setItem('isAuthenticated', 'true');
-        localStorage.setItem('userType', 'provider');
-        localStorage.setItem('userName', 'Proveedor Global');
-        localStorage.setItem('userEmail', 'provider@easystore.com');
-        setLoading(false);
-        navigate('/provider-orders');
-      }
-      else {
-        setError('Usuario o contraseña incorrectos. Prueba con: admin/123 o provider/123');
-        setLoading(false);
-      }
-    }, 1000);
+    setLoading(true);
+    try {
+      await loginLocal(email, password);
+      const user = await getMe();
+      setUser(user);
+      navigate(user.user_role === 'provider' ? '/provider-orders' : '/catalogo');
+    } catch (e) {
+      setError(e.message || 'Email o contraseña incorrectos');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleGoogleLogin = async () => {
     setGoogleLoading(true);
     setError('');
     try {
-      const res = await fetch('https://easypy-backend-430520813248.us-central1.run.app/auth/google');
-      const data = await res.json();
+      const data = await getGoogleAuthUrl();
       window.location.href = data.url;
     } catch (e) {
       setError('No se pudo conectar con Google. Intentá de nuevo.');
@@ -71,24 +58,22 @@ export default function LoginMinimal() {
       <div className="login-wrapper">
         <div className="login-card">
 
-          {/* Header */}
           <div className="login-header">
             <h1>Bienvenido</h1>
             <p>Ingresa tus credenciales para continuar</p>
           </div>
 
-          {/* Form */}
           <div className="login-form">
             <div className="form-group">
-              <label>Usuario</label>
+              <label>Email</label>
               <div className="input-wrapper">
                 <Mail className="input-icon" />
                 <input
-                  type="text"
+                  type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder="Usuario"
+                  placeholder="tu@email.com"
                   disabled={loading}
                 />
               </div>
@@ -106,12 +91,7 @@ export default function LoginMinimal() {
                   placeholder="••••••••"
                   disabled={loading}
                 />
-                <button
-                  type="button"
-                  className="icon-button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  disabled={loading}
-                >
+                <button type="button" className="icon-button" onClick={() => setShowPassword(!showPassword)} disabled={loading}>
                   {showPassword ? <EyeOff /> : <Eye />}
                 </button>
               </div>
@@ -120,51 +100,32 @@ export default function LoginMinimal() {
             {error && <div className="error-box">{error}</div>}
 
             <div className="login-options">
-              <label>
-                <input type="checkbox" /> Recordarme
-              </label>
+              <label><input type="checkbox" /> Recordarme</label>
               <a href="#" onClick={(e) => e.preventDefault()}>¿Olvidaste tu contraseña?</a>
             </div>
 
-            <button
-              className="primary-button"
-              onClick={handleSubmit}
-              disabled={loading}
-            >
+            <button className="primary-button" onClick={handleSubmit} disabled={loading}>
               {loading ? 'Ingresando...' : 'Iniciar Sesión'}
             </button>
 
-            {/* Divisor */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: '16px 0' }}>
               <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }} />
               <span style={{ fontSize: '13px', color: '#9ca3af', whiteSpace: 'nowrap' }}>o continúa con</span>
               <div style={{ flex: 1, height: '1px', background: '#e5e7eb' }} />
             </div>
 
-            {/* Botón Google */}
             <button
               onClick={handleGoogleLogin}
               disabled={googleLoading}
               style={{
-                width: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '10px',
-                padding: '10px 16px',
-                border: '1px solid #e5e7eb',
-                borderRadius: '8px',
-                background: '#fff',
-                cursor: googleLoading ? 'not-allowed' : 'pointer',
-                fontSize: '14px',
-                fontWeight: '500',
-                color: '#374151',
-                transition: 'background 0.2s',
+                width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                gap: '10px', padding: '10px 16px', border: '1px solid #e5e7eb', borderRadius: '8px',
+                background: '#fff', cursor: googleLoading ? 'not-allowed' : 'pointer',
+                fontSize: '14px', fontWeight: '500', color: '#374151', transition: 'background 0.2s',
               }}
               onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'}
               onMouseLeave={e => e.currentTarget.style.background = '#fff'}
             >
-              {/* Google SVG icon */}
               <svg width="18" height="18" viewBox="0 0 48 48">
                 <path fill="#FFC107" d="M43.6 20H24v8h11.3C33.6 33.1 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.5 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20c11 0 19.7-8 19.7-20 0-1.3-.1-2.7-.1-4z"/>
                 <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 16 19 13 24 13c3 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.5 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/>
@@ -173,7 +134,6 @@ export default function LoginMinimal() {
               </svg>
               {googleLoading ? 'Redirigiendo...' : 'Continuar con Google'}
             </button>
-
           </div>
 
           <div className="login-footer">
