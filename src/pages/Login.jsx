@@ -67,7 +67,6 @@ export default function LoginMinimal() {
             <div className="form-group">
               <label>Email</label>
               <div className="input-wrapper">
-                <Mail className="input-icon" />
                 <input
                   type="email"
                   value={email}
@@ -82,7 +81,6 @@ export default function LoginMinimal() {
             <div className="form-group">
               <label>Contraseña</label>
               <div className="input-wrapper">
-                <Lock className="input-icon" />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
