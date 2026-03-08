@@ -11,6 +11,7 @@ const Signup = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleSignup, setIsGoogleSignup] = useState(false);
+  const [googleId, setGoogleId] = useState('');
 
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -29,9 +30,11 @@ const Signup = () => {
     const name = searchParams.get('name');
     const email = searchParams.get('email');
     const provider = searchParams.get('provider');
+    const gid = searchParams.get('google_id');
 
     if (provider === 'google' && email) {
       setIsGoogleSignup(true);
+      setGoogleId(gid || '');
       setFormData(prev => ({
         ...prev,
         fullName: name || '',
@@ -69,7 +72,7 @@ const Signup = () => {
     setIsLoading(true);
     try {
       if (isGoogleSignup) {
-        await registerGoogle(formData.email, formData.fullName, userType);
+        await registerGoogle(formData.email, formData.fullName, userType, googleId);
       } else {
         await registerLocal(formData.email, formData.fullName, formData.password, userType);
       }

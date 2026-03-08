@@ -37,10 +37,10 @@ export const registerLocal = (email, name, password, userRole) =>
     body: JSON.stringify({ email, name, password, user_role: userRole }),
   });
 
-export const registerGoogle = (email, name, userRole) =>
+export const registerGoogle = (email, name, userRole, googleId) =>
   api("/auth/register/google", {
     method: "POST",
-    body: JSON.stringify({ email, name, user_role: userRole }),
+    body: JSON.stringify({ email, name, user_role: userRole, google_id: googleId }),
   });
 
 // ─── Users ───────────────────────────────────────────
