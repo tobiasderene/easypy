@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { registerLocal, getMe } from '../services/api';
+import { registerLocal, registerGoogle, getMe } from '../services/api';
 import { useUser } from '../App';
 import '../styles/signup.css';
 
@@ -68,7 +68,11 @@ const Signup = () => {
 
     setIsLoading(true);
     try {
-      await registerLocal(formData.email, formData.fullName, formData.password, userType);
+      if (isGoogleSignup) {
+        await registerGoogle(formData.email, formData.fullName, userType);
+      } else {
+        await registerLocal(formData.email, formData.fullName, formData.password, userType);
+      }
       const user = await getMe();
       setUser(user);
       navigate(user.user_role === 'provider' ? '/provider-orders' : '/catalogo');

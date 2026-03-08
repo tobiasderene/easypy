@@ -37,6 +37,12 @@ export const registerLocal = (email, name, password, userRole) =>
     body: JSON.stringify({ email, name, password, user_role: userRole }),
   });
 
+export const registerGoogle = (email, name, userRole) =>
+  api("/auth/register/google", {
+    method: "POST",
+    body: JSON.stringify({ email, name, user_role: userRole }),
+  });
+
 // ─── Users ───────────────────────────────────────────
 export const getUser = (userId) => api(`/users/${userId}`);
 export const updateUser = (userId, data) =>
