@@ -1,13 +1,14 @@
 const BASE_URL = "https://easypy-backend-430520813248.us-central1.run.app";
 
 const api = async (endpoint, options = {}) => {
+  const { headers, ...rest } = options;
   const res = await fetch(`${BASE_URL}${endpoint}`, {
-    credentials: "include", // necesario para mandar las cookies de sesión
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
-      ...options.headers,
+      ...headers,
     },
-    ...options,
+    ...rest,
   });
 
   if (!res.ok) {
@@ -15,14 +16,26 @@ const api = async (endpoint, options = {}) => {
     throw new Error(error.detail || "Error en la solicitud");
   }
 
-  // algunos endpoints devuelven 204 sin body
   const text = await res.text();
   return text ? JSON.parse(text) : null;
 };
 
 // ─── Auth ────────────────────────────────────────────
 export const getGoogleAuthUrl = () => api("/auth/google");
-export const getMe = () => api("/auth/me");
+export const getMe = async () => {
+  const { headers, ...rest } = {};
+  const res = await fetch(`${BASE_URL}/auth/me`, {
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+  });
+  if (res.status === 401) return null;
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ detail: "Error desconocido" }));
+    throw new Error(error.detail || "Error en la solicitud");
+  }
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
+};
 export const logout = () => api("/auth/logout", { method: "POST" });
 
 export const loginLocal = (email, password) =>
