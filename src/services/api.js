@@ -57,9 +57,13 @@ export const registerGoogle = (email, name, userRole, googleId) =>
   });
 
 // ─── Users ───────────────────────────────────────────
-export const getUser = (userId) => api(`/users/${userId}`);
-export const updateUser = (userId, data) =>
+export const getUsers = (params = {}) => {
+  const query = new URLSearchParams(params).toString();
+  return api(`/users${query ? `?${query}` : ''}`);
+};export const updateUser = (userId, data) =>
   api(`/users/${userId}`, { method: "PATCH", body: JSON.stringify(data) });
+
+
 
 // ─── Products ────────────────────────────────────────
 export const getProducts = (skip = 0, limit = 100) =>
@@ -130,8 +134,13 @@ export const getWithdrawalsByWallet = (walletId) =>
   api(`/withdrawals/wallet/${walletId}`);
 export const createWithdrawal = (data) =>
   api("/withdrawals", { method: "POST", body: JSON.stringify(data) });
+export const getWithdrawalsByStatus = (status) =>
+  api(`/withdrawals/status/${status}`);
+
 export const updateWithdrawal = (withdrawalId, data) =>
-  api(`/withdrawals/${withdrawalId}`, { method: "PATCH", body: JSON.stringify(data) });
+  api(`/withdrawals/${withdrawalId}`, { method: 'PATCH', body: JSON.stringify(data) });
+
+
 
 // ─── Bank Movements ───────────────────────────────────
 export const getBankMovements = () => api("/bank-movements");
@@ -139,3 +148,9 @@ export const getBankMovementsByWithdrawal = (withdrawalId) =>
   api(`/bank-movements/withdrawal/${withdrawalId}`);
 export const createBankMovement = (data) =>
   api("/bank-movements", { method: "POST", body: JSON.stringify(data) });
+export const getBankMovementsByStatus = (status) =>
+  api(`/bank-movements/status/${status}`);
+export const updateBankMovement = (bankMovementId, data) =>
+  api(`/bank-movements/${bankMovementId}`, { method: 'PATCH', body: JSON.stringify(data) });
+
+
