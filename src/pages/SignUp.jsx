@@ -156,10 +156,6 @@ const Signup = () => {
             <div className="form-group">
               <label htmlFor="fullName">Nombre completo</label>
               <div className="input-wrapper">
-                <svg className="input-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                  <circle cx="12" cy="7" r="4"></circle>
-                </svg>
                 <input type="text" id="fullName" name="fullName" placeholder="Juan Pérez" value={formData.fullName} onChange={handleInputChange} required />
               </div>
             </div>
@@ -167,10 +163,6 @@ const Signup = () => {
             <div className="form-group">
               <label htmlFor="email">Correo electrónico</label>
               <div className="input-wrapper">
-                <svg className="input-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-                  <polyline points="22,6 12,13 2,6"></polyline>
-                </svg>
                 <input
                   type="email" id="email" name="email" placeholder="correo@ejemplo.com"
                   value={formData.email} onChange={handleInputChange} required
@@ -183,9 +175,6 @@ const Signup = () => {
             <div className="form-group">
               <label htmlFor="phone">Teléfono</label>
               <div className="input-wrapper">
-                <svg className="input-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-                </svg>
                 <input type="tel" id="phone" name="phone" placeholder="+595 123 456 789" value={formData.phone} onChange={handleInputChange} required />
               </div>
             </div>
@@ -195,10 +184,6 @@ const Signup = () => {
                 <div className="form-group">
                   <label htmlFor="password">Contraseña</label>
                   <div className="input-wrapper">
-                    <svg className="input-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                      <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                    </svg>
                     <input type={showPassword ? 'text' : 'password'} id="password" name="password" placeholder="••••••••" value={formData.password} onChange={handleInputChange} required />
                     <button type="button" className="icon-button" onClick={() => setShowPassword(!showPassword)}>
                       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -211,10 +196,6 @@ const Signup = () => {
                 <div className="form-group">
                   <label htmlFor="confirmPassword">Confirmar contraseña</label>
                   <div className="input-wrapper">
-                    <svg className="input-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                      <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                    </svg>
                     <input type={showConfirmPassword ? 'text' : 'password'} id="confirmPassword" name="confirmPassword" placeholder="••••••••" value={formData.confirmPassword} onChange={handleInputChange} required />
                     <button type="button" className="icon-button" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
                       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
