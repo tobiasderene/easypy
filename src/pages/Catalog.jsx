@@ -202,7 +202,7 @@ const Catalog = () => {
   };
 
   const handleProductClick = (product) => {
-    if (!product.isMock) navigate(`/product/${product.id}`);
+    navigate(`/product/${product.id}`);
   };
 
   const formatPrice = (price) =>
@@ -212,7 +212,7 @@ const Catalog = () => {
     <div
       className="product-card"
       onClick={() => handleProductClick(product)}
-      style={{ cursor: product.isMock ? 'default' : 'pointer' }}
+      style={{ cursor: 'pointer' }}
     >
       <div className="product-image-container">
         {product.image ? (
