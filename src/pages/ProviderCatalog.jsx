@@ -1,158 +1,93 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Package, TrendingUp, Edit, Trash2, Plus, Search, Filter, Eye, EyeOff } from 'lucide-react';
+import { getMyProducts, deleteProduct, updateProduct, getProductImages } from '../services/api';
 import '../styles/providercatalog.css';
-
-// Mock data de productos del proveedor
-const mockProducts = [
-  {
-    id: 1,
-    name: 'Smart Watch Serie 8 - Pantalla AMOLED 1.96"',
-    image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&q=80',
-    sku: 'SW-001',
-    price: 45000,
-    stock: 156,
-    unitsSold: 342,
-    revenue: 15390000,
-    status: 'active', // active, inactive
-    category: 'electronics'
-  },
-  {
-    id: 2,
-    name: 'Auriculares Inalámbricos Bluetooth 5.0',
-    image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&q=80',
-    sku: 'AUD-002',
-    price: 29900,
-    stock: 234,
-    unitsSold: 567,
-    revenue: 16953300,
-    status: 'active',
-    category: 'electronics'
-  },
-  {
-    id: 3,
-    name: 'Anillo de Luz LED para Streaming - 12"',
-    image: 'https://images.unsplash.com/photo-1579389083078-4e7018379f7e?w=400&q=80',
-    sku: 'LED-003',
-    price: 35000,
-    stock: 89,
-    unitsSold: 178,
-    revenue: 6230000,
-    status: 'active',
-    category: 'electronics'
-  },
-  {
-    id: 4,
-    name: 'Soporte para Laptop Ajustable de Aluminio',
-    image: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=400&q=80',
-    sku: 'LAP-004',
-    price: 24500,
-    stock: 0,
-    unitsSold: 423,
-    revenue: 10363500,
-    status: 'inactive',
-    category: 'office'
-  },
-  {
-    id: 5,
-    name: 'Mini Proyector Portátil 1080P WiFi',
-    image: 'https://images.unsplash.com/photo-1478720568477-152d9b164e26?w=400&q=80',
-    sku: 'PRJ-005',
-    price: 89990,
-    stock: 45,
-    unitsSold: 89,
-    revenue: 8009110,
-    status: 'active',
-    category: 'electronics'
-  },
-  {
-    id: 6,
-    name: 'Tiras LED RGB 5M Control por App WiFi',
-    image: 'https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=400&q=80',
-    sku: 'LED-006',
-    price: 19990,
-    stock: 312,
-    unitsSold: 891,
-    revenue: 17810190,
-    status: 'active',
-    category: 'home'
-  },
-  {
-    id: 7,
-    name: 'Funda para Móvil con Soporte Magnético',
-    image: 'https://images.unsplash.com/photo-1601784551446-20c9e07cdbdb?w=400&q=80',
-    sku: 'FND-007',
-    price: 8990,
-    stock: 567,
-    unitsSold: 1234,
-    revenue: 11093660,
-    status: 'active',
-    category: 'accessories'
-  },
-  {
-    id: 8,
-    name: 'Set de Bandas de Resistencia 5 Niveles',
-    image: 'https://images.unsplash.com/photo-1598289431512-b97b0917affc?w=400&q=80',
-    sku: 'FIT-008',
-    price: 15990,
-    stock: 145,
-    unitsSold: 267,
-    revenue: 4269330,
-    status: 'active',
-    category: 'fitness'
-  }
-];
 
 const ProviderCatalog = () => {
   const navigate = useNavigate();
-  const [products, setProducts] = useState(mockProducts);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
 
-  // Format currency
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('es-PY', {
-      style: 'currency',
-      currency: 'PYG',
-      minimumFractionDigits: 0
-    }).format(amount);
+  const formatCurrency = (amount) =>
+    new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', minimumFractionDigits: 0 }).format(amount);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const data = await getMyProducts();
+        // Traer imagen primaria de cada producto
+        const withImages = await Promise.all(
+          data.map(async (p) => {
+            try {
+              const images = await getProductImages(p.product_id);
+              const primary = images.find(img => img.is_primary) || images[0];
+              return { ...p, imageUrl: primary?.image_url || null };
+            } catch {
+              return { ...p, imageUrl: null };
+            }
+          })
+        );
+        setProducts(withImages);
+      } catch (e) {
+        setError('No se pudieron cargar los productos.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProducts();
+  }, []);
+
+  const toggleProductStatus = async (product) => {
+    const newStatus = product.product_status === 'active' ? 'inactive' : 'active';
+    try {
+      await updateProduct(product.product_id, { product_status: newStatus });
+      setProducts(prev =>
+        prev.map(p => p.product_id === product.product_id ? { ...p, product_status: newStatus } : p)
+      );
+    } catch {
+      alert('No se pudo actualizar el estado del producto.');
+    }
   };
 
-  // Toggle product status
-  const toggleProductStatus = (productId) => {
-    setProducts(products.map(product => 
-      product.id === productId 
-        ? { ...product, status: product.status === 'active' ? 'inactive' : 'active' }
-        : product
-    ));
+  const handleDelete = async (productId) => {
+    if (!confirm('¿Estás seguro que querés eliminar este producto?')) return;
+    try {
+      await deleteProduct(productId);
+      setProducts(prev => prev.filter(p => p.product_id !== productId));
+    } catch {
+      alert('No se pudo eliminar el producto.');
+    }
   };
 
-  // Filter products
-  const filteredProducts = products.filter(product => {
-    const matchesSearch = 
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.sku.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === 'all' || product.status === statusFilter;
-    const matchesCategory = categoryFilter === 'all' || product.category === categoryFilter;
-    
+  const filteredProducts = products.filter(p => {
+    const matchesSearch =
+      p.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.product_sku.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || p.product_status === statusFilter;
+    const matchesCategory = categoryFilter === 'all' || p.product_category === categoryFilter;
     return matchesSearch && matchesStatus && matchesCategory;
   });
 
-  // Calculate statistics
+  const categories = [...new Set(products.map(p => p.product_category))];
+
   const stats = {
     totalProducts: products.length,
-    activeProducts: products.filter(p => p.status === 'active').length,
-    totalRevenue: products.reduce((sum, p) => sum + p.revenue, 0),
-    totalUnitsSold: products.reduce((sum, p) => sum + p.unitsSold, 0),
-    lowStock: products.filter(p => p.stock < 50 && p.status === 'active').length
+    activeProducts: products.filter(p => p.product_status === 'active').length,
+    totalRevenue: 0, // sin datos de ventas por ahora
+    lowStock: 0,
   };
+
+  if (loading) return <div className="provider-catalog-page" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}><p>Cargando productos...</p></div>;
 
   return (
     <div className="provider-catalog-page">
       <div className="provider-catalog-container">
-        
+
         {/* Header */}
         <div className="provider-catalog-header">
           <div className="header-content">
@@ -160,7 +95,7 @@ const ProviderCatalog = () => {
               <Package size={32} />
               <div>
                 <h1>Mi Catálogo de Productos</h1>
-                <p>Gestiona tu inventario y monitorea ventas</p>
+                <p>Gestiona tu inventario</p>
               </div>
             </div>
             <button className="btn-add-product" onClick={() => navigate('/add-product')}>
@@ -170,48 +105,32 @@ const ProviderCatalog = () => {
           </div>
         </div>
 
-        {/* Stats Cards */}
+        {/* Stats */}
         <div className="catalog-stats-grid">
           <div className="catalog-stat-card">
-            <div className="stat-icon total">
-              <Package size={24} />
-            </div>
+            <div className="stat-icon total"><Package size={24} /></div>
             <div className="stat-info">
               <span className="stat-label">Total Productos</span>
               <span className="stat-value">{stats.totalProducts}</span>
             </div>
           </div>
-
           <div className="catalog-stat-card">
-            <div className="stat-icon active">
-              <Eye size={24} />
-            </div>
+            <div className="stat-icon active"><Eye size={24} /></div>
             <div className="stat-info">
               <span className="stat-label">Productos Activos</span>
               <span className="stat-value">{stats.activeProducts}</span>
             </div>
           </div>
-
           <div className="catalog-stat-card">
-            <div className="stat-icon revenue">
-              <TrendingUp size={24} />
-            </div>
+            <div className="stat-icon revenue"><TrendingUp size={24} /></div>
             <div className="stat-info">
-              <span className="stat-label">Ingresos Totales</span>
-              <span className="stat-value">{formatCurrency(stats.totalRevenue)}</span>
-            </div>
-          </div>
-
-          <div className="catalog-stat-card">
-            <div className="stat-icon sold">
-              <Package size={24} />
-            </div>
-            <div className="stat-info">
-              <span className="stat-label">Unidades Vendidas</span>
-              <span className="stat-value">{stats.totalUnitsSold}</span>
+              <span className="stat-label">Inactivos</span>
+              <span className="stat-value">{stats.totalProducts - stats.activeProducts}</span>
             </div>
           </div>
         </div>
+
+        {error && <div className="error-box" style={{ marginBottom: '16px' }}>{error}</div>}
 
         {/* Filters */}
         <div className="catalog-filters-section">
@@ -224,32 +143,22 @@ const ProviderCatalog = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-
           <div className="filter-group">
             <div className="filter-item">
               <Filter size={18} />
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
+              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
                 <option value="all">Todos los estados</option>
                 <option value="active">Activos</option>
                 <option value="inactive">Inactivos</option>
               </select>
             </div>
-
             <div className="filter-item">
               <Filter size={18} />
-              <select
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-              >
+              <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}>
                 <option value="all">Todas las categorías</option>
-                <option value="electronics">Electrónica</option>
-                <option value="home">Hogar</option>
-                <option value="office">Oficina</option>
-                <option value="fitness">Fitness</option>
-                <option value="accessories">Accesorios</option>
+                {categories.map(cat => (
+                  <option key={cat} value={cat}>{cat}</option>
+                ))}
               </select>
             </div>
           </div>
@@ -261,65 +170,56 @@ const ProviderCatalog = () => {
             <div className="empty-state">
               <Package size={64} />
               <h3>No se encontraron productos</h3>
-              <p>Intenta ajustar los filtros de búsqueda</p>
+              <p>{products.length === 0 ? 'Todavía no agregaste ningún producto.' : 'Intentá ajustar los filtros.'}</p>
             </div>
           ) : (
             filteredProducts.map(product => (
-              <div key={product.id} className={`catalog-product-card ${product.status}`}>
-                {/* Product Image */}
+              <div key={product.product_id} className={`catalog-product-card ${product.product_status}`}>
                 <div className="catalog-product-image">
-                  <img src={product.image} alt={product.name} />
-                  {product.stock === 0 && (
-                    <div className="out-of-stock-badge">Sin Stock</div>
-                  )}
-                  {product.stock > 0 && product.stock < 50 && (
-                    <div className="low-stock-badge">Stock Bajo</div>
+                  {product.imageUrl
+                    ? <img src={product.imageUrl} alt={product.product_name} />
+                    : <div style={{ width: '100%', height: '100%', background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Package size={40} color="#d1d5db" /></div>
+                  }
+                  {product.product_status === 'inactive' && (
+                    <div className="out-of-stock-badge">Inactivo</div>
                   )}
                 </div>
 
-                {/* Product Info */}
                 <div className="catalog-product-info">
                   <div className="product-header">
-                    <span className="product-sku">SKU: {product.sku}</span>
-                    <button 
-                      className={`status-toggle ${product.status}`}
-                      onClick={() => toggleProductStatus(product.id)}
-                      title={product.status === 'active' ? 'Desactivar' : 'Activar'}
+                    <span className="product-sku">SKU: {product.product_sku}</span>
+                    <button
+                      className={`status-toggle ${product.product_status}`}
+                      onClick={() => toggleProductStatus(product)}
+                      title={product.product_status === 'active' ? 'Desactivar' : 'Activar'}
                     >
-                      {product.status === 'active' ? <Eye size={16} /> : <EyeOff size={16} />}
+                      {product.product_status === 'active' ? <Eye size={16} /> : <EyeOff size={16} />}
                     </button>
                   </div>
 
-                  <h3 className="catalog-product-name">{product.name}</h3>
+                  <h3 className="catalog-product-name">{product.product_name}</h3>
 
                   <div className="product-details">
                     <div className="detail-row">
-                      <span className="detail-label">Precio:</span>
-                      <span className="detail-value price">{formatCurrency(product.price)}</span>
+                      <span className="detail-label">Precio base:</span>
+                      <span className="detail-value price">{formatCurrency(product.product_base_cost)}</span>
                     </div>
                     <div className="detail-row">
-                      <span className="detail-label">Stock:</span>
-                      <span className={`detail-value stock ${product.stock === 0 ? 'zero' : product.stock < 50 ? 'low' : ''}`}>
-                        {product.stock} unidades
-                      </span>
-                    </div>
-                    <div className="detail-row highlight">
-                      <span className="detail-label">Vendidos:</span>
-                      <span className="detail-value sold">{product.unitsSold} unidades</span>
+                      <span className="detail-label">Categoría:</span>
+                      <span className="detail-value">{product.product_category}</span>
                     </div>
                     <div className="detail-row">
-                      <span className="detail-label">Ingresos:</span>
-                      <span className="detail-value revenue">{formatCurrency(product.revenue)}</span>
+                      <span className="detail-label">Descuento:</span>
+                      <span className="detail-value">{product.product_discount}%</span>
                     </div>
                   </div>
 
-                  {/* Actions */}
                   <div className="product-actions">
-                    <button className="btn-action edit">
+                    <button className="btn-action edit" onClick={() => navigate(`/edit-product/${product.product_id}`)}>
                       <Edit size={16} />
                       <span>Editar</span>
                     </button>
-                    <button className="btn-action delete">
+                    <button className="btn-action delete" onClick={() => handleDelete(product.product_id)}>
                       <Trash2 size={16} />
                       <span>Eliminar</span>
                     </button>
@@ -330,22 +230,11 @@ const ProviderCatalog = () => {
           )}
         </div>
 
-        {/* Summary Footer */}
         {filteredProducts.length > 0 && (
           <div className="catalog-summary">
             <div className="summary-item">
               <span>Productos mostrados:</span>
               <strong>{filteredProducts.length}</strong>
-            </div>
-            <div className="summary-item">
-              <span>Unidades vendidas:</span>
-              <strong>{filteredProducts.reduce((sum, p) => sum + p.unitsSold, 0)}</strong>
-            </div>
-            <div className="summary-item">
-              <span>Ingresos totales:</span>
-              <strong className="total-revenue">
-                {formatCurrency(filteredProducts.reduce((sum, p) => sum + p.revenue, 0))}
-              </strong>
             </div>
           </div>
         )}
