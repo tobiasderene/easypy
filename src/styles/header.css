@@ -1,20 +1,15 @@
-/* header.css */
-
+/* Header.css */
 .header {
-  position: sticky;
-  top: 0;
-  width: 100%;
-  height: 70px;
   background: white;
-  border-bottom: 2px solid #f3f4f6;
+  border-bottom: 2px solid #e5e7eb;
+  padding: 2rem 0px;
   display: flex;
   align-items: center;
-  padding: 0 24px;
-  gap: 24px;
-  z-index: 100;
+  gap: 20px;
+  height: 70px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-/* Burger Button */
 .burger-button {
   background: none;
   border: none;
@@ -34,55 +29,48 @@
 .burger-line {
   width: 24px;
   height: 3px;
-  background: #1f2937;
+  background: #056EB7;
   border-radius: 2px;
-  transition: all 0.3s ease;
 }
 
-/* Logo */
 .logo {
   display: flex;
-  gap: 4px;
-  font-size: 20px;
-  font-weight: 800;
-  letter-spacing: -0.5px;
-  cursor: default;
+  flex-direction: column;
+  line-height: 1;
+  font-weight: 700;
+  color: #056EB7;
+  min-width: 80px;
+  justify-content: center;
 }
 
 .logo-easy {
+  font-size: 18px;
+  text-transform: uppercase;
   color: #056EB7;
+  letter-spacing: 0.5px;
 }
 
 .logo-drop {
-  color: #1f2937;
+  font-size: 18px;
+  text-transform: uppercase;
+  color: #056EB7;
+  letter-spacing: 0.5px;
 }
 
-/* Search Bar */
 .search-container {
   flex: 1;
-  max-width: 500px;
+  max-width: 600px;
   position: relative;
-}
-
-.search-icon {
-  position: absolute;
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 20px;
-  height: 20px;
-  color: #9ca3af;
-  pointer-events: none;
 }
 
 .search-input {
   width: 100%;
-  height: 40px;
-  padding: 0 16px 0 44px;
+  padding: 12px 44px;
   border: 2px solid #e5e7eb;
   border-radius: 10px;
   font-size: 14px;
-  transition: all 0.3s ease;
+  box-sizing: border-box;
+  transition: border-color 0.3s ease;
 }
 
 .search-input:focus {
@@ -94,7 +82,17 @@
   color: #9ca3af;
 }
 
-/* Header Actions */
+.search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  pointer-events: none;
+  width: 20px;
+  height: 20px;
+}
+
 .header-actions {
   display: flex;
   align-items: center;
@@ -102,36 +100,28 @@
   margin-left: auto;
 }
 
-/* Wallet Button */
 .wallet {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  background: linear-gradient(135deg, #056EB7 0%, #045A94 100%);
-  border: none;
+  background: #EFF6FF;
+  border: 2px solid #BFDBFE;
   border-radius: 10px;
-  color: white;
+  color: #056EB7;
   font-weight: 600;
   font-size: 14px;
   cursor: pointer;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(5, 110, 183, 0.2);
 }
 
 .wallet:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(5, 110, 183, 0.3);
-}
-
-.wallet:active {
-  transform: translateY(0);
+  background: #DBEAFE;
 }
 
 .wallet-icon {
-  width: 18px;
-  height: 18px;
-  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
 }
 
 /* Cart Button */
@@ -140,43 +130,43 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 44px;
-  height: 44px;
-  background: white;
-  border: 2px solid #e5e7eb;
+  width: 40px;
+  height: 40px;
+  background: #EFF6FF;
+  border: 2px solid #BFDBFE;
   border-radius: 10px;
-  color: #1f2937;
+  color: #056EB7;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
 }
 
 .cart-button:hover {
-  border-color: #056EB7;
-  background: #f9fafb;
+  background: #DBEAFE;
 }
 
 .cart-icon {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
 }
 
 .cart-badge {
   position: absolute;
   top: -6px;
   right: -6px;
-  background: #dc2626;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  background: #056EB7;
   color: white;
   font-size: 11px;
   font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 10px;
-  min-width: 18px;
-  text-align: center;
-  line-height: 1.2;
-  border: 2px solid white;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
-/* User Button */
 .user-button {
   display: flex;
   align-items: center;
@@ -184,29 +174,28 @@
   padding: 6px 12px 6px 6px;
   background: white;
   border: 2px solid #e5e7eb;
-  border-radius: 12px;
+  border-radius: 10px;
   cursor: pointer;
   transition: all 0.3s ease;
+  margin-right: 1rem;
 }
 
 .user-button:hover {
   border-color: #056EB7;
-  background: #f9fafb;
 }
 
 .user-avatar {
   width: 36px;
   height: 36px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #056EB7 0%, #045A94 100%);
+  border-radius: 50%;
+  background: #056EB7;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
-  font-weight: 700;
+  font-weight: 600;
   font-size: 14px;
   overflow: hidden;
-  flex-shrink: 0;
 }
 
 .user-avatar img {
@@ -216,59 +205,45 @@
 }
 
 .user-name {
-  font-size: 14px;
   font-weight: 600;
-  color: #1f2937;
-  white-space: nowrap;
-}
-
-/* Responsive */
-@media (max-width: 1024px) {
-  .search-container {
-    max-width: 400px;
-  }
+  font-size: 14px;
+  color: #374151;
 }
 
 @media (max-width: 768px) {
   .header {
-    padding: 0 16px;
-    gap: 16px;
+    padding: 12px 0px;
+    gap: 12px;
+  }
+
+  .logo {
+    min-width: 60px;
+  }
+
+  .logo-easy,
+  .logo-drop {
+    font-size: 14px;
   }
 
   .search-container {
     max-width: 300px;
   }
 
+  .wallet {
+    padding: 6px 12px;
+  }
+
   .user-name {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .search-container {
     display: none;
   }
 
   .wallet span {
     display: none;
-  }
-
-  .wallet {
-    padding: 10px;
-    width: 40px;
-    height: 40px;
-    justify-content: center;
-  }
-}
-
-@media (max-width: 640px) {
-  .header {
-    gap: 12px;
-  }
-
-  .logo {
-    font-size: 16px;
-  }
-
-  .search-container {
-    display: none;
-  }
-
-  .header-actions {
-    gap: 12px;
   }
 }
