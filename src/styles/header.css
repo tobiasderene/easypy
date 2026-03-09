@@ -1,15 +1,20 @@
-/* Header.css */
+/* header.css */
+
 .header {
+  position: sticky;
+  top: 0;
+  width: 100%;
+  height: 70px;
   background: white;
-  border-bottom: 2px solid #e5e7eb;
-  padding: 2rem 0px;
+  border-bottom: 2px solid #f3f4f6;
   display: flex;
   align-items: center;
-  gap: 20px;
-  height: 70px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 0 24px;
+  gap: 24px;
+  z-index: 100;
 }
 
+/* Burger Button */
 .burger-button {
   background: none;
   border: none;
@@ -19,8 +24,7 @@
   flex-direction: column;
   gap: 4px;
   transition: all 0.3s ease;
-  margin-left: 1rem; /* ← Agrega esto */
-
+  margin-left: 1rem;
 }
 
 .burger-button:hover {
@@ -30,48 +34,55 @@
 .burger-line {
   width: 24px;
   height: 3px;
-  background: #056EB7;
+  background: #1f2937;
   border-radius: 2px;
+  transition: all 0.3s ease;
 }
 
+/* Logo */
 .logo {
   display: flex;
-  flex-direction: column;
-  line-height: 1;
-  font-weight: 700;
-  color: #056EB7;
-  min-width: 80px;
-  justify-content: center;
+  gap: 4px;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  cursor: default;
 }
 
 .logo-easy {
-  font-size: 18px;
-  text-transform: uppercase;
   color: #056EB7;
-  letter-spacing: 0.5px;
 }
 
 .logo-drop {
-  font-size: 18px;
-  text-transform: uppercase;
-  color: #056EB7;
-  letter-spacing: 0.5px;
+  color: #1f2937;
 }
 
+/* Search Bar */
 .search-container {
   flex: 1;
-  max-width: 600px;
+  max-width: 500px;
   position: relative;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  color: #9ca3af;
+  pointer-events: none;
 }
 
 .search-input {
   width: 100%;
-  padding: 12px 44px;
+  height: 40px;
+  padding: 0 16px 0 44px;
   border: 2px solid #e5e7eb;
   border-radius: 10px;
   font-size: 14px;
-  box-sizing: border-box;
-  transition: border-color 0.3s ease;
+  transition: all 0.3s ease;
 }
 
 .search-input:focus {
@@ -83,17 +94,7 @@
   color: #9ca3af;
 }
 
-.search-icon {
-  position: absolute;
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  color: #9ca3af;
-  pointer-events: none;
-  width: 20px;
-  height: 20px;
-}
-
+/* Header Actions */
 .header-actions {
   display: flex;
   align-items: center;
@@ -101,24 +102,81 @@
   margin-left: auto;
 }
 
+/* Wallet Button */
 .wallet {
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 8px 16px;
-  background: #EFF6FF;
-  border: 2px solid #BFDBFE;
+  background: linear-gradient(135deg, #056EB7 0%, #045A94 100%);
+  border: none;
   border-radius: 10px;
-  color: #056EB7;
+  color: white;
   font-weight: 600;
   font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(5, 110, 183, 0.2);
+}
+
+.wallet:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(5, 110, 183, 0.3);
+}
+
+.wallet:active {
+  transform: translateY(0);
 }
 
 .wallet-icon {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
 }
 
+/* Cart Button */
+.cart-button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  color: #1f2937;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cart-button:hover {
+  border-color: #056EB7;
+  background: #f9fafb;
+}
+
+.cart-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.cart-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: #dc2626;
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 18px;
+  text-align: center;
+  line-height: 1.2;
+  border: 2px solid white;
+}
+
+/* User Button */
 .user-button {
   display: flex;
   align-items: center;
@@ -126,28 +184,29 @@
   padding: 6px 12px 6px 6px;
   background: white;
   border: 2px solid #e5e7eb;
-  border-radius: 10px;
+  border-radius: 12px;
   cursor: pointer;
   transition: all 0.3s ease;
-  margin-right: 1rem;
 }
 
 .user-button:hover {
   border-color: #056EB7;
+  background: #f9fafb;
 }
 
 .user-avatar {
   width: 36px;
   height: 36px;
-  border-radius: 50%;
-  background: #056EB7;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #056EB7 0%, #045A94 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
-  font-weight: 600;
+  font-weight: 700;
   font-size: 14px;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .user-avatar img {
@@ -157,45 +216,59 @@
 }
 
 .user-name {
-  font-weight: 600;
   font-size: 14px;
-  color: #374151;
+  font-weight: 600;
+  color: #1f2937;
+  white-space: nowrap;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .search-container {
+    max-width: 400px;
+  }
 }
 
 @media (max-width: 768px) {
   .header {
-    padding: 12px 0px;
-    gap: 12px;
-  }
-
-  .logo {
-    min-width: 60px;
-  }
-
-  .logo-easy,
-  .logo-store {
-    font-size: 14px;
+    padding: 0 16px;
+    gap: 16px;
   }
 
   .search-container {
     max-width: 300px;
   }
 
-  .wallet {
-    padding: 6px 12px;
-  }
-
   .user-name {
-    display: none;
-  }
-}
-
-@media (max-width: 480px) {
-  .search-container {
     display: none;
   }
 
   .wallet span {
     display: none;
+  }
+
+  .wallet {
+    padding: 10px;
+    width: 40px;
+    height: 40px;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 640px) {
+  .header {
+    gap: 12px;
+  }
+
+  .logo {
+    font-size: 16px;
+  }
+
+  .search-container {
+    display: none;
+  }
+
+  .header-actions {
+    gap: 12px;
   }
 }
