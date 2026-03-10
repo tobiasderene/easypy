@@ -41,7 +41,7 @@ body {
 .container {
   max-width: 1200px;
   margin: 0 auto;
-  padding-bottom: 30px;
+  padding-bottom: 80px;
 }
 
 /* Header */
@@ -664,6 +664,7 @@ body {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 10px;
+  padding-bottom: 16px;
 }
 
 @media (max-width: 768px) {
