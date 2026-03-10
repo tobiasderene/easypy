@@ -279,7 +279,6 @@ const ProductPage = () => {
                 ['SKU',        product.product_sku],
                 ['Categoría',  product.product_category],
                 ['Estado',     product.product_status === 'active' ? 'Disponible' : 'No disponible'],
-                ['Descuento',  discount > 0 ? `${discount}%` : 'Sin descuento'],
               ].map(([label, value]) => (
                 <div key={label} className="spec-item">
                   <div className="spec-label">{label}:</div>
