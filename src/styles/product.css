@@ -18,6 +18,8 @@
   box-sizing: border-box;
 }
 
+
+
 body {
   font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   background: var(--gray-50);
@@ -49,6 +51,12 @@ body {
   padding: 16px 0;
   margin-bottom: 32px;
   border-bottom: 2px solid var(--gray-200);
+}
+
+
+.tabs-section {
+  margin-top: 60px;
+  margin-bottom: 60px;
 }
 
 .logo {

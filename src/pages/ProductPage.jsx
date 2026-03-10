@@ -145,7 +145,7 @@ const ProductPage = () => {
             <div className="breadcrumb">
               <span
                 className="breadcrumb-link"
-                style={{ cursor: 'pointer' }}
+                style={{ cursor: 'pointer', fontSize: '13px' }}
                 onClick={() => navigate('/catalogo')}
               >
                 Catálogo
@@ -249,12 +249,7 @@ const ProductPage = () => {
             >
               Especificaciones
             </button>
-            <button
-              className={`tab-btn ${activeTab === 'shipping' ? 'active' : ''}`}
-              onClick={() => setActiveTab('shipping')}
-            >
-              Envío
-            </button>
+
           </div>
 
           {/* Description */}
@@ -282,17 +277,7 @@ const ProductPage = () => {
             </div>
           </div>
 
-          {/* Shipping */}
-          <div className={`tab-content ${activeTab === 'shipping' ? 'active' : ''}`}>
-            <div className="description" style={{ lineHeight: '1.8' }}>
-              <p style={{ marginBottom: '16px' }}>
-                Los tiempos y costos de envío son coordinados directamente con el proveedor al momento de confirmar el pedido.
-              </p>
-              <p>
-                Para más información sobre envíos, contactá al proveedor a través de la plataforma.
-              </p>
-            </div>
-          </div>
+
         </div>
 
       </div>
