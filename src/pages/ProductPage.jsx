@@ -76,7 +76,19 @@ const ProductPage = () => {
       <div className="product-page">
         <div className="container" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: '400px', gap: '16px' }}>
           <p style={{ color: '#6b7280', fontSize: '15px' }}>No se encontró el producto.</p>
-          <button className="buy-now-btn" style={{ maxWidth: '200px' }} onClick={() => navigate('/catalogo')}>
+          <button
+            style={{
+              padding: '8px 20px',
+              background: '#056EB7',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '13px',
+              fontWeight: '600',
+              cursor: 'pointer'
+            }}
+            onClick={() => navigate('/catalogo')}
+          >
             Volver al catálogo
           </button>
         </div>
