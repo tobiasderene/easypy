@@ -678,16 +678,19 @@ body {
   background: white;
   border-radius: 12px;
   border: 2px solid var(--gray-200);
+  overflow: hidden;
+}
+
+.spec-value {
+  color: var(--gray-600);
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .spec-label {
   font-weight: 700;
   color: var(--gray-900);
   min-width: 140px;
-}
-
-.spec-value {
-  color: var(--gray-600);
 }
 
 /* Reviews */
