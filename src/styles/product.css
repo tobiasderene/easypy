@@ -662,6 +662,7 @@ body {
 .specs-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
 }
 
 @media (max-width: 768px) {
@@ -673,8 +674,7 @@ body {
 .spec-item {
   display: flex;
   align-items: flex-start;
-  padding: 16px;
-  background: white;
+  padding: 10px;
   border-radius: 12px;
   border: 2px solid var(--gray-200);
 }
