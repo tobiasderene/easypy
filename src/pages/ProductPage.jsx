@@ -1,82 +1,120 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { getProduct, getProductImages } from '../services/api';
+import { useCart } from '../App';
 import '../styles/assets.css';
 import '../styles/product.css';
 
 const ProductPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { addToCart } = useCart();
+
+  const [product, setProduct]         = useState(null);
+  const [images, setImages]           = useState([]);
+  const [loading, setLoading]         = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
-  const [quantity, setQuantity] = useState(1);
-  const [selectedColor, setSelectedColor] = useState('black');
-  const [selectedSize, setSelectedSize] = useState('M');
-  const [activeTab, setActiveTab] = useState('description');
-  const [isFavorite, setIsFavorite] = useState(false);
-  const [cartCount, setCartCount] = useState(0);
+  const [quantity, setQuantity]       = useState(1);
+  const [activeTab, setActiveTab]     = useState('description');
+  const [isFavorite, setIsFavorite]   = useState(false);
 
-  const images = [
-    'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&h=800&fit=crop',
-    'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=800&h=800&fit=crop',
-    'https://images.unsplash.com/photo-1572635196237-14b3f281503f?w=800&h=800&fit=crop',
-    'https://images.unsplash.com/photo-1560343090-f0409e92791a?w=800&h=800&fit=crop'
-  ];
+  // ── Scroll al top al entrar ──────────────────────
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, []);
 
-  const specs = [
-    { label: 'Material', value: 'Acero inoxidable premium' },
-    { label: 'Dimensiones', value: '15 x 10 x 5 cm' },
-    { label: 'Peso', value: '350 gramos' },
-    { label: 'Color disponible', value: 'Negro, Azul, Rojo, Blanco' },
-    { label: 'Origen', value: 'Fabricado en Alemania' },
-    { label: 'Garantía', value: '2 años del fabricante' }
-  ];
-
-  const reviews = [
-    {
-      name: 'María González',
-      date: '5 de febrero, 2026',
-      rating: 5,
-      text: '¡Excelente producto! La calidad es increíble y llegó muy rápido. Totalmente recomendado para cualquiera que busque algo duradero y elegante.'
-    },
-    {
-      name: 'Carlos Ramírez',
-      date: '1 de febrero, 2026',
-      rating: 5,
-      text: 'Superó mis expectativas. El diseño es moderno y funcional. Vale cada centavo invertido.'
-    },
-    {
-      name: 'Ana Martínez',
-      date: '28 de enero, 2026',
-      rating: 4,
-      text: 'Muy buen producto, aunque tardó un poco más de lo esperado en llegar. La calidad es excelente.'
-    }
-  ];
+  // ── Fetch producto e imágenes ────────────────────
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [prod, imgs] = await Promise.all([
+          getProduct(id),
+          getProductImages(id),
+        ]);
+        setProduct(prod);
+        // ordenar: primaria primero
+        const sorted = [...(imgs || [])].sort((a, b) => b.is_primary - a.is_primary);
+        setImages(sorted);
+      } catch {
+        // si falla dejamos producto null y mostramos error
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [id]);
 
   const handleAddToCart = () => {
-    setCartCount(cartCount + quantity);
-    alert(`¡${quantity} producto(s) agregado(s) al carrito!`);
+    if (!product) return;
+    addToCart(
+      { id: product.product_id, name: product.product_name, price: product.product_base_cost, quantity },
+      product.user_id
+    );
   };
 
   const handleBuyNow = () => {
     navigate('/order/new');
   };
 
+  const formatPrice = (price) =>
+    new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', minimumFractionDigits: 0 }).format(price);
+
+  // ── Loading ──────────────────────────────────────
+  if (loading) {
+    return (
+      <div className="product-page">
+        <div className="container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+          <p style={{ color: '#9ca3af', fontSize: '15px' }}>Cargando producto...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Error / no encontrado ────────────────────────
+  if (!product) {
+    return (
+      <div className="product-page">
+        <div className="container" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: '400px', gap: '16px' }}>
+          <p style={{ color: '#6b7280', fontSize: '15px' }}>No se encontró el producto.</p>
+          <button className="buy-now-btn" style={{ maxWidth: '200px' }} onClick={() => navigate('/catalogo')}>
+            Volver al catálogo
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const currentImage = images[selectedImage]?.image_url || null;
+  const discount = product.product_discount ? parseFloat(product.product_discount) : 0;
+  const originalPrice = discount > 0
+    ? parseFloat(product.product_base_cost) / (1 - discount / 100)
+    : null;
+
   return (
     <div className="product-page">
       <div className="container">
-        
 
         {/* Product Grid */}
         <div className="product-grid">
+
           {/* Gallery */}
           <div className="gallery">
             <div className="main-image-container">
-              <img 
-                src={images[selectedImage]} 
-                alt="Producto principal" 
-                className="main-image"
-              />
-              <div className="discount-badge">-35% OFF</div>
-              <button 
+              {currentImage ? (
+                <img src={currentImage} alt={product.product_name} className="main-image" />
+              ) : (
+                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f3f4f6' }}>
+                  <svg width="64" height="64" fill="none" stroke="#d1d5db" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+              )}
+
+              {discount > 0 && (
+                <div className="discount-badge">-{discount}% OFF</div>
+              )}
+
+              <button
                 className={`favorite-btn ${isFavorite ? 'active' : ''}`}
                 onClick={() => setIsFavorite(!isFavorite)}
                 aria-label="Agregar a favoritos"
@@ -86,67 +124,66 @@ const ProductPage = () => {
                 </svg>
               </button>
             </div>
-            
-            <div className="thumbnails">
-              {images.map((img, idx) => (
-                <div 
-                  key={idx}
-                  className={`thumbnail ${selectedImage === idx ? 'active' : ''}`}
-                  onClick={() => setSelectedImage(idx)}
-                >
-                  <img src={img} alt={`Vista ${idx + 1}`} />
-                </div>
-              ))}
-            </div>
+
+            {images.length > 1 && (
+              <div className="thumbnails">
+                {images.map((img, idx) => (
+                  <div
+                    key={img.image_id}
+                    className={`thumbnail ${selectedImage === idx ? 'active' : ''}`}
+                    onClick={() => setSelectedImage(idx)}
+                  >
+                    <img src={img.image_url} alt={`Vista ${idx + 1}`} />
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Product Info */}
           <div className="product-info">
             <div className="breadcrumb">
-              <a href="#" className="breadcrumb-link">Inicio</a>
+              <span
+                className="breadcrumb-link"
+                style={{ cursor: 'pointer' }}
+                onClick={() => navigate('/catalogo')}
+              >
+                Catálogo
+              </span>
               <span className="breadcrumb-separator">/</span>
-              <a href="#" className="breadcrumb-link">Electrónicos</a>
+              <span>{product.product_category}</span>
               <span className="breadcrumb-separator">/</span>
-              <span>Producto Premium</span>
+              <span>{product.product_name}</span>
             </div>
 
-            <h1 className="product-title">
-              Reloj Inteligente Premium Serie 5 Pro
-            </h1>
-
-            <div className="rating-section">
-              <div className="stars">
-                {[...Array(5)].map((_, i) => (
-                  <svg key={i} width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                  </svg>
-                ))}
-              </div>
-              <span className="rating-text">4.9/5.0</span>
-              <a href="#reviews" className="reviews-link">(324 reseñas)</a>
-            </div>
+            <h1 className="product-title">{product.product_name}</h1>
 
             <div className="price-section">
               <div className="price-row">
-                <span className="current-price">$129.99</span>
-                <span className="original-price">$199.99</span>
+                <span className="current-price">{formatPrice(product.product_base_cost)}</span>
+                {originalPrice && (
+                  <span className="original-price">{formatPrice(originalPrice)}</span>
+                )}
               </div>
-              <div className="save-text">Ahorras $70.00 (35%)</div>
+              {discount > 0 && (
+                <div className="save-text">Ahorrás {discount}% con este precio</div>
+              )}
             </div>
 
-            <p className="description">
-              Experimenta la tecnología de última generación con nuestro reloj inteligente premium. 
-              Diseñado para quienes buscan estilo y funcionalidad, combina materiales de alta calidad 
-              con características avanzadas para acompañarte en tu día a día. Monitor de salud 24/7, 
-              resistencia al agua y batería de larga duración.
-            </p>
+            {product.product_description && (
+              <p className="description">{product.product_description}</p>
+            )}
+
+            {product.product_sku && (
+              <p style={{ fontSize: '13px', color: '#9ca3af' }}>SKU: {product.product_sku}</p>
+            )}
 
             {/* Quantity */}
             <div className="quantity-section">
               <div className="variant-label">Cantidad</div>
               <div className="quantity-selector">
-                <button 
-                  className="qty-btn" 
+                <button
+                  className="qty-btn"
                   onClick={() => setQuantity(Math.max(1, quantity - 1))}
                   disabled={quantity <= 1}
                   aria-label="Disminuir cantidad"
@@ -154,8 +191,8 @@ const ProductPage = () => {
                   −
                 </button>
                 <span className="qty-display">{quantity}</span>
-                <button 
-                  className="qty-btn" 
+                <button
+                  className="qty-btn"
                   onClick={() => setQuantity(quantity + 1)}
                   aria-label="Aumentar cantidad"
                 >
@@ -164,15 +201,21 @@ const ProductPage = () => {
               </div>
             </div>
 
-            {/* Stock Info */}
+            {/* Stock */}
             <div className="stock-info">
               <span className="stock-dot"></span>
-              <span className="stock-text">En stock - Solo quedan 12 unidades</span>
+              <span className="stock-text">
+                {product.product_status === 'active' ? 'Disponible' : 'No disponible'}
+              </span>
             </div>
 
             {/* Action Buttons */}
             <div className="action-buttons">
-              <button className="add-to-cart-btn" onClick={handleAddToCart}>
+              <button
+                className="add-to-cart-btn"
+                onClick={handleAddToCart}
+                disabled={product.product_status !== 'active'}
+              >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <circle cx="9" cy="21" r="1" />
                   <circle cx="20" cy="21" r="1" />
@@ -180,35 +223,33 @@ const ProductPage = () => {
                 </svg>
                 Agregar al carrito
               </button>
-              <button className="buy-now-btn" onClick={handleBuyNow}>
+              <button
+                className="buy-now-btn"
+                onClick={handleBuyNow}
+                disabled={product.product_status !== 'active'}
+              >
                 Comprar ahora
               </button>
             </div>
           </div>
         </div>
 
-        {/* Tabs Section */}
+        {/* Tabs */}
         <div className="tabs-section">
           <div className="tabs-header">
-            <button 
+            <button
               className={`tab-btn ${activeTab === 'description' ? 'active' : ''}`}
               onClick={() => setActiveTab('description')}
             >
               Descripción
             </button>
-            <button 
+            <button
               className={`tab-btn ${activeTab === 'specs' ? 'active' : ''}`}
               onClick={() => setActiveTab('specs')}
             >
               Especificaciones
             </button>
-            <button 
-              className={`tab-btn ${activeTab === 'reviews' ? 'active' : ''}`}
-              onClick={() => setActiveTab('reviews')}
-            >
-              Reseñas (324)
-            </button>
-            <button 
+            <button
               className={`tab-btn ${activeTab === 'shipping' ? 'active' : ''}`}
               onClick={() => setActiveTab('shipping')}
             >
@@ -216,111 +257,44 @@ const ProductPage = () => {
             </button>
           </div>
 
-          {/* Description Tab */}
+          {/* Description */}
           <div className={`tab-content ${activeTab === 'description' ? 'active' : ''}`}>
-            <h2 className="product-title" style={{ fontSize: '24px', marginBottom: '20px' }}>
-              Acerca de este producto
-            </h2>
-            <p className="description" style={{ marginBottom: '16px' }}>
-              El Reloj Inteligente Premium Serie 5 Pro representa la culminación de años de innovación 
-              en tecnología wearable. Diseñado meticulosamente para ofrecer la mejor experiencia posible, 
-              cada aspecto ha sido optimizado para rendimiento y estilo.
-            </p>
-            <p className="description" style={{ marginBottom: '16px' }}>
-              Con una pantalla AMOLED de alta resolución, el brillo se ajusta automáticamente para 
-              ofrecer la mejor visibilidad en cualquier condición de iluminación. El procesador de 
-              última generación garantiza una experiencia fluida y responsiva.
-            </p>
-            <p className="description">
-              La batería de larga duración te permite usar el reloj durante días sin preocuparte por 
-              cargarlo constantemente. Además, la carga rápida te da horas de uso con solo minutos 
-              de carga.
+            <p className="description" style={{ lineHeight: '1.8' }}>
+              {product.product_description || 'Este producto no tiene descripción disponible.'}
             </p>
           </div>
 
-          {/* Specs Tab */}
+          {/* Specs */}
           <div className={`tab-content ${activeTab === 'specs' ? 'active' : ''}`}>
-            <h2 className="product-title" style={{ fontSize: '24px', marginBottom: '20px' }}>
-              Especificaciones técnicas
-            </h2>
             <div className="specs-grid">
-              {specs.map((spec, idx) => (
-                <div key={idx} className="spec-item">
-                  <div className="spec-label">{spec.label}:</div>
-                  <div className="spec-value">{spec.value}</div>
+              {[
+                ['Nombre',     product.product_name],
+                ['SKU',        product.product_sku],
+                ['Categoría',  product.product_category],
+                ['Estado',     product.product_status === 'active' ? 'Disponible' : 'No disponible'],
+                ['Descuento',  discount > 0 ? `${discount}%` : 'Sin descuento'],
+              ].map(([label, value]) => (
+                <div key={label} className="spec-item">
+                  <div className="spec-label">{label}:</div>
+                  <div className="spec-value">{value || '—'}</div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Reviews Tab */}
-          <div className={`tab-content ${activeTab === 'reviews' ? 'active' : ''}`} id="reviews">
-            <div className="review-summary">
-              <div className="review-stats">
-                <div>
-                  <div className="rating-large">4.9</div>
-                  <div className="stars" style={{ marginTop: '8px' }}>
-                    {[...Array(5)].map((_, i) => (
-                      <svg key={i} width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                      </svg>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <p className="description" style={{ marginBottom: '8px' }}>
-                    Basado en 324 reseñas verificadas
-                  </p>
-                  <p className="description">
-                    98% de los clientes recomiendan este producto
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {reviews.map((review, idx) => (
-              <div key={idx} className="review-card">
-                <div className="review-header">
-                  <div>
-                    <div className="reviewer-name">{review.name}</div>
-                    <div className="stars" style={{ marginTop: '4px' }}>
-                      {[...Array(review.rating)].map((_, i) => (
-                        <svg key={i} width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                        </svg>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="review-date">{review.date}</div>
-                </div>
-                <p className="review-text">{review.text}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Shipping Tab */}
+          {/* Shipping */}
           <div className={`tab-content ${activeTab === 'shipping' ? 'active' : ''}`}>
-            <h2 className="product-title" style={{ fontSize: '24px', marginBottom: '20px' }}>
-              Información de envío
-            </h2>
-            <div className="description" style={{ marginBottom: '24px' }}>
+            <div className="description" style={{ lineHeight: '1.8' }}>
               <p style={{ marginBottom: '16px' }}>
-                <strong>Envío estándar gratuito</strong> en pedidos superiores a $50. 
-                Tiempo estimado de entrega: 5-7 días hábiles.
-              </p>
-              <p style={{ marginBottom: '16px' }}>
-                <strong>Envío express disponible</strong> con entrega en 2-3 días hábiles por $12.99.
-              </p>
-              <p style={{ marginBottom: '16px' }}>
-                <strong>Envío internacional</strong> disponible para la mayoría de países. 
-                Los tiempos y costos varían según el destino.
+                Los tiempos y costos de envío son coordinados directamente con el proveedor al momento de confirmar el pedido.
               </p>
               <p>
-                Todos los envíos incluyen número de rastreo y seguro completo del producto.
+                Para más información sobre envíos, contactá al proveedor a través de la plataforma.
               </p>
             </div>
           </div>
         </div>
+
       </div>
     </div>
   );
