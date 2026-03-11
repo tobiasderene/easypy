@@ -3,22 +3,26 @@ import { useNavigate } from 'react-router-dom';
 import { getUsers, updateUser } from '../services/api';
 import { getWithdrawalsByStatus, updateWithdrawal } from '../services/api';
 import { getBankMovementsByStatus, updateBankMovement } from '../services/api';
+import { getOrdersByStatus, confirmOrderAdmin, cancelOrderAdmin } from '../services/api';
 import '../styles/adminpage.css';
 
 const TABS = [
-  { id: 'providers', label: 'Proveedores', icon: '🏭' },
-  { id: 'withdrawals', label: 'Egresos', icon: '💸' },
-  { id: 'deposits', label: 'Ingresos', icon: '💰' },
+  { id: 'providers',   label: 'Proveedores', icon: '🏭' },
+  { id: 'withdrawals', label: 'Egresos',     icon: '💸' },
+  { id: 'deposits',    label: 'Ingresos',    icon: '💰' },
+  { id: 'orders',      label: 'Órdenes',     icon: '📦' },
 ];
 
 const StatusBadge = ({ status }) => {
   const map = {
-    pending:  { label: 'Pendiente', cls: 'badge-pending' },
-    active:   { label: 'Activo',    cls: 'badge-active'  },
-    inactive: { label: 'Inactivo',  cls: 'badge-inactive'},
-    approved: { label: 'Aprobado',  cls: 'badge-active'  },
-    rejected: { label: 'Rechazado', cls: 'badge-inactive'},
-    confirmed:{ label: 'Confirmado',cls: 'badge-active'  },
+    pending:    { label: 'Pendiente',  cls: 'badge-pending'    },
+    active:     { label: 'Activo',     cls: 'badge-active'     },
+    inactive:   { label: 'Inactivo',   cls: 'badge-inactive'   },
+    approved:   { label: 'Aprobado',   cls: 'badge-active'     },
+    rejected:   { label: 'Rechazado',  cls: 'badge-inactive'   },
+    confirmed:  { label: 'Confirmado', cls: 'badge-active'     },
+    processing: { label: 'En proceso', cls: 'badge-processing' },
+    cancelled:  { label: 'Cancelado',  cls: 'badge-inactive'   },
   };
   const s = map[status] || { label: status, cls: 'badge-pending' };
   return <span className={`badge ${s.cls}`}>{s.label}</span>;
@@ -42,9 +46,7 @@ const ProvidersTab = () => {
   const [loading, setLoading]     = useState(true);
   const [modal, setModal]         = useState(null);
 
-  useEffect(() => {
-    fetchProviders();
-  }, []);
+  useEffect(() => { fetchProviders(); }, []);
 
   const fetchProviders = async () => {
     try {
@@ -97,25 +99,17 @@ const ProvidersTab = () => {
               <div className="card-info">
                 <p className="card-name">{p.user_nickname}</p>
                 <p className="card-sub">{p.email}</p>
-                {p.user_description && (
-                  <p className="card-desc">{p.user_description}</p>
-                )}
+                {p.user_description && <p className="card-desc">{p.user_description}</p>}
               </div>
               <div className="card-meta">
                 <StatusBadge status={p.user_status} />
                 <p className="card-date">{new Date(p.created_at).toLocaleDateString('es-PY')}</p>
               </div>
               <div className="card-actions">
-                <button
-                  className="btn btn-success"
-                  onClick={() => handleAction(p, 'active')}
-                >
+                <button className="btn btn-success" onClick={() => handleAction(p, 'active')}>
                   Habilitar
                 </button>
-                <button
-                  className="btn btn-danger"
-                  onClick={() => handleAction(p, 'inactive')}
-                >
+                <button className="btn btn-danger" onClick={() => handleAction(p, 'inactive')}>
                   Rechazar
                 </button>
               </div>
@@ -141,9 +135,7 @@ const WithdrawalsTab = () => {
   const [loading, setLoading]         = useState(true);
   const [modal, setModal]             = useState(null);
 
-  useEffect(() => {
-    fetchWithdrawals();
-  }, []);
+  useEffect(() => { fetchWithdrawals(); }, []);
 
   const fetchWithdrawals = async () => {
     try {
@@ -206,16 +198,10 @@ const WithdrawalsTab = () => {
                 <p className="card-date">{new Date(w.created_at).toLocaleDateString('es-PY')}</p>
               </div>
               <div className="card-actions">
-                <button
-                  className="btn btn-success"
-                  onClick={() => handleAction(w, 'approved')}
-                >
+                <button className="btn btn-success" onClick={() => handleAction(w, 'approved')}>
                   Aprobar
                 </button>
-                <button
-                  className="btn btn-danger"
-                  onClick={() => handleAction(w, 'rejected')}
-                >
+                <button className="btn btn-danger" onClick={() => handleAction(w, 'rejected')}>
                   Rechazar
                 </button>
               </div>
@@ -241,14 +227,11 @@ const DepositsTab = () => {
   const [loading, setLoading]   = useState(true);
   const [modal, setModal]       = useState(null);
 
-  useEffect(() => {
-    fetchDeposits();
-  }, []);
+  useEffect(() => { fetchDeposits(); }, []);
 
   const fetchDeposits = async () => {
     try {
       const data = await getBankMovementsByStatus('pending');
-      // Solo los de tipo ingreso
       const ingresos = (data || []).filter(d => d.bank_movement_type === 'ingreso');
       setDeposits(ingresos);
     } catch {
@@ -307,17 +290,117 @@ const DepositsTab = () => {
                 <p className="card-date">{new Date(d.created_at).toLocaleDateString('es-PY')}</p>
               </div>
               <div className="card-actions">
-                <button
-                  className="btn btn-success"
-                  onClick={() => handleAction(d, 'confirmed')}
-                >
+                <button className="btn btn-success" onClick={() => handleAction(d, 'confirmed')}>
                   Confirmar
                 </button>
-                <button
-                  className="btn btn-danger"
-                  onClick={() => handleAction(d, 'rejected')}
-                >
+                <button className="btn btn-danger" onClick={() => handleAction(d, 'rejected')}>
                   Rechazar
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {modal && (
+        <ConfirmModal
+          message={modal.message}
+          onConfirm={modal.onConfirm}
+          onCancel={() => setModal(null)}
+        />
+      )}
+    </div>
+  );
+};
+
+// ─── Tab: Órdenes ────────────────────────────────────
+const OrdersTab = () => {
+  const [orders, setOrders]   = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [modal, setModal]     = useState(null);
+
+  useEffect(() => { fetchOrders(); }, []);
+
+  const fetchOrders = async () => {
+    try {
+      const data = await getOrdersByStatus('pending');
+      setOrders(data || []);
+    } catch {
+      setOrders([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatCurrency = (v) =>
+    new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', minimumFractionDigits: 0 }).format(v);
+
+  const handleConfirm = (order) => {
+    setModal({
+      message: `¿Confirmás la orden #${order.order_id} por ${formatCurrency(order.final_price)}?`,
+      onConfirm: () => applyAction(order.order_id, 'confirm'),
+    });
+  };
+
+  const handleCancel = (order) => {
+    setModal({
+      message: `¿Cancelás la orden #${order.order_id}? Esta acción no se puede deshacer.`,
+      onConfirm: () => applyAction(order.order_id, 'cancel'),
+    });
+  };
+
+  const applyAction = async (orderId, action) => {
+    setModal(null);
+    try {
+      if (action === 'confirm') await confirmOrderAdmin(orderId);
+      else                      await cancelOrderAdmin(orderId);
+      setOrders(prev => prev.filter(o => o.order_id !== orderId));
+    } catch {
+      alert('Ocurrió un error. Intentá de nuevo.');
+    }
+  };
+
+  if (loading) return <div className="tab-loading">Cargando órdenes...</div>;
+
+  return (
+    <div className="tab-content">
+      <div className="tab-header">
+        <h2 className="tab-title">Órdenes pendientes</h2>
+        <span className="tab-count">{orders.length} pendientes</span>
+      </div>
+
+      {orders.length === 0 ? (
+        <div className="empty-state">
+          <span className="empty-icon">✅</span>
+          <p>No hay órdenes pendientes de confirmación</p>
+        </div>
+      ) : (
+        <div className="card-list">
+          {orders.map(o => (
+            <div key={o.order_id} className="admin-card">
+              <div className="card-avatar card-avatar--money">📦</div>
+              <div className="card-info">
+                <p className="card-name">Orden #{o.order_id}</p>
+                <p className="card-sub">Destinatario: {o.recipient_name}</p>
+                <p className="card-sub">
+                  {o.recipient_city}{o.recipient_region ? `, ${o.recipient_region}` : ''}
+                </p>
+              </div>
+              <div className="card-meta">
+                <StatusBadge status={o.status} />
+                <p className="card-name" style={{ color: '#056EB7' }}>
+                  {formatCurrency(o.final_price)}
+                </p>
+                <p className="card-date">
+                  {new Date(o.created_at).toLocaleDateString('es-PY')}
+                </p>
+              </div>
+              <div className="card-actions">
+                <button className="btn btn-success" onClick={() => handleConfirm(o)}>
+                  Confirmar
+                </button>
+                <button className="btn btn-danger" onClick={() => handleCancel(o)}>
+                  Cancelar
                 </button>
               </div>
             </div>
@@ -344,7 +427,7 @@ const AdminPage = () => {
     <div className="admin-container">
       <div className="admin-header">
         <h1 className="admin-title">Panel de Administración</h1>
-        <p className="admin-subtitle">Gestioná proveedores, egresos e ingresos pendientes</p>
+        <p className="admin-subtitle">Gestioná proveedores, egresos, ingresos y órdenes pendientes</p>
       </div>
 
       <div className="admin-tabs">
@@ -364,6 +447,7 @@ const AdminPage = () => {
         {activeTab === 'providers'   && <ProvidersTab />}
         {activeTab === 'withdrawals' && <WithdrawalsTab />}
         {activeTab === 'deposits'    && <DepositsTab />}
+        {activeTab === 'orders'      && <OrdersTab />}
       </div>
     </div>
   );
