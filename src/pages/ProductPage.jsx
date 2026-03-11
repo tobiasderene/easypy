@@ -265,7 +265,11 @@ const ProductPage = () => {
           </div>
 
           {/* Description */}
-          <div className={`tab-content ${activeTab === 'description' ? 'active' : ''}`}>
+          {/* Descripción */}
+          <div style={{ marginTop: '40px', marginBottom: '60px' }}>
+            <h2 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '16px', color: '#111827' }}>
+              Descripción
+            </h2>
             <p className="description" style={{ lineHeight: '1.8' }}>
               {product.product_description || 'Este producto no tiene descripción disponible.'}
             </p>
