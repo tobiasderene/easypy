@@ -125,6 +125,13 @@ export const cancelOrderAdmin = (orderId) =>
   fetch(`${BASE_URL}/orders/${orderId}/cancel`, {
     method: 'POST', credentials: 'include'
   }).then(r => { if (!r.ok) throw new Error(); return r.json(); });
+export const getOrdersBySupplierApi = (supplierId) =>
+  api(`/orders/supplier/${supplierId}`);
+export const confirmOrderSupplier = (orderId) =>
+  api(`/orders/${orderId}/confirm/supplier`, { method: 'POST' });
+export const cancelOrderSupplier = (orderId) =>
+  api(`/orders/${orderId}/cancel`, { method: 'POST' });
+
 
 // ─── Wallets ─────────────────────────────────────────
 export const getWallet = (walletId) => api(`/wallets/${walletId}`);

@@ -1,217 +1,123 @@
-import React, { useState } from 'react';
-import { Package, Eye, CheckCircle, XCircle, Truck, Clock, AlertCircle, Search, Filter } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Package, Eye, CheckCircle, XCircle, Truck, Clock, Search, Filter } from 'lucide-react';
+import { useUser } from '../App';
+import { getOrdersBySupplierApi, confirmOrderSupplier, cancelOrderSupplier } from '../services/api';
 import OrderDetailsModal from '../components/Orderdetailsmodal';
 import '../styles/providerorders.css';
 
-// Mock data de órdenes
-const mockOrders = [
-  {
-    id: 'ORD-001',
-    date: '2024-02-24',
-    time: '14:30',
-    buyer: 'Tienda Central',
-    product: {
-      name: 'Smart Watch Serie 8 - Pantalla AMOLED 1.96"',
-      image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&q=80',
-      sku: 'SW-001',
-      quantity: 12,
-      unitPrice: 45000,
-      total: 540000
-    },
-    status: 'pending', // pending, confirmed, preparing, ready, rejected, completed
-    shippingAddress: 'Av. España 1234, Asunción',
-    notes: 'Por favor verificar stock antes de confirmar'
+const statusConfig = {
+  pending: {
+    label: 'Pendiente',
+    icon: Clock,
+    color: '#d97706',
+    bgColor: '#fffbeb'
   },
-  {
-    id: 'ORD-002',
-    date: '2024-02-24',
-    time: '10:15',
-    buyer: 'Comercial San Blas',
-    product: {
-      name: 'Auriculares Inalámbricos Bluetooth 5.0',
-      image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&q=80',
-      sku: 'AUD-002',
-      quantity: 24,
-      unitPrice: 29900,
-      total: 717600
-    },
-    status: 'confirmed',
-    shippingAddress: 'Ruta 2 Km 18, Capiatá',
-    notes: ''
+  confirmed: {
+    label: 'Confirmado por Admin',
+    icon: CheckCircle,
+    color: '#2563eb',
+    bgColor: '#eff6ff'
   },
-  {
-    id: 'ORD-003',
-    date: '2024-02-23',
-    time: '16:45',
-    buyer: 'Distribuidora Norte',
-    product: {
-      name: 'Anillo de Luz LED para Streaming - 12"',
-      image: 'https://images.unsplash.com/photo-1579389083078-4e7018379f7e?w=400&q=80',
-      sku: 'LED-003',
-      quantity: 8,
-      unitPrice: 35000,
-      total: 280000
-    },
-    status: 'preparing',
-    shippingAddress: 'Av. Artigas 890, San Lorenzo',
-    notes: 'Urgente - Cliente necesita antes del viernes'
+  processing: {
+    label: 'En proceso',
+    icon: Package,
+    color: '#8b5cf6',
+    bgColor: '#f5f3ff'
   },
-  {
-    id: 'ORD-004',
-    date: '2024-02-23',
-    time: '09:00',
-    buyer: 'Mega Store',
-    product: {
-      name: 'Soporte para Laptop Ajustable',
-      image: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=400&q=80',
-      sku: 'LAP-004',
-      quantity: 15,
-      unitPrice: 24500,
-      total: 367500
-    },
-    status: 'ready',
-    shippingAddress: 'Centro Comercial Multiplaza, Asunción',
-    notes: ''
+  cancelled: {
+    label: 'Cancelado',
+    icon: XCircle,
+    color: '#dc2626',
+    bgColor: '#fef2f2'
   },
-  {
-    id: 'ORD-005',
-    date: '2024-02-22',
-    time: '18:20',
-    buyer: 'Tech Solutions',
-    product: {
-      name: 'Mini Proyector Portátil 1080P WiFi',
-      image: 'https://images.unsplash.com/photo-1478720568477-152d9b164e26?w=400&q=80',
-      sku: 'PRJ-005',
-      quantity: 5,
-      unitPrice: 89990,
-      total: 449950
-    },
-    status: 'rejected',
-    shippingAddress: 'Zona Industrial, Luque',
-    notes: ''
+  completed: {
+    label: 'Completado',
+    icon: CheckCircle,
+    color: '#059669',
+    bgColor: '#d1fae5'
   },
-  {
-    id: 'ORD-006',
-    date: '2024-02-22',
-    time: '11:30',
-    buyer: 'Electro Home',
-    product: {
-      name: 'Tiras LED RGB 5M Control por App WiFi',
-      image: 'https://images.unsplash.com/photo-1550009158-9ebf69173e03?w=400&q=80',
-      sku: 'LED-006',
-      quantity: 30,
-      unitPrice: 19990,
-      total: 599700
-    },
-    status: 'completed',
-    shippingAddress: 'Av. Eusebio Ayala 2345, Asunción',
-    notes: ''
-  }
-];
+};
 
 const ProviderOrders = () => {
-  const [orders, setOrders] = useState(mockOrders);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const { user }                          = useUser();
+  const [orders, setOrders]               = useState([]);
+  const [loading, setLoading]             = useState(true);
+  const [searchTerm, setSearchTerm]       = useState('');
+  const [statusFilter, setStatusFilter]   = useState('all');
   const [selectedOrder, setSelectedOrder] = useState(null);
-  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showModal, setShowModal]         = useState(false);
 
-  // Status configuration
-  const statusConfig = {
-    pending: {
-      label: 'Pendiente',
-      icon: Clock,
-      color: '#d97706',
-      bgColor: '#fffbeb'
-    },
-    confirmed: {
-      label: 'Confirmado',
-      icon: CheckCircle,
-      color: '#2563eb',
-      bgColor: '#eff6ff'
-    },
-    preparing: {
-      label: 'Preparando',
-      icon: Package,
-      color: '#8b5cf6',
-      bgColor: '#f5f3ff'
-    },
-    ready: {
-      label: 'Listo para entrega',
-      icon: Truck,
-      color: '#16a34a',
-      bgColor: '#f0fdf4'
-    },
-    rejected: {
-      label: 'Rechazado',
-      icon: XCircle,
-      color: '#dc2626',
-      bgColor: '#fef2f2'
-    },
-    completed: {
-      label: 'Completado',
-      icon: CheckCircle,
-      color: '#059669',
-      bgColor: '#d1fae5'
+  useEffect(() => {
+    if (user?.user_id) fetchOrders();
+  }, [user]);
+
+  const fetchOrders = async () => {
+    try {
+      const data = await getOrdersBySupplierApi(user.user_id);
+      setOrders(data || []);
+    } catch {
+      setOrders([]);
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Format currency
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('es-PY', {
-      style: 'currency',
-      currency: 'PYG',
-      minimumFractionDigits: 0
-    }).format(amount);
+  const formatCurrency = (v) =>
+    new Intl.NumberFormat('es-PY', {
+      style: 'currency', currency: 'PYG', minimumFractionDigits: 0
+    }).format(v);
+
+  const formatDate = (dateString) =>
+    new Intl.DateTimeFormat('es-PY', {
+      year: 'numeric', month: 'short', day: 'numeric'
+    }).format(new Date(dateString));
+
+  const handleUpdateOrderStatus = async (orderId, newStatus) => {
+    try {
+      if (newStatus === 'processing') {
+        await confirmOrderSupplier(orderId);
+      } else if (newStatus === 'cancelled') {
+        await cancelOrderSupplier(orderId);
+      }
+      setOrders(prev =>
+        prev.map(o => o.order_id === orderId ? { ...o, status: newStatus } : o)
+      );
+      setShowModal(false);
+    } catch {
+      alert('Ocurrió un error. Intentá de nuevo.');
+    }
   };
 
-  // Format date
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('es-PY', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    }).format(date);
-  };
-
-  // Filter orders
   const filteredOrders = orders.filter(order => {
-    const matchesSearch = 
-      order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.buyer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.product.name.toLowerCase().includes(searchTerm.toLowerCase());
-    
+    const matchesSearch =
+      String(order.order_id).includes(searchTerm) ||
+      (order.recipient_name || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
-    
     return matchesSearch && matchesStatus;
   });
 
-  // Calculate statistics
   const stats = {
-    total: orders.length,
-    pending: orders.filter(o => o.status === 'pending').length,
-    confirmed: orders.filter(o => o.status === 'confirmed').length,
-    preparing: orders.filter(o => o.status === 'preparing').length,
-    ready: orders.filter(o => o.status === 'ready').length
+    total:      orders.length,
+    pending:    orders.filter(o => o.status === 'pending').length,
+    confirmed:  orders.filter(o => o.status === 'confirmed').length,
+    processing: orders.filter(o => o.status === 'processing').length,
+    completed:  orders.filter(o => o.status === 'completed').length,
   };
 
-  const handleViewDetails = (order) => {
-    setSelectedOrder(order);
-    setShowDetailsModal(true);
-  };
-
-  const handleUpdateOrderStatus = (orderId, newStatus) => {
-    setOrders(orders.map(order => 
-      order.id === orderId ? { ...order, status: newStatus } : order
-    ));
-    setShowDetailsModal(false);
-  };
+  if (loading) return (
+    <div className="provider-orders-page">
+      <div className="provider-orders-container">
+        <p style={{ color: '#9ca3af', textAlign: 'center', paddingTop: '60px' }}>
+          Cargando órdenes...
+        </p>
+      </div>
+    </div>
+  );
 
   return (
     <div className="provider-orders-page">
       <div className="provider-orders-container">
-        
+
         {/* Header */}
         <div className="provider-orders-header">
           <div className="header-content">
@@ -219,51 +125,40 @@ const ProviderOrders = () => {
               <Package size={32} />
               <div>
                 <h1>Gestión de Pedidos</h1>
-                <p>Administra y procesa las órdenes de tus clientes</p>
+                <p>Administrá y procesá las órdenes de tus clientes</p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Stats Cards */}
+        {/* Stats */}
         <div className="stats-grid">
           <div className="stat-card">
-            <div className="stat-icon total">
-              <Package size={24} />
-            </div>
+            <div className="stat-icon total"><Package size={24} /></div>
             <div className="stat-info">
-              <span className="stat-label">Total Pedidos</span>
+              <span className="stat-label">Total</span>
               <span className="stat-value">{stats.total}</span>
             </div>
           </div>
-
           <div className="stat-card">
-            <div className="stat-icon pending">
-              <Clock size={24} />
-            </div>
+            <div className="stat-icon pending"><Clock size={24} /></div>
             <div className="stat-info">
               <span className="stat-label">Pendientes</span>
               <span className="stat-value">{stats.pending}</span>
             </div>
           </div>
-
           <div className="stat-card">
-            <div className="stat-icon preparing">
-              <Package size={24} />
-            </div>
+            <div className="stat-icon preparing"><Package size={24} /></div>
             <div className="stat-info">
-              <span className="stat-label">En Preparación</span>
-              <span className="stat-value">{stats.preparing}</span>
+              <span className="stat-label">En Proceso</span>
+              <span className="stat-value">{stats.processing}</span>
             </div>
           </div>
-
           <div className="stat-card">
-            <div className="stat-icon ready">
-              <Truck size={24} />
-            </div>
+            <div className="stat-icon ready"><Truck size={24} /></div>
             <div className="stat-info">
-              <span className="stat-label">Listos</span>
-              <span className="stat-value">{stats.ready}</span>
+              <span className="stat-label">Completados</span>
+              <span className="stat-value">{stats.completed}</span>
             </div>
           </div>
         </div>
@@ -274,25 +169,20 @@ const ProviderOrders = () => {
             <Search className="search-icon" size={20} />
             <input
               type="text"
-              placeholder="Buscar por orden, cliente o producto..."
+              placeholder="Buscar por orden o destinatario..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-
           <div className="filter-group">
             <div className="filter-item">
               <Filter size={18} />
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
+              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
                 <option value="all">Todos los estados</option>
                 <option value="pending">Pendientes</option>
-                <option value="confirmed">Confirmados</option>
-                <option value="preparing">En Preparación</option>
-                <option value="ready">Listos para entrega</option>
-                <option value="rejected">Rechazados</option>
+                <option value="confirmed">Confirmados por Admin</option>
+                <option value="processing">En Proceso</option>
+                <option value="cancelled">Cancelados</option>
                 <option value="completed">Completados</option>
               </select>
             </div>
@@ -305,64 +195,52 @@ const ProviderOrders = () => {
             <div className="empty-state">
               <Package size={64} />
               <h3>No se encontraron pedidos</h3>
-              <p>Intenta ajustar los filtros de búsqueda</p>
+              <p>Intentá ajustar los filtros de búsqueda</p>
             </div>
           ) : (
             filteredOrders.map(order => {
-              const StatusIcon = statusConfig[order.status].icon;
-              
+              const cfg        = statusConfig[order.status] || statusConfig.pending;
+              const StatusIcon = cfg.icon;
               return (
-                <div key={order.id} className="order-card">
+                <div key={order.order_id} className="order-card">
                   <div className="order-main">
-                    {/* Product Image */}
-                    <div className="order-image">
-                      <img src={order.product.image} alt={order.product.name} />
-                    </div>
-
-                    {/* Order Info */}
                     <div className="order-info">
                       <div className="order-header-row">
                         <div className="order-id">
                           <span className="id-label">ORDEN:</span>
-                          <span className="id-value">{order.id}</span>
+                          <span className="id-value">#{order.order_id}</span>
                         </div>
                         <div className="order-date">
-                          <span>{formatDate(order.date)}</span>
-                          <span className="order-time">{order.time}</span>
+                          <span>{formatDate(order.created_at)}</span>
                         </div>
                       </div>
-
-                      <h3 className="product-name">{order.product.name}</h3>
-                      
                       <div className="order-meta">
                         <div className="meta-item">
-                          <span className="meta-label">Cliente:</span>
-                          <span className="meta-value">{order.buyer}</span>
+                          <span className="meta-label">Destinatario:</span>
+                          <span className="meta-value">{order.recipient_name || '—'}</span>
                         </div>
                         <div className="meta-item">
-                          <span className="meta-label">Cantidad:</span>
-                          <span className="meta-value">{order.product.quantity} unidades</span>
+                          <span className="meta-label">Ciudad:</span>
+                          <span className="meta-value">{order.recipient_city || '—'}</span>
                         </div>
                         <div className="meta-item">
                           <span className="meta-label">Total:</span>
-                          <span className="meta-value amount">{formatCurrency(order.product.total)}</span>
+                          <span className="meta-value amount">{formatCurrency(order.final_price)}</span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Order Actions */}
                     <div className="order-actions">
                       <div className="status-badge" style={{
-                        backgroundColor: statusConfig[order.status].bgColor,
-                        color: statusConfig[order.status].color
+                        backgroundColor: cfg.bgColor,
+                        color: cfg.color
                       }}>
                         <StatusIcon size={16} />
-                        <span>{statusConfig[order.status].label}</span>
+                        <span>{cfg.label}</span>
                       </div>
-
-                      <button 
+                      <button
                         className="btn-view-details"
-                        onClick={() => handleViewDetails(order)}
+                        onClick={() => { setSelectedOrder(order); setShowModal(true); }}
                       >
                         <Eye size={18} />
                         <span>Ver Detalles</span>
@@ -374,14 +252,12 @@ const ProviderOrders = () => {
             })
           )}
         </div>
-
       </div>
 
-      {/* Order Details Modal */}
-      {showDetailsModal && selectedOrder && (
+      {showModal && selectedOrder && (
         <OrderDetailsModal
           order={selectedOrder}
-          onClose={() => setShowDetailsModal(false)}
+          onClose={() => setShowModal(false)}
           onUpdateStatus={handleUpdateOrderStatus}
           statusConfig={statusConfig}
           formatCurrency={formatCurrency}
