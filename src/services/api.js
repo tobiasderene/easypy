@@ -153,4 +153,7 @@ export const getBankMovementsByStatus = (status) =>
 export const updateBankMovement = (bankMovementId, data) =>
   api(`/bank-movements/${bankMovementId}`, { method: 'PATCH', body: JSON.stringify(data) });
 
-
+// ─── Logistics ───────────────────────────────────────
+// ─── Logistics ───────────────────────────────────────
+export const getLogistics = () => api("/logistics");
+export const getLogistic  = (logisticId) => api(`/logistics/${logisticId}`);
