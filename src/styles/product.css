@@ -641,12 +641,10 @@ body {
 }
 
 .tab-content {
-  display: none;
+  display: block;
+
 }
 
-.tab-content.active {
-  display: block;
-}
 
 @keyframes fadeInUp {
   from {

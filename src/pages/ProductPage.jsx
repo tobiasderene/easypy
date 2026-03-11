@@ -10,12 +10,13 @@ const ProductPage = () => {
   const navigate = useNavigate();
   const { addToCart } = useCart();
 
-  const [product, setProduct]             = useState(null);
-  const [images, setImages]               = useState([]);
-  const [loading, setLoading]             = useState(true);
+  const [product, setProduct]         = useState(null);
+  const [images, setImages]           = useState([]);
+  const [loading, setLoading]         = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
-  const [quantity, setQuantity]           = useState(1);
-  const [isFavorite, setIsFavorite]       = useState(false);
+  const [quantity, setQuantity]       = useState(1);
+  const [activeTab, setActiveTab]     = useState('description');
+  const [isFavorite, setIsFavorite]   = useState(false);
 
   // ── Scroll al top al entrar ──────────────────────
   useEffect(() => {
@@ -31,10 +32,11 @@ const ProductPage = () => {
           getProductImages(id),
         ]);
         setProduct(prod);
+        // ordenar: primaria primero
         const sorted = [...(imgs || [])].sort((a, b) => b.is_primary - a.is_primary);
         setImages(sorted);
       } catch {
-        // producto null → mostramos error
+        // si falla dejamos producto null y mostramos error
       } finally {
         setLoading(false);
       }
@@ -75,7 +77,16 @@ const ProductPage = () => {
         <div className="container" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', minHeight: '400px', gap: '16px' }}>
           <p style={{ color: '#6b7280', fontSize: '15px' }}>No se encontró el producto.</p>
           <button
-            style={{ padding: '8px 20px', background: '#056EB7', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}
+            style={{
+              padding: '8px 20px',
+              background: '#056EB7',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '13px',
+              fontWeight: '600',
+              cursor: 'pointer'
+            }}
             onClick={() => navigate('/catalogo')}
           >
             Volver al catálogo
@@ -85,8 +96,8 @@ const ProductPage = () => {
     );
   }
 
-  const currentImage  = images[selectedImage]?.image_url || null;
-  const discount      = product.product_discount ? parseFloat(product.product_discount) : 0;
+  const currentImage = images[selectedImage]?.image_url || null;
+  const discount = product.product_discount ? parseFloat(product.product_discount) : 0;
   const originalPrice = discount > 0
     ? parseFloat(product.product_base_cost) / (1 - discount / 100)
     : null;
@@ -235,14 +246,44 @@ const ProductPage = () => {
           </div>
         </div>
 
-        {/* Descripción */}
-        <div style={{ marginTop: '40px', marginBottom: '60px', paddingBottom: '20px' }}>
-          <h2 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '16px', color: '#111827' }}>
-            Descripción
-          </h2>
-          <p className="description" style={{ lineHeight: '1.8' }}>
-            {product.product_description || 'Este producto no tiene descripción disponible.'}
-          </p>
+        {/* Tabs */}
+        <div className="tabs-section">
+          <div className="tabs-header">
+            <button
+              className={`tab-btn ${activeTab === 'description' ? 'active' : ''}`}
+              onClick={() => setActiveTab('description')}
+            >
+              Descripción
+            </button>
+
+          </div>
+
+          {/* Description */}
+          <div style={{ marginTop: '40px', marginBottom: '60px' }}>
+            <h2 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '16px', color: '#111827' }}>
+              Descripción
+            </h2>
+            <p className="description" style={{ lineHeight: '1.8' }}>
+              {product.product_description || 'Este producto no tiene descripción disponible.'}
+            </p>
+          </div>
+
+          {/* Specs */}
+          <div className="specs-grid">
+            {[
+              ['Nombre',    product.product_name],
+              ['SKU',       product.product_sku],
+              ['Categoría', product.product_category],
+              ['Estado',    product.product_status === 'active' ? 'Disponible' : 'No disponible'],
+            ].map(([label, value]) => (
+              <div key={label} className="spec-item">
+                <div className="spec-label">{label}:</div>
+                <div className="spec-value">{value || '—'}</div>
+              </div>
+            ))}
+          </div>
+
+
         </div>
 
       </div>
