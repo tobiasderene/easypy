@@ -114,6 +114,17 @@ export const createOrder = (data) =>
 export const updateOrder = (orderId, data) =>
   api(`/orders/${orderId}`, { method: "PATCH", body: JSON.stringify(data) });
 export const getOrderHistory = (orderId) => api(`/orders/${orderId}/history`);
+export const getOrdersByStatus = (status) =>
+  fetch(`${BASE_URL}/orders/status/${status}`, { credentials: 'include' })
+    .then(r => r.json());
+export const confirmOrderAdmin = (orderId) =>
+  fetch(`${BASE_URL}/orders/${orderId}/confirm/admin`, {
+    method: 'POST', credentials: 'include'
+  }).then(r => { if (!r.ok) throw new Error(); return r.json(); });
+export const cancelOrderAdmin = (orderId) =>
+  fetch(`${BASE_URL}/orders/${orderId}/cancel`, {
+    method: 'POST', credentials: 'include'
+  }).then(r => { if (!r.ok) throw new Error(); return r.json(); });
 
 // ─── Wallets ─────────────────────────────────────────
 export const getWallet = (walletId) => api(`/wallets/${walletId}`);
@@ -153,7 +164,6 @@ export const getBankMovementsByStatus = (status) =>
 export const updateBankMovement = (bankMovementId, data) =>
   api(`/bank-movements/${bankMovementId}`, { method: 'PATCH', body: JSON.stringify(data) });
 
-// ─── Logistics ───────────────────────────────────────
 // ─── Logistics ───────────────────────────────────────
 export const getLogistics = () => api("/logistics");
 export const getLogistic  = (logisticId) => api(`/logistics/${logisticId}`);
