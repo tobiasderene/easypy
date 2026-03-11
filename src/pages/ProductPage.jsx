@@ -246,26 +246,7 @@ const ProductPage = () => {
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="tabs-section">
-          <div className="tabs-header">
-            <button
-              className={`tab-btn ${activeTab === 'description' ? 'active' : ''}`}
-              onClick={() => setActiveTab('description')}
-            >
-              Descripción
-            </button>
-            <button
-              className={`tab-btn ${activeTab === 'specs' ? 'active' : ''}`}
-              onClick={() => setActiveTab('specs')}
-            >
-              Especificaciones
-            </button>
-
-          </div>
-
           {/* Description */}
-          {/* Descripción */}
           <div style={{ marginTop: '40px', marginBottom: '60px' }}>
             <h2 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '16px', color: '#111827' }}>
               Descripción
