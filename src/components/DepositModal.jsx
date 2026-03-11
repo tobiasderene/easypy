@@ -1,54 +1,50 @@
 import React, { useState } from 'react';
 import { CheckCircle, X, DollarSign } from 'lucide-react';
+import { createBankMovement } from '../services/api';
 import '../styles/depositmodal.css';
 
 const DepositModal = ({ isOpen, onClose }) => {
-  const [step, setStep] = useState(1); // 1: form, 2: confirmation
-  const [amount, setAmount] = useState('');
-  const [error, setError] = useState('');
+  const [step, setStep]         = useState(1);
+  const [amount, setAmount]     = useState('');
+  const [reference, setReference] = useState('');
+  const [error, setError]       = useState('');
+  const [loading, setLoading]   = useState(false);
 
   const handleAmountChange = (e) => {
-    const value = e.target.value;
-    // Solo permitir números
-    if (value === '' || /^\d+$/.test(value)) {
-      setAmount(value);
-      setError('');
-    }
+    const v = e.target.value;
+    if (v === '' || /^\d+$/.test(v)) { setAmount(v); setError(''); }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Validación
-    if (!amount || amount === '0') {
-      setError('Por favor ingresa un monto válido');
-      return;
-    }
+    if (!amount || amount === '0') return setError('Por favor ingresa un monto válido');
+    if (parseInt(amount) < 10000) return setError('El monto mínimo es Gs. 10,000');
+    if (!reference.trim()) return setError('Por favor ingresa el número de referencia de tu transferencia');
 
-    if (parseInt(amount) < 10000) {
-      setError('El monto mínimo es Gs. 10,000');
-      return;
+    setLoading(true);
+    try {
+      await createBankMovement({
+        bank_movement_type: 'ingreso',
+        amount: parseInt(amount),
+        reference_number: reference.trim(),
+        status: 'pending',
+      });
+      setStep(2);
+    } catch (err) {
+      setError(err.message || 'Ocurrió un error. Intentá de nuevo.');
+    } finally {
+      setLoading(false);
     }
-
-    // Ir al paso de confirmación
-    setStep(2);
   };
 
   const handleClose = () => {
-    // Reset al cerrar
-    setStep(1);
-    setAmount('');
-    setError('');
+    setStep(1); setAmount(''); setReference(''); setError('');
     onClose();
   };
 
   const formatCurrency = (value) => {
     if (!value) return 'Gs. 0';
-    return new Intl.NumberFormat('es-PY', {
-      style: 'currency',
-      currency: 'PYG',
-      minimumFractionDigits: 0
-    }).format(value);
+    return new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', minimumFractionDigits: 0 }).format(value);
   };
 
   if (!isOpen) return null;
@@ -56,28 +52,23 @@ const DepositModal = ({ isOpen, onClose }) => {
   return (
     <div className="modal-overlay" onClick={handleClose}>
       <div className="modal-container" onClick={(e) => e.stopPropagation()}>
-        
-        {/* Step 1: Form */}
+
+        {/* Step 1 */}
         {step === 1 && (
           <>
-            {/* Header */}
             <div className="modal-header">
-              <div className="modal-icon deposit">
-                <DollarSign size={24} />
-              </div>
+              <div className="modal-icon deposit"><DollarSign size={24} /></div>
               <h2>Solicitud de Ingreso</h2>
-              <button className="modal-close" onClick={handleClose}>
-                <X size={20} />
-              </button>
+              <button className="modal-close" onClick={handleClose}><X size={20} /></button>
             </div>
 
-            {/* Body */}
             <div className="modal-body">
               <p className="modal-description">
-                Ingresa el monto que transferiste para agregar fondos a tu billetera
+                Realizá la transferencia a nuestra cuenta y completá el formulario
               </p>
 
               <form onSubmit={handleSubmit}>
+                {/* Monto */}
                 <div className="form-group">
                   <label htmlFor="amount">Monto transferido</label>
                   <div className="amount-input-wrapper">
@@ -92,15 +83,29 @@ const DepositModal = ({ isOpen, onClose }) => {
                       autoFocus
                     />
                   </div>
-                  {error && <span className="error-message">{error}</span>}
                   {amount && !error && (
-                    <div className="amount-preview">
-                      {formatCurrency(amount)}
-                    </div>
+                    <div className="amount-preview">{formatCurrency(amount)}</div>
                   )}
                 </div>
 
-                {/* Información bancaria */}
+                {/* Referencia */}
+                <div className="form-group">
+                  <label htmlFor="reference">Número de referencia</label>
+                  <div className="amount-input-wrapper">
+                    <input
+                      type="text"
+                      id="reference"
+                      className={`amount-input ${error ? 'error' : ''}`}
+                      placeholder="Ej: TRF-20250310-001"
+                      value={reference}
+                      onChange={(e) => { setReference(e.target.value); setError(''); }}
+                      style={{ paddingLeft: '16px' }}
+                    />
+                  </div>
+                  {error && <span className="error-message">{error}</span>}
+                </div>
+
+                {/* Datos bancarios */}
                 <div className="bank-info">
                   <h4>Datos para transferencia</h4>
                   <div className="bank-details">
@@ -114,7 +119,7 @@ const DepositModal = ({ isOpen, onClose }) => {
                     </div>
                     <div className="bank-row">
                       <span className="bank-label">Titular:</span>
-                      <span className="bank-value">EasyStore S.A.</span>
+                      <span className="bank-value">EasyPy S.A.</span>
                     </div>
                     <div className="bank-row">
                       <span className="bank-label">RUC:</span>
@@ -123,36 +128,17 @@ const DepositModal = ({ isOpen, onClose }) => {
                   </div>
                 </div>
 
-                {/* Nota importante */}
                 <div className="info-box">
                   <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round" 
-                      strokeWidth={2} 
-                      d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
-                    />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <p>
-                    Una vez enviada la solicitud, verificaremos tu transferencia. 
-                    El proceso puede tomar hasta 24 horas hábiles.
-                  </p>
+                  <p>Una vez enviada la solicitud, verificaremos tu transferencia. El proceso puede tomar hasta 24 horas hábiles.</p>
                 </div>
 
-                {/* Buttons */}
                 <div className="modal-actions">
-                  <button 
-                    type="button" 
-                    className="btn-secondary"
-                    onClick={handleClose}
-                  >
-                    Cancelar
-                  </button>
-                  <button 
-                    type="submit" 
-                    className="btn-primary"
-                  >
-                    Enviar Solicitud
+                  <button type="button" className="btn-secondary" onClick={handleClose}>Cancelar</button>
+                  <button type="submit" className="btn-primary" disabled={loading}>
+                    {loading ? 'Enviando...' : 'Enviar Solicitud'}
                   </button>
                 </div>
               </form>
@@ -160,33 +146,28 @@ const DepositModal = ({ isOpen, onClose }) => {
           </>
         )}
 
-        {/* Step 2: Confirmation */}
+        {/* Step 2 */}
         {step === 2 && (
           <>
-            {/* Header */}
             <div className="modal-header">
-              <div className="modal-icon success">
-                <CheckCircle size={24} />
-              </div>
+              <div className="modal-icon success"><CheckCircle size={24} /></div>
               <h2>¡Solicitud Enviada!</h2>
-              <button className="modal-close" onClick={handleClose}>
-                <X size={20} />
-              </button>
+              <button className="modal-close" onClick={handleClose}><X size={20} /></button>
             </div>
 
-            {/* Body */}
             <div className="modal-body">
               <div className="success-content">
-                <div className="success-icon-large">
-                  <CheckCircle size={64} />
-                </div>
-                
+                <div className="success-icon-large"><CheckCircle size={64} /></div>
                 <h3>Solicitud recibida correctamente</h3>
-                
+
                 <div className="confirmation-details">
                   <div className="confirmation-row">
-                    <span className="confirmation-label">Monto solicitado:</span>
+                    <span className="confirmation-label">Monto:</span>
                     <span className="confirmation-value">{formatCurrency(amount)}</span>
+                  </div>
+                  <div className="confirmation-row">
+                    <span className="confirmation-label">Referencia:</span>
+                    <span className="confirmation-value">{reference}</span>
                   </div>
                   <div className="confirmation-row">
                     <span className="confirmation-label">Estado:</span>
@@ -195,44 +176,23 @@ const DepositModal = ({ isOpen, onClose }) => {
                   <div className="confirmation-row">
                     <span className="confirmation-label">Fecha:</span>
                     <span className="confirmation-value">
-                      {new Date().toLocaleDateString('es-PY', {
-                        day: '2-digit',
-                        month: 'long',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
+                      {new Date().toLocaleDateString('es-PY', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
                 </div>
 
                 <div className="info-box success">
                   <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round" 
-                      strokeWidth={2} 
-                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" 
-                    />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <p>
-                    Recibirás una notificación cuando tu solicitud sea verificada 
-                    y el monto esté disponible en tu billetera.
-                  </p>
+                  <p>Recibirás una notificación cuando tu solicitud sea verificada y el monto esté disponible.</p>
                 </div>
 
-                {/* Button */}
-                <button 
-                  className="btn-primary full-width"
-                  onClick={handleClose}
-                >
-                  Entendido
-                </button>
+                <button className="btn-primary full-width" onClick={handleClose}>Entendido</button>
               </div>
             </div>
           </>
         )}
-
       </div>
     </div>
   );

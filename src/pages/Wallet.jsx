@@ -1,147 +1,97 @@
-import React, { useState } from 'react';
-import { TrendingUp, TrendingDown, DollarSign, ArrowUpRight, ArrowDownLeft, Wallet as WalletIcon, Calendar } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { TrendingUp, TrendingDown, ArrowUpRight, ArrowDownLeft, Wallet as WalletIcon, Calendar } from 'lucide-react';
+import { useUser } from '../App';
+import { getWalletByUser, getTransactionsByWallet } from '../services/api';
 import DepositModal from '../components/DepositModal';
 import WithdrawModal from '../components/WithdrawModal';
 import '../styles/wallet.css';
 
 const Wallet = () => {
-  const [activeTab, setActiveTab] = useState('all'); // all, income, expense
-  const [showDepositModal, setShowDepositModal] = useState(false);
+  const { user } = useUser();
+
+  const [wallet, setWallet]         = useState(null);
+  const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading]       = useState(true);
+  const [activeTab, setActiveTab]   = useState('all');
+  const [showDepositModal, setShowDepositModal]   = useState(false);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
 
-  // Balance y datos
-  const balance = 1250000; // Gs. 1,250,000
-  const monthlyChange = 15.5; // +15.5%
-  const isPositive = monthlyChange > 0;
-
-  // Datos para el gráfico (últimos 7 días)
-  const chartData = [
-    { day: 'Lun', amount: 1100000 },
-    { day: 'Mar', amount: 1150000 },
-    { day: 'Mié', amount: 1120000 },
-    { day: 'Jue', amount: 1180000 },
-    { day: 'Vie', amount: 1220000 },
-    { day: 'Sáb', amount: 1200000 },
-    { day: 'Dom', amount: 1250000 }
-  ];
-
-  const maxAmount = Math.max(...chartData.map(d => d.amount));
-  const minAmount = Math.min(...chartData.map(d => d.amount));
-
-  // Transacciones
-  const transactions = [
-    {
-      id: 1,
-      type: 'income',
-      description: 'Venta - Pedido #TRX-001',
-      amount: 150000,
-      date: '2024-02-23',
-      time: '14:30',
-      status: 'completed'
-    },
-    {
-      id: 2,
-      type: 'expense',
-      description: 'Compra a TechGlobal Suppliers',
-      amount: 80000,
-      date: '2024-02-23',
-      time: '10:15',
-      status: 'completed'
-    },
-    {
-      id: 3,
-      type: 'income',
-      description: 'Venta - Pedido #TRX-002',
-      amount: 95000,
-      date: '2024-02-22',
-      time: '16:45',
-      status: 'completed'
-    },
-    {
-      id: 4,
-      type: 'expense',
-      description: 'Retiro a cuenta bancaria',
-      amount: 200000,
-      date: '2024-02-22',
-      time: '09:00',
-      status: 'pending'
-    },
-    {
-      id: 5,
-      type: 'income',
-      description: 'Venta - Pedido #TRX-003',
-      amount: 120000,
-      date: '2024-02-21',
-      time: '18:20',
-      status: 'completed'
-    },
-    {
-      id: 6,
-      type: 'expense',
-      description: 'Compra a BeautyHub Wholesale',
-      amount: 65000,
-      date: '2024-02-21',
-      time: '11:30',
-      status: 'completed'
-    },
-    {
-      id: 7,
-      type: 'income',
-      description: 'Depósito manual',
-      amount: 300000,
-      date: '2024-02-20',
-      time: '08:00',
-      status: 'completed'
-    },
-    {
-      id: 8,
-      type: 'expense',
-      description: 'Compra a AudioPro Wholesale',
-      amount: 45000,
-      date: '2024-02-20',
-      time: '15:45',
-      status: 'completed'
+  const fetchData = async () => {
+    if (!user?.user_id) return;
+    try {
+      const w = await getWalletByUser(user.user_id);
+      setWallet(w);
+      if (w?.wallet_id) {
+        const txs = await getTransactionsByWallet(w.wallet_id);
+        setTransactions(txs || []);
+      }
+    } catch {
+      // silencioso
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
 
-  // Filtrar transacciones
-  const filteredTransactions = transactions.filter(transaction => {
+  useEffect(() => { fetchData(); }, [user]);
+
+  const formatCurrency = (amount) =>
+    new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', minimumFractionDigits: 0 }).format(amount || 0);
+
+  const formatDate = (dateString) =>
+    new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(dateString));
+
+  const filteredTransactions = transactions.filter(t => {
     if (activeTab === 'all') return true;
-    return transaction.type === activeTab;
+    if (activeTab === 'income') return t.transaction_direction === 'in';
+    if (activeTab === 'expense') return t.transaction_direction === 'out';
+    return true;
   });
 
-  // Formatear moneda
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('es-PY', {
-      style: 'currency',
-      currency: 'PYG',
-      minimumFractionDigits: 0
-    }).format(amount);
-  };
-
-  // Formatear fecha
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('es-ES', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    }).format(date);
-  };
-
-  // Calcular totales
   const totalIncome = transactions
-    .filter(t => t.type === 'income' && t.status === 'completed')
-    .reduce((sum, t) => sum + t.amount, 0);
+    .filter(t => t.transaction_direction === 'in' && t.transaction_status === 'completed')
+    .reduce((sum, t) => sum + parseFloat(t.transaction_amount || 0), 0);
 
   const totalExpense = transactions
-    .filter(t => t.type === 'expense' && t.status === 'completed')
-    .reduce((sum, t) => sum + t.amount, 0);
+    .filter(t => t.transaction_direction === 'out' && t.transaction_status === 'completed')
+    .reduce((sum, t) => sum + parseFloat(t.transaction_amount || 0), 0);
+
+  // Gráfico: últimas 7 transacciones agrupadas por día
+  const chartData = (() => {
+    const days = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+    const today = new Date();
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(today);
+      d.setDate(today.getDate() - (6 - i));
+      const dayName = days[d.getDay() === 0 ? 6 : d.getDay() - 1];
+      const dayTxs = transactions.filter(t => {
+        const td = new Date(t.created_at);
+        return td.toDateString() === d.toDateString();
+      });
+      const amount = dayTxs.reduce((sum, t) => {
+        const val = parseFloat(t.transaction_amount || 0);
+        return t.transaction_direction === 'in' ? sum + val : sum - val;
+      }, parseFloat(wallet?.balance_available || 0));
+      return { day: dayName, amount: Math.max(0, amount) };
+    });
+  })();
+
+  const maxAmount = Math.max(...chartData.map(d => d.amount), 1);
+  const minAmount = Math.min(...chartData.map(d => d.amount), 0);
+
+  if (loading) {
+    return (
+      <div className="wallet-page">
+        <div className="wallet-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+          <p style={{ color: '#9ca3af' }}>Cargando billetera...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="wallet-page">
       <div className="wallet-container">
-        
+
         {/* Header */}
         <div className="wallet-header">
           <div className="header-content">
@@ -153,83 +103,71 @@ const Wallet = () => {
           </div>
         </div>
 
-        {/* Balance & Chart Section */}
+        {/* Balance & Chart */}
         <div className="balance-chart-section">
-          
+
           {/* Balance Card */}
           <div className="balance-card">
             <div className="balance-header">
               <span className="balance-label">Balance Disponible</span>
-              <div className={`balance-change ${isPositive ? 'positive' : 'negative'}`}>
-                {isPositive ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
-                <span>{isPositive ? '+' : ''}{monthlyChange}%</span>
-              </div>
             </div>
-            
+
             <div className="balance-amount">
-              {formatCurrency(balance)}
+              {formatCurrency(wallet?.balance_available)}
             </div>
+
+            {wallet?.balance_pending > 0 && (
+              <div style={{ fontSize: '13px', opacity: 0.8 }}>
+                Pendiente: {formatCurrency(wallet.balance_pending)}
+              </div>
+            )}
 
             <div className="balance-stats">
               <div className="stat-item">
                 <ArrowUpRight size={16} className="icon-income" />
                 <div>
                   <div className="stat-label">Ingresos</div>
-                  <div className="stat-value income">{formatCurrency(totalIncome)}</div>
+                  <div className="stat-value">{formatCurrency(totalIncome)}</div>
                 </div>
               </div>
-              
               <div className="stat-divider"></div>
-
               <div className="stat-item">
                 <ArrowDownLeft size={16} className="icon-expense" />
                 <div>
                   <div className="stat-label">Egresos</div>
-                  <div className="stat-value expense">{formatCurrency(totalExpense)}</div>
+                  <div className="stat-value">{formatCurrency(totalExpense)}</div>
                 </div>
               </div>
             </div>
 
-            {/* Action Buttons */}
             <div className="balance-actions">
-              <button 
-                className="action-btn deposit"
-                onClick={() => setShowDepositModal(true)}
-              >
+              <button className="action-btn deposit" onClick={() => setShowDepositModal(true)}>
                 <ArrowDownLeft size={18} />
                 <span>Ingresar Dinero</span>
               </button>
-              <button 
-                className="action-btn withdraw"
-                onClick={() => setShowWithdrawModal(true)}
-              >
+              <button className="action-btn withdraw" onClick={() => setShowWithdrawModal(true)}>
                 <ArrowUpRight size={18} />
                 <span>Retirar Dinero</span>
               </button>
             </div>
           </div>
 
-          {/* Chart Card */}
+          {/* Chart */}
           <div className="chart-card">
             <div className="chart-header">
               <h3>Evolución (7 días)</h3>
               <Calendar size={20} />
             </div>
-            
             <div className="chart-container">
               <div className="chart">
                 {chartData.map((data, index) => {
-                  const heightPercent = ((data.amount - minAmount) / (maxAmount - minAmount)) * 100;
+                  const range = maxAmount - minAmount || 1;
+                  const heightPercent = ((data.amount - minAmount) / range) * 100;
                   return (
                     <div key={index} className="chart-bar-wrapper">
                       <div className="chart-bar-container">
-                        <div 
-                          className="chart-bar"
-                          style={{ height: `${heightPercent}%` }}
-                        >
-                          <span className="chart-tooltip">
-                            {formatCurrency(data.amount)}
-                          </span>
+                        <div className="chart-bar" style={{ height: `${Math.max(heightPercent, 5)}%` }}>
+                          <span className="chart-tooltip">{formatCurrency(data.amount)}</span>
                         </div>
                       </div>
                       <span className="chart-label">{data.day}</span>
@@ -241,77 +179,67 @@ const Wallet = () => {
           </div>
         </div>
 
-        {/* Transactions Section */}
+        {/* Transactions */}
         <div className="transactions-section">
           <div className="transactions-header">
             <h2>Historial de Movimientos</h2>
             <div className="transaction-tabs">
-              <button
-                className={`tab-btn ${activeTab === 'all' ? 'active' : ''}`}
-                onClick={() => setActiveTab('all')}
-              >
-                Todos
-              </button>
-              <button
-                className={`tab-btn ${activeTab === 'income' ? 'active' : ''}`}
-                onClick={() => setActiveTab('income')}
-              >
-                Ingresos
-              </button>
-              <button
-                className={`tab-btn ${activeTab === 'expense' ? 'active' : ''}`}
-                onClick={() => setActiveTab('expense')}
-              >
-                Egresos
-              </button>
+              {[['all', 'Todos'], ['income', 'Ingresos'], ['expense', 'Egresos']].map(([val, label]) => (
+                <button
+                  key={val}
+                  className={`tab-btn ${activeTab === val ? 'active' : ''}`}
+                  onClick={() => setActiveTab(val)}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
           </div>
 
           <div className="transactions-list">
-            {filteredTransactions.map(transaction => (
-              <div key={transaction.id} className="transaction-item">
-                <div className="transaction-icon-wrapper">
-                  <div className={`transaction-icon ${transaction.type}`}>
-                    {transaction.type === 'income' ? (
-                      <ArrowDownLeft size={20} />
-                    ) : (
-                      <ArrowUpRight size={20} />
-                    )}
-                  </div>
-                </div>
-
-                <div className="transaction-info">
-                  <h4 className="transaction-description">{transaction.description}</h4>
-                  <div className="transaction-meta">
-                    <span className="transaction-date">{formatDate(transaction.date)}</span>
-                    <span className="transaction-time">{transaction.time}</span>
-                    <span className={`transaction-status ${transaction.status}`}>
-                      {transaction.status === 'completed' ? 'Completado' : 'Pendiente'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className={`transaction-amount ${transaction.type}`}>
-                  {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
-                </div>
+            {filteredTransactions.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px', color: '#9ca3af' }}>
+                No hay movimientos para mostrar
               </div>
-            ))}
+            ) : (
+              filteredTransactions.map(t => {
+                const isIncome = t.transaction_direction === 'in';
+                return (
+                  <div key={t.id_transaction} className="transaction-item">
+                    <div className="transaction-icon-wrapper">
+                      <div className={`transaction-icon ${isIncome ? 'income' : 'expense'}`}>
+                        {isIncome ? <ArrowDownLeft size={20} /> : <ArrowUpRight size={20} />}
+                      </div>
+                    </div>
+                    <div className="transaction-info">
+                      <h4 className="transaction-description">{t.transaction_category}</h4>
+                      <div className="transaction-meta">
+                        <span className="transaction-date">{formatDate(t.created_at)}</span>
+                        <span className={`transaction-status ${t.transaction_status}`}>
+                          {t.transaction_status === 'completed' ? 'Completado' : 'Pendiente'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className={`transaction-amount ${isIncome ? 'income' : 'expense'}`}>
+                      {isIncome ? '+' : '-'}{formatCurrency(t.transaction_amount)}
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
-
       </div>
 
-      {/* Deposit Modal */}
-      <DepositModal 
+      <DepositModal
         isOpen={showDepositModal}
-        onClose={() => setShowDepositModal(false)}
+        onClose={() => { setShowDepositModal(false); fetchData(); }}
       />
-
-      {/* Withdraw Modal */}
-      <WithdrawModal 
+      <WithdrawModal
         isOpen={showWithdrawModal}
-        onClose={() => setShowWithdrawModal(false)}
-        availableBalance={balance}
+        onClose={() => { setShowWithdrawModal(false); fetchData(); }}
+        walletId={wallet?.wallet_id}
+        availableBalance={parseFloat(wallet?.balance_available || 0)}
       />
     </div>
   );
