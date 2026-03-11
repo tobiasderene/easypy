@@ -92,16 +92,7 @@ const Wallet = () => {
     <div className="wallet-page">
       <div className="wallet-container">
 
-        {/* Header */}
-        <div className="wallet-header">
-          <div className="header-content">
-            <WalletIcon size={32} />
-            <div>
-              <h1>Mi Billetera</h1>
-              <p>Gestiona tus ingresos y egresos</p>
-            </div>
-          </div>
-        </div>
+
 
         {/* Balance & Chart */}
         <div className="balance-chart-section">
