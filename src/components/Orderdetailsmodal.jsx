@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, CheckCircle, XCircle, Package, Truck, MapPin, User, MessageSquare } from 'lucide-react';
+import { X, CheckCircle, XCircle, Package, Truck, MapPin, User } from 'lucide-react';
 import '../styles/orderdetailsmodal.css';
 
 const OrderDetailsModal = ({ order, onClose, onUpdateStatus, statusConfig, formatCurrency, formatDate }) => {
@@ -29,35 +29,30 @@ const OrderDetailsModal = ({ order, onClose, onUpdateStatus, statusConfig, forma
             </button>
           </div>
         );
-
       case 'processing':
         return (
           <div className="info-box">
             <span>🔄 Este pedido está siendo procesado</span>
           </div>
         );
-
       case 'cancelled':
         return (
           <div className="info-box">
             <span>❌ Este pedido fue cancelado</span>
           </div>
         );
-
       case 'completed':
         return (
           <div className="info-box">
             <span>✅ Este pedido ya fue completado</span>
           </div>
         );
-
       case 'pending':
         return (
           <div className="info-box">
             <span>⏳ Esperando confirmación del administrador</span>
           </div>
         );
-
       default:
         return null;
     }

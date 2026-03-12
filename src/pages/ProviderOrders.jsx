@@ -67,10 +67,14 @@ const ProviderOrders = () => {
       style: 'currency', currency: 'PYG', minimumFractionDigits: 0
     }).format(v);
 
-  const formatDate = (dateString) =>
-    new Intl.DateTimeFormat('es-PY', {
+  const formatDate = (dateString) => {
+    if (!dateString) return '—';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '—';
+    return new Intl.DateTimeFormat('es-PY', {
       year: 'numeric', month: 'short', day: 'numeric'
-    }).format(new Date(dateString));
+    }).format(date);
+  };
 
   const handleUpdateOrderStatus = async (orderId, newStatus) => {
     try {
