@@ -15,7 +15,7 @@ import Wallet from './pages/Wallet';
 import ProviderOrders from './pages/ProviderOrders';
 import ProviderCatalog from './pages/ProviderCatalog';
 import AddProductForm from './pages/AddProductForm';
-import AdminPage from './pages/AdminPage';
+import AdminPage from './pages/Adminpage';
 import PendingApproval from './pages/PendingApproval';
 import OrderForm from './components/OrderForm';
 import { getMe, exchangeSession } from './services/api';
