@@ -128,7 +128,11 @@ const OrderForm = () => {
       await createOrder(payload);
       navigate('/catalogo', { replace: true });
     } catch (err) {
-      setSubmitError(err.message || 'Ocurrió un error al crear la orden');
+      if (err.message?.includes('Saldo insuficiente')) {
+        setSubmitError('No tenés saldo suficiente para cubrir el costo de esta orden.');
+      } else {
+        setSubmitError(err.message || 'Ocurrió un error al crear la orden');
+      }
     } finally {
       setSubmitting(false);
     }
