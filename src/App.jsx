@@ -105,29 +105,43 @@ const Dashboard = () => {
   const { user, setUser } = useUser();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-
+ 
   useEffect(() => {
     const token = searchParams.get('token');
-
+ 
     if (token) {
+      console.log('[DASHBOARD] temp_token recibido:', token);
       fetch(`${BASE_URL}/auth/session`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token }),
       })
-        .then(() => getMe())
+        .then(res => {
+          console.log('[DASHBOARD] /auth/session status:', res.status);
+          return res.json();
+        })
+        .then(data => {
+          console.log('[DASHBOARD] /auth/session response:', data);
+          console.log('[DASHBOARD] JWT guardado en localStorage:', localStorage.getItem('auth_token'));
+          return getMe();
+        })
         .then((u) => {
+          console.log('[DASHBOARD] getMe() result:', u);
           if (u) {
             setUser(u);
             if (u.user_role === 'provider') navigate('/provider-orders', { replace: true });
             else if (u.user_role === 'admin') navigate('/admin', { replace: true });
             else navigate('/catalogo', { replace: true });
           } else {
+            console.log('[DASHBOARD] getMe() returned null - redirigiendo a login');
             navigate('/login', { replace: true });
           }
         })
-        .catch(() => navigate('/login', { replace: true }));
+        .catch((err) => {
+          console.error('[DASHBOARD] Error:', err);
+          navigate('/login', { replace: true });
+        });
     } else if (user) {
       if (user.user_role === 'provider') navigate('/provider-orders', { replace: true });
       else if (user.user_role === 'admin') navigate('/admin', { replace: true });
@@ -136,7 +150,7 @@ const Dashboard = () => {
       navigate('/login', { replace: true });
     }
   }, []);
-
+ 
   return <div className="loading-screen">Cargando...</div>;
 };
 
