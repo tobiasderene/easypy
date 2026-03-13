@@ -10,7 +10,6 @@ const authHeaders = () => {
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
-// Si la respuesta trae un token JWT lo guardamos automáticamente
 const extractAndSaveToken = (data) => {
   if (data?.token) saveToken(data.token);
   return data;
@@ -41,7 +40,8 @@ const api = async (endpoint, options = {}) => {
 };
 
 // ─── Auth ────────────────────────────────────────────
-export const getGoogleAuthUrl = () => api("/auth/google");
+export const getGoogleAuthUrl  = () => api("/auth/google");
+export const exchangeSession   = (token) => api("/auth/session", { method: "POST", body: JSON.stringify({ token }) });
 
 export const getMe = async () => {
   const res = await fetch(`${BASE_URL}/auth/me`, {
@@ -166,9 +166,9 @@ export const getWalletByUser = (userId)         => api(`/wallets/user/${userId}`
 export const updateWallet    = (walletId, data) => api(`/wallets/${walletId}`, { method: "PATCH", body: JSON.stringify(data) });
 
 // ─── Transactions ─────────────────────────────────────
-export const getTransactions         = ()          => api("/transactions");
-export const getTransactionsByWallet = (walletId)  => api(`/transactions/wallet/${walletId}`);
-export const getTransactionsByOrder  = (orderId)   => api(`/transactions/order/${orderId}`);
+export const getTransactions         = ()         => api("/transactions");
+export const getTransactionsByWallet = (walletId) => api(`/transactions/wallet/${walletId}`);
+export const getTransactionsByOrder  = (orderId)  => api(`/transactions/order/${orderId}`);
 
 // ─── Withdrawals ──────────────────────────────────────
 export const getWithdrawals         = ()         => api("/withdrawals");

@@ -15,12 +15,10 @@ import Wallet from './pages/Wallet';
 import ProviderOrders from './pages/ProviderOrders';
 import ProviderCatalog from './pages/ProviderCatalog';
 import AddProductForm from './pages/AddProductForm';
-import AdminPage from './pages/Adminpage';
+import AdminPage from './pages/AdminPage';
 import OrderForm from './components/OrderForm';
-import { getMe } from './services/api';
+import { getMe, exchangeSession } from './services/api';
 import './App.css';
-
-const BASE_URL = "https://easypy-backend-430520813248.us-central1.run.app";
 
 // ─── Context de usuario ───────────────────────────────
 export const UserContext = createContext(null);
@@ -114,16 +112,7 @@ const Dashboard = () => {
 
     if (token) {
       log(`temp_token: ${token.slice(0, 10)}...`);
-      fetch(`${BASE_URL}/auth/session`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token }),
-      })
-        .then(res => {
-          log(`/auth/session status: ${res.status}`);
-          return res.json();
-        })
+      exchangeSession(token)
         .then(data => {
           log(`response token: ${data?.token ? data.token.slice(0, 10) + '...' : 'NINGUNO'}`);
           log(`localStorage token: ${localStorage.getItem('auth_token')?.slice(0, 10) || 'NINGUNO'}`);
@@ -136,17 +125,17 @@ const Dashboard = () => {
             if (u.user_role === 'provider') navigate('/provider-orders', { replace: true });
             else if (u.user_role === 'admin') navigate('/admin', { replace: true });
             else navigate('/catalogo', { replace: true });
-          } else {
-            // no redirigir para ver los logs
           }
         })
         .catch((err) => {
           log(`ERROR: ${err.message}`);
         });
+    } else if (user) {
+      if (user.user_role === 'provider') navigate('/provider-orders', { replace: true });
+      else if (user.user_role === 'admin') navigate('/admin', { replace: true });
+      else navigate('/catalogo', { replace: true });
     } else {
-      log('No hay token en URL');
-      if (user) navigate('/catalogo', { replace: true });
-      else navigate('/login', { replace: true });
+      navigate('/login', { replace: true });
     }
   }, []);
 
