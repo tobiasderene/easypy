@@ -105,12 +105,15 @@ const Dashboard = () => {
   const { user, setUser } = useUser();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
- 
+  const [debugLog, setDebugLog] = useState([]);
+
+  const log = (msg) => setDebugLog(prev => [...prev, msg]);
+
   useEffect(() => {
     const token = searchParams.get('token');
- 
+
     if (token) {
-      console.log('[DASHBOARD] temp_token recibido:', token);
+      log(`temp_token: ${token.slice(0, 10)}...`);
       fetch(`${BASE_URL}/auth/session`, {
         method: 'POST',
         credentials: 'include',
@@ -118,40 +121,46 @@ const Dashboard = () => {
         body: JSON.stringify({ token }),
       })
         .then(res => {
-          console.log('[DASHBOARD] /auth/session status:', res.status);
+          log(`/auth/session status: ${res.status}`);
           return res.json();
         })
         .then(data => {
-          console.log('[DASHBOARD] /auth/session response:', data);
-          console.log('[DASHBOARD] JWT guardado en localStorage:', localStorage.getItem('auth_token'));
+          log(`response token: ${data?.token ? data.token.slice(0, 10) + '...' : 'NINGUNO'}`);
+          log(`localStorage token: ${localStorage.getItem('auth_token')?.slice(0, 10) || 'NINGUNO'}`);
           return getMe();
         })
         .then((u) => {
-          console.log('[DASHBOARD] getMe() result:', u);
+          log(`getMe: ${u ? u.user_role : 'null'}`);
           if (u) {
             setUser(u);
             if (u.user_role === 'provider') navigate('/provider-orders', { replace: true });
             else if (u.user_role === 'admin') navigate('/admin', { replace: true });
             else navigate('/catalogo', { replace: true });
           } else {
-            console.log('[DASHBOARD] getMe() returned null - redirigiendo a login');
-            navigate('/login', { replace: true });
+            // no redirigir para ver los logs
           }
         })
         .catch((err) => {
-          console.error('[DASHBOARD] Error:', err);
-          navigate('/login', { replace: true });
+          log(`ERROR: ${err.message}`);
         });
-    } else if (user) {
-      if (user.user_role === 'provider') navigate('/provider-orders', { replace: true });
-      else if (user.user_role === 'admin') navigate('/admin', { replace: true });
-      else navigate('/catalogo', { replace: true });
     } else {
-      navigate('/login', { replace: true });
+      log('No hay token en URL');
+      if (user) navigate('/catalogo', { replace: true });
+      else navigate('/login', { replace: true });
     }
   }, []);
- 
-  return <div className="loading-screen">Cargando...</div>;
+
+  return (
+    <div style={{ padding: '20px', fontFamily: 'monospace', fontSize: '13px' }}>
+      <p style={{ fontWeight: 'bold', marginBottom: '12px' }}>Debug log:</p>
+      {debugLog.map((line, i) => (
+        <p key={i} style={{ marginBottom: '4px', color: line.startsWith('ERROR') ? 'red' : '#111' }}>
+          {i + 1}. {line}
+        </p>
+      ))}
+      {debugLog.length === 0 && <p style={{ color: '#999' }}>Esperando...</p>}
+    </div>
+  );
 };
 
 // ─── Cart Provider ────────────────────────────────────
