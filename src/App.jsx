@@ -15,7 +15,7 @@ import Wallet from './pages/Wallet';
 import ProviderOrders from './pages/ProviderOrders';
 import ProviderCatalog from './pages/ProviderCatalog';
 import AddProductForm from './pages/AddProductForm';
-import AdminPage from './pages/Adminpage';
+import AdminPage from './pages/AdminPage';
 import OrderForm from './components/OrderForm';
 import { getMe, exchangeSession } from './services/api';
 import './App.css';
@@ -103,33 +103,24 @@ const Dashboard = () => {
   const { user, setUser } = useUser();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [debugLog, setDebugLog] = useState([]);
-
-  const log = (msg) => setDebugLog(prev => [...prev, msg]);
 
   useEffect(() => {
     const token = searchParams.get('token');
 
     if (token) {
-      log(`temp_token: ${token.slice(0, 10)}...`);
       exchangeSession(token)
-        .then(data => {
-          log(`response token: ${data?.token ? data.token.slice(0, 10) + '...' : 'NINGUNO'}`);
-          log(`localStorage token: ${localStorage.getItem('auth_token')?.slice(0, 10) || 'NINGUNO'}`);
-          return getMe();
-        })
+        .then(() => getMe())
         .then((u) => {
-          log(`getMe: ${u ? u.user_role : 'null'}`);
           if (u) {
             setUser(u);
             if (u.user_role === 'provider') navigate('/provider-orders', { replace: true });
             else if (u.user_role === 'admin') navigate('/admin', { replace: true });
             else navigate('/catalogo', { replace: true });
+          } else {
+            navigate('/login', { replace: true });
           }
         })
-        .catch((err) => {
-          log(`ERROR: ${err.message}`);
-        });
+        .catch(() => navigate('/login', { replace: true }));
     } else if (user) {
       if (user.user_role === 'provider') navigate('/provider-orders', { replace: true });
       else if (user.user_role === 'admin') navigate('/admin', { replace: true });
@@ -139,17 +130,7 @@ const Dashboard = () => {
     }
   }, []);
 
-  return (
-    <div style={{ padding: '20px', fontFamily: 'monospace', fontSize: '13px' }}>
-      <p style={{ fontWeight: 'bold', marginBottom: '12px' }}>Debug log:</p>
-      {debugLog.map((line, i) => (
-        <p key={i} style={{ marginBottom: '4px', color: line.startsWith('ERROR') ? 'red' : '#111' }}>
-          {i + 1}. {line}
-        </p>
-      ))}
-      {debugLog.length === 0 && <p style={{ color: '#999' }}>Esperando...</p>}
-    </div>
-  );
+  return <div className="loading-screen">Cargando...</div>;
 };
 
 // ─── Cart Provider ────────────────────────────────────
