@@ -15,7 +15,8 @@ import Wallet from './pages/Wallet';
 import ProviderOrders from './pages/ProviderOrders';
 import ProviderCatalog from './pages/ProviderCatalog';
 import AddProductForm from './pages/AddProductForm';
-import AdminPage from './pages/Adminpage';
+import AdminPage from './pages/AdminPage';
+import PendingApproval from './pages/PendingApproval';
 import OrderForm from './components/OrderForm';
 import { getMe, exchangeSession } from './services/api';
 import './App.css';
@@ -74,6 +75,7 @@ const ProtectedRoute = ({ children, withLayout = true }) => {
   const { user, loading } = useUser();
   if (loading) return <div className="loading-screen">Cargando...</div>;
   if (!user) return <Navigate to="/login" replace />;
+  if (user.user_status === 'pending') return <PendingApproval />;
   return withLayout ? <Layout>{children}</Layout> : children;
 };
 
@@ -82,6 +84,7 @@ const AdminRoute = ({ children }) => {
   const { user, loading } = useUser();
   if (loading) return <div className="loading-screen">Cargando...</div>;
   if (!user) return <Navigate to="/login" replace />;
+  if (user.user_status === 'pending') return <PendingApproval />;
   if (user.user_role !== 'admin') return <Navigate to="/" replace />;
   return <Layout>{children}</Layout>;
 };
@@ -91,6 +94,7 @@ const PublicRoute = ({ children }) => {
   const { user, loading } = useUser();
   if (loading) return <div className="loading-screen">Cargando...</div>;
   if (user) {
+    if (user.user_status === 'pending') return <PendingApproval />;
     if (user.user_role === 'provider') return <Navigate to="/provider-orders" replace />;
     if (user.user_role === 'admin') return <Navigate to="/admin" replace />;
     return <Navigate to="/catalogo" replace />;
@@ -113,6 +117,7 @@ const Dashboard = () => {
         .then((u) => {
           if (u) {
             setUser(u);
+            if (u.user_status === 'pending') return; // PendingApproval se muestra via ProtectedRoute
             if (u.user_role === 'provider') navigate('/provider-orders', { replace: true });
             else if (u.user_role === 'admin') navigate('/admin', { replace: true });
             else navigate('/catalogo', { replace: true });
@@ -122,6 +127,7 @@ const Dashboard = () => {
         })
         .catch(() => navigate('/login', { replace: true }));
     } else if (user) {
+      if (user.user_status === 'pending') return;
       if (user.user_role === 'provider') navigate('/provider-orders', { replace: true });
       else if (user.user_role === 'admin') navigate('/admin', { replace: true });
       else navigate('/catalogo', { replace: true });

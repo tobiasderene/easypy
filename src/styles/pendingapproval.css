@@ -1,0 +1,232 @@
+:root {
+  --primary-orange: #056EB7;
+  --primary-orange-dark: #045A94;
+  --primary-orange-light: #aacdfe;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-400: #9ca3af;
+  --gray-500: #6b7280;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+}
+
+.pending-page {
+  min-height: 100vh;
+  background: var(--gray-50);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.pending-card {
+  background: white;
+  border-radius: 20px;
+  border: 2px solid var(--gray-200);
+  padding: 48px 40px;
+  max-width: 480px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  text-align: center;
+}
+
+/* Icon */
+.pending-icon {
+  width: 88px;
+  height: 88px;
+  background: linear-gradient(135deg, var(--primary-orange-light), #dbeafe);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-orange);
+  animation: spin-slow 8s linear infinite;
+}
+
+@keyframes spin-slow {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Title */
+.pending-title {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--gray-900);
+  letter-spacing: -0.5px;
+  margin: 0;
+}
+
+.pending-subtitle {
+  font-size: 15px;
+  color: var(--gray-500);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Steps */
+.pending-steps {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  width: 100%;
+  justify-content: center;
+  margin: 8px 0;
+}
+
+.pending-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gray-400);
+  min-width: 90px;
+}
+
+.pending-step.done {
+  color: #16a34a;
+}
+
+.pending-step.active {
+  color: var(--primary-orange);
+}
+
+.pending-step.inactive {
+  color: var(--gray-300);
+}
+
+.step-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.pending-step.done .step-dot {
+  background: #16a34a;
+  color: white;
+}
+
+.pending-step.active .step-dot {
+  background: var(--primary-orange);
+  color: white;
+}
+
+.pending-step.inactive .step-dot.empty {
+  background: var(--gray-100);
+  border: 2px solid var(--gray-200);
+}
+
+/* Pulse animation for active step */
+.step-pulse {
+  width: 10px;
+  height: 10px;
+  background: white;
+  border-radius: 50%;
+  display: block;
+  position: relative;
+}
+
+.step-pulse::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  animation: pulse-ring 1.5s ease-out infinite;
+}
+
+@keyframes pulse-ring {
+  0%   { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+}
+
+/* Step line */
+.pending-step-line {
+  flex: 1;
+  height: 2px;
+  background: #16a34a;
+  margin-bottom: 20px;
+  max-width: 40px;
+}
+
+.pending-step-line.inactive {
+  background: var(--gray-200);
+}
+
+/* Info box */
+.pending-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: #eff6ff;
+  border: 1.5px solid var(--primary-orange-light);
+  border-radius: 10px;
+  padding: 14px 16px;
+  text-align: left;
+  width: 100%;
+  color: var(--primary-orange);
+}
+
+.pending-info svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.pending-info p {
+  font-size: 13px;
+  color: var(--gray-600);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Logout button */
+.pending-logout {
+  padding: 10px 28px;
+  background: white;
+  color: var(--gray-500);
+  border: 2px solid var(--gray-200);
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pending-logout:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+  background: #fef2f2;
+}
+
+@media (max-width: 480px) {
+  .pending-card {
+    padding: 32px 24px;
+  }
+
+  .pending-title {
+    font-size: 22px;
+  }
+
+  .pending-step {
+    font-size: 11px;
+    min-width: 70px;
+  }
+}
