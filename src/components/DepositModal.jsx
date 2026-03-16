@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import { CheckCircle, X, DollarSign } from 'lucide-react';
 import { createBankMovement } from '../services/api';
+import { useUser } from '../App';
 import '../styles/depositmodal.css';
 
 const DepositModal = ({ isOpen, onClose }) => {
-  const [step, setStep]         = useState(1);
-  const [amount, setAmount]     = useState('');
+  const { user } = useUser();
+  const [step, setStep]           = useState(1);
+  const [amount, setAmount]       = useState('');
   const [reference, setReference] = useState('');
-  const [error, setError]       = useState('');
-  const [loading, setLoading]   = useState(false);
+  const [error, setError]         = useState('');
+  const [loading, setLoading]     = useState(false);
 
   const handleAmountChange = (e) => {
     const v = e.target.value;
@@ -25,9 +27,10 @@ const DepositModal = ({ isOpen, onClose }) => {
     try {
       await createBankMovement({
         bank_movement_type: 'ingreso',
-        amount: parseInt(amount),
-        reference_number: reference.trim(),
-        status: 'pending',
+        amount:             parseInt(amount),
+        reference_number:   reference.trim(),
+        status:             'pending',
+        user_id:            user.user_id,
       });
       setStep(2);
     } catch (err) {
@@ -68,7 +71,6 @@ const DepositModal = ({ isOpen, onClose }) => {
               </p>
 
               <form onSubmit={handleSubmit}>
-                {/* Monto */}
                 <div className="form-group">
                   <label htmlFor="amount">Monto transferido</label>
                   <div className="amount-input-wrapper">
@@ -88,7 +90,6 @@ const DepositModal = ({ isOpen, onClose }) => {
                   )}
                 </div>
 
-                {/* Referencia */}
                 <div className="form-group">
                   <label htmlFor="reference">Número de referencia</label>
                   <div className="amount-input-wrapper">
@@ -105,7 +106,6 @@ const DepositModal = ({ isOpen, onClose }) => {
                   {error && <span className="error-message">{error}</span>}
                 </div>
 
-                {/* Datos bancarios */}
                 <div className="bank-info">
                   <h4>Datos para transferencia</h4>
                   <div className="bank-details">
