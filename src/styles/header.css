@@ -140,13 +140,19 @@
   transition: all 0.3s ease;
 }
 
+.cart-button svg {
+  width: 20px !important;
+  height: 20px !important;
+  display: block;
+}
+
 .cart-button:hover {
   background: #DBEAFE;
 }
 
 .cart-icon {
-  width: 20px;
-  height: 20px;
+  width: 20px !important;
+  height: 20px !important;
   display: block;
   flex-shrink: 0;
 }
