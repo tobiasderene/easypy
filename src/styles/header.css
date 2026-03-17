@@ -147,6 +147,8 @@
 .cart-icon {
   width: 20px;
   height: 20px;
+  display: block;
+  flex-shrink: 0;
 }
 
 .cart-badge {
