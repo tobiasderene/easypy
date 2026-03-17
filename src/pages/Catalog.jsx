@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getProducts, getProductImages } from '../services/api';
+import { useCart } from '../App';
 import '../styles/catalog.css';
 
 const mockProducts = [
@@ -128,6 +129,7 @@ const mockProducts = [
 
 const Catalog = () => {
   const navigate = useNavigate();
+  const { addToCart } = useCart();
   const [activeFilter, setActiveFilter] = useState('all');
   const [wishlist, setWishlist] = useState([]);
   const [realProducts, setRealProducts] = useState([]);
@@ -144,25 +146,25 @@ const Catalog = () => {
                 const images = await getProductImages(p.product_id);
                 const primary = images.find(img => img.is_primary) || images[0];
                 return {
-                  id: p.product_id,
-                  name: p.product_name,
-                  provider: `Proveedor #${p.user_id}`,
-                  price: parseFloat(p.product_base_cost),
-                  image: primary?.image_url || null,
-                  badge: null,
+                  id:       p.product_id,
+                  name:     p.product_name,
+                  provider: p.user_id,
+                  price:    parseFloat(p.product_base_cost),
+                  image:    primary?.image_url || null,
+                  badge:    null,
                   category: p.product_category,
-                  isMock: false,
+                  isMock:   false,
                 };
               } catch {
                 return {
-                  id: p.product_id,
-                  name: p.product_name,
-                  provider: `Proveedor #${p.user_id}`,
-                  price: parseFloat(p.product_base_cost),
-                  image: null,
-                  badge: null,
+                  id:       p.product_id,
+                  name:     p.product_name,
+                  provider: p.user_id,
+                  price:    parseFloat(p.product_base_cost),
+                  image:    null,
+                  badge:    null,
                   category: p.product_category,
-                  isMock: false,
+                  isMock:   false,
                 };
               }
             })
@@ -170,7 +172,6 @@ const Catalog = () => {
           setRealProducts(withImages);
         }
       } catch {
-        // silencioso — el mockup igual se muestra
       } finally {
         setLoadingReal(false);
       }
@@ -179,10 +180,9 @@ const Catalog = () => {
   }, []);
 
   const allProducts = [...mockProducts, ...realProducts];
-
-  const categories = ['all', ...new Set(allProducts.map(p => p.category))];
-  const filters = categories.map(cat => ({
-    id: cat,
+  const categories  = ['all', ...new Set(allProducts.map(p => p.category))];
+  const filters     = categories.map(cat => ({
+    id:    cat,
     label: cat === 'all' ? 'Todos' : cat.charAt(0).toUpperCase() + cat.slice(1)
   }));
 
@@ -198,7 +198,10 @@ const Catalog = () => {
 
   const handleAddToCart = (product, e) => {
     e.stopPropagation();
-    console.log('Añadido al carrito:', product);
+    addToCart(
+      { id: product.id, name: product.name, price: product.price, image: product.image },
+      product.provider
+    );
   };
 
   const handleProductClick = (product) => {
@@ -242,7 +245,7 @@ const Catalog = () => {
           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
           </svg>
-          {product.provider}
+          {product.isMock ? product.provider : `Proveedor #${product.provider}`}
         </div>
         <div className="product-footer">
           <div>
@@ -253,7 +256,7 @@ const Catalog = () => {
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
-            <span>Comprar ya</span>
+            <span>Añadir al carrito</span>
           </button>
         </div>
       </div>
@@ -278,12 +281,10 @@ const Catalog = () => {
         ))}
       </div>
 
-      {/* Productos mock */}
       <div className="catalog-grid">
         {filteredMock.map(product => <ProductCard key={product.id} product={product} />)}
       </div>
 
-      {/* Productos reales */}
       {!loadingReal && filteredReal.length > 0 && (
         <>
           <div style={{ margin: '32px 0 16px', maxWidth: '1400px', marginLeft: 'auto', marginRight: 'auto' }}>

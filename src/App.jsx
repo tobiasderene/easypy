@@ -18,7 +18,7 @@ import AddProductForm from './pages/AddProductForm';
 import AdminPage from './pages/Adminpage';
 import PendingApproval from './pages/PendingApproval';
 import OrderForm from './components/OrderForm';
-import { getMe, exchangeSession } from './services/api';
+import { getMe, exchangeSession, getWalletByUser } from './services/api';
 import './App.css';
 
 // ─── Context de usuario ───────────────────────────────
@@ -33,15 +33,24 @@ export const useCart = () => useContext(CartContext);
 const Layout = ({ children }) => {
   const { user } = useUser();
   const { cart, isCartOpen, setIsCartOpen, updateQuantity, removeFromCart, clearCart } = useCart();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen]   = useState(false);
+  const [walletBalance, setWalletBalance]   = useState(null);
 
   const cartItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+  useEffect(() => {
+    if (user?.user_id) {
+      getWalletByUser(user.user_id)
+        .then(w => setWalletBalance(w ? parseFloat(w.balance_available) : 0))
+        .catch(() => setWalletBalance(0));
+    }
+  }, [user]);
 
   return (
     <>
       <Header
         userName={user?.user_nickname || 'Usuario'}
-        userBalance="1,250.00"
+        userBalance={walletBalance}
         userAvatar={null}
         onMenuClick={() => setIsSidebarOpen(true)}
         onSearch={(v) => console.log('Searching:', v)}
@@ -117,7 +126,7 @@ const Dashboard = () => {
         .then((u) => {
           if (u) {
             setUser(u);
-            if (u.user_status === 'pending') return; // PendingApproval se muestra via ProtectedRoute
+            if (u.user_status === 'pending') return;
             if (u.user_role === 'provider') navigate('/provider-orders', { replace: true });
             else if (u.user_role === 'admin') navigate('/admin', { replace: true });
             else navigate('/catalogo', { replace: true });
