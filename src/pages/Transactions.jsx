@@ -219,8 +219,6 @@ const Transactions = () => {
                       <div className="provider-info">
                         <Package size={14} />
                         <span>Proveedor #{order.supplier_id}</span>
-                        <span className="dot-sep">·</span>
-                        <span>{itemCount} unidad{itemCount !== 1 ? 'es' : ''}</span>
                       </div>
                     </div>
 
