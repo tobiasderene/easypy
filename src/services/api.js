@@ -88,6 +88,7 @@ export const getUsers = (params = {}) => {
   const query = new URLSearchParams(params).toString();
   return api(`/users${query ? `?${query}` : ''}`);
 };
+export const getProviders = () => api("/users/providers");
 
 export const updateUser = (userId, data) =>
   api(`/users/${userId}`, { method: "PATCH", body: JSON.stringify(data) });
