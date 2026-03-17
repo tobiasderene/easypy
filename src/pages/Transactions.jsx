@@ -39,11 +39,11 @@ const statusConfig = {
 
 const Transactions = () => {
   const { user } = useUser();
-  const [orders, setOrders]           = useState([]);
-  const [loading, setLoading]         = useState(true);
-  const [searchTerm, setSearchTerm]   = useState('');
+  const [orders, setOrders]             = useState([]);
+  const [loading, setLoading]           = useState(true);
+  const [searchTerm, setSearchTerm]     = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [dateFilter, setDateFilter]   = useState('all');
+  const [dateFilter, setDateFilter]     = useState('all');
 
   useEffect(() => {
     if (!user?.user_id) return;
@@ -56,8 +56,12 @@ const Transactions = () => {
   const formatCurrency = (amount) =>
     new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', minimumFractionDigits: 0 }).format(amount || 0);
 
-  const formatDate = (dateString) =>
-    new Intl.DateTimeFormat('es-PY', { year: 'numeric', month: 'short', day: 'numeric' }).format(new Date(dateString));
+  const formatDate = (dateString) => {
+    if (!dateString) return '—';
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '—';
+    return new Intl.DateTimeFormat('es-PY', { year: 'numeric', month: 'short', day: 'numeric' }).format(date);
+  };
 
   const filteredOrders = orders.filter(order => {
     const itemNames = order.items?.map(i => `producto #${i.product_id}`).join(' ') || '';
@@ -69,10 +73,15 @@ const Transactions = () => {
 
     let matchesDate = true;
     if (dateFilter !== 'all') {
-      const daysDiff = Math.floor((new Date() - new Date(order.created_at)) / (1000 * 60 * 60 * 24));
-      if (dateFilter === 'today') matchesDate = daysDiff === 0;
-      if (dateFilter === 'week')  matchesDate = daysDiff <= 7;
-      if (dateFilter === 'month') matchesDate = daysDiff <= 30;
+      const orderDate = order.created_at ? new Date(order.created_at) : null;
+      if (!orderDate || isNaN(orderDate.getTime())) {
+        matchesDate = true;
+      } else {
+        const daysDiff = Math.floor((new Date() - orderDate) / (1000 * 60 * 60 * 24));
+        if (dateFilter === 'today') matchesDate = daysDiff === 0;
+        if (dateFilter === 'week')  matchesDate = daysDiff <= 7;
+        if (dateFilter === 'month') matchesDate = daysDiff <= 30;
+      }
     }
 
     return matchesSearch && matchesStatus && matchesDate;
@@ -191,14 +200,12 @@ const Transactions = () => {
                 <div key={order.order_id} className="transaction-card">
                   <div className="transaction-main">
 
-                    {/* Left: ID + items */}
                     <div className="transaction-info">
                       <div className="transaction-id">
                         <span className="id-label">Orden</span>
                         <span className="id-value">#{order.order_id}</span>
                       </div>
 
-                      {/* Items — horizontal, truncated */}
                       <div className="order-items-row">
                         {order.items?.map((item, idx) => (
                           <span key={item.item_id} className="order-item-chip">
@@ -217,7 +224,6 @@ const Transactions = () => {
                       </div>
                     </div>
 
-                    {/* Right: details */}
                     <div className="transaction-details">
                       <div className="detail-item">
                         <span className="detail-label">Fecha</span>
