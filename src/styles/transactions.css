@@ -264,7 +264,6 @@
   text-overflow: ellipsis;
 }
 
-/* Provider — fixed, no wrap */
 .provider-info {
   display: flex;
   align-items: center;
@@ -274,6 +273,9 @@
   font-weight: 500;
   white-space: nowrap;
   flex-shrink: 0;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .provider-info svg { color: var(--gray-300); flex-shrink: 0; }
