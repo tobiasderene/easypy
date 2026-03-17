@@ -43,9 +43,6 @@ const CartSidebar = ({ isOpen, onClose, cart, updateQuantity, removeFromCart, cl
           <div className="cart-title">
             <ShoppingCart size={24} />
             <h2>Carrito de Compras</h2>
-            {totalItems > 0 && (
-              <span className="cart-badge">{totalItems}</span>
-            )}
           </div>
           <button className="cart-close" onClick={onClose} aria-label="Cerrar carrito">
             <X size={20} />
@@ -65,15 +62,6 @@ const CartSidebar = ({ isOpen, onClose, cart, updateQuantity, removeFromCart, cl
             <>
               {/* Provider Info */}
               <div className="cart-provider-info">
-                <div className="provider-badge">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="1" y="3" width="15" height="13"></rect>
-                    <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
-                    <circle cx="5.5" cy="18.5" r="2.5"></circle>
-                    <circle cx="18.5" cy="18.5" r="2.5"></circle>
-                  </svg>
-                  <span>Proveedor: {providerName}</span>
-                </div>
                 <button 
                   className="btn-clear-cart"
                   onClick={clearCart}
