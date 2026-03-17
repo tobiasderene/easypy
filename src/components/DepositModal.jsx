@@ -149,12 +149,6 @@ const DepositModal = ({ isOpen, onClose }) => {
         {/* Step 2 */}
         {step === 2 && (
           <>
-            <div className="modal-header">
-              <div className="modal-icon success"><CheckCircle size={24} /></div>
-              <h2>¡Solicitud Enviada!</h2>
-              <button className="modal-close" onClick={handleClose}><X size={20} /></button>
-            </div>
-
             <div className="modal-body">
               <div className="success-content">
                 <div className="success-icon-large"><CheckCircle size={64} /></div>
