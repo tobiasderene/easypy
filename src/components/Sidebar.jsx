@@ -38,7 +38,7 @@ const Sidebar = ({ isOpen, onClose }) => {
       <aside className={`sidebar ${isOpen ? 'active' : ''}`}>
         <div className="sidebar-header">
           <div className="logo">
-            <img src="/full-logo.png" alt="EasyDrop" className="logo-img" />
+            <img src="/full-logo.png" alt="EasyDrop" className="sidebar-logo-img" />
           </div>
           <button className="sidebar-close" onClick={onClose} aria-label="Cerrar menú">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">

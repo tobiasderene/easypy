@@ -72,7 +72,8 @@
   letter-spacing: -0.5px;
 }
 
-.logo-img {
+/* sidebar.css */
+.sidebar-logo-img {
   height: 50px;
   width: auto;
   object-fit: contain;
