@@ -38,7 +38,7 @@
   flex-direction: column;
   line-height: 1;
   font-weight: 700;
-  color: #056EB7;
+  background: white;
   min-width: 80px;
   justify-content: center;
 }
