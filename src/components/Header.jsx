@@ -45,8 +45,7 @@ const Header = ({
       </button>
 
       <div className="logo">
-        <span className="logo-easy">EASY</span>
-        <span className="logo-drop">DROP</span>
+        <img src="/full-logo.png" alt="EasyDrop" className="logo-img" />
       </div>
 
       <div className="search-container">

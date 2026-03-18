@@ -57,6 +57,12 @@
   letter-spacing: 0.5px;
 }
 
+.logo-img {
+  height: 36px;
+  width: auto;
+  object-fit: contain;
+}
+
 .search-container {
   flex: 1;
   max-width: 600px;
