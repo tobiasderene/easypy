@@ -21,31 +21,26 @@ const COUNTRY_CODES = [
 const PLATFORM_COMMISSION = 0.05;
 
 const OrderForm = () => {
-  const navigate  = useNavigate();
-  const location  = useLocation();
-  const { user }  = useUser();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { user } = useUser();
 
   const { initialItem, supplierId } = location.state || {};
 
-  // ── Items de la orden ────────────────────────────────
-  const [items, setItems] = useState(initialItem ? [initialItem] : []);
-
-  // ── Productos del mismo proveedor ────────────────────
+  const [items, setItems]                       = useState(initialItem ? [initialItem] : []);
+  const [salePrices, setSalePrices]             = useState(initialItem ? { [initialItem.id]: '' } : {});
   const [supplierProducts, setSupplierProducts] = useState([]);
   const [loadingProducts, setLoadingProducts]   = useState(false);
   const [showProductList, setShowProductList]   = useState(false);
-
-  // ── Logística ────────────────────────────────────────
   const [logistics, setLogistics]               = useState([]);
   const [loadingLogistics, setLoadingLogistics] = useState(true);
-
-  const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState('');
+  const [submitting, setSubmitting]             = useState(false);
+  const [submitError, setSubmitError]           = useState('');
 
   const [form, setForm] = useState({
     firstName: '', lastName: '', countryCode: '+595', phone: '',
     city: '', region: '', address: '', addressComplement: '',
-    email: '', salePrice: '', collectionType: 'con_recaudo', logisticsId: null,
+    email: '', collectionType: 'con_recaudo', logisticsId: null,
   });
   const [errors, setErrors] = useState({});
 
@@ -56,7 +51,6 @@ const OrderForm = () => {
       .finally(() => setLoadingLogistics(false));
   }, []);
 
-  // Cargar productos del proveedor
   useEffect(() => {
     if (!supplierId) return;
     setLoadingProducts(true);
@@ -80,14 +74,14 @@ const OrderForm = () => {
       .finally(() => setLoadingProducts(false));
   }, [supplierId]);
 
-  // ── Cálculos ─────────────────────────────────────────
+  // ── Cálculos por item ────────────────────────────────
+  const getSalePrice  = (id) => parseFloat(salePrices[id]) || 0;
+  const itemRecaudo   = (item) => getSalePrice(item.id) * item.quantity;
   const totalSupplierCost = items.reduce((s, i) => s + i.price * i.quantity, 0);
-  const salePrice         = parseFloat(form.salePrice) || 0;
-  const totalItems        = items.reduce((s, i) => s + i.quantity, 0);
-  const totalRecaudo      = salePrice * totalItems;
+  const totalRecaudo      = items.reduce((s, i) => s + itemRecaudo(i), 0);
   const commission        = totalRecaudo * PLATFORM_COMMISSION;
   const logisticCost      = 0;
-  const earnings          = totalRecaudo - logisticCost - commission;
+  const earnings          = totalRecaudo - totalSupplierCost - logisticCost - commission;
 
   const formatCurrency = (v) =>
     new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', minimumFractionDigits: 0 }).format(v);
@@ -97,13 +91,18 @@ const OrderForm = () => {
     if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }));
   };
 
-  // Agregar producto a la orden
+  const setSalePrice = (id, value) => {
+    setSalePrices(prev => ({ ...prev, [id]: value }));
+    if (errors[`price_${id}`]) setErrors(prev => ({ ...prev, [`price_${id}`]: '' }));
+  };
+
   const addItem = (product) => {
     setItems(prev => {
       const existing = prev.find(i => i.id === product.id);
       if (existing) return prev.map(i => i.id === product.id ? { ...i, quantity: i.quantity + 1 } : i);
       return [...prev, { ...product, quantity: 1 }];
     });
+    setSalePrices(prev => ({ ...prev, [product.id]: prev[product.id] || '' }));
     setShowProductList(false);
   };
 
@@ -114,19 +113,23 @@ const OrderForm = () => {
 
   const removeItem = (id) => {
     setItems(prev => prev.filter(i => i.id !== id));
+    setSalePrices(prev => { const n = { ...prev }; delete n[id]; return n; });
   };
 
   const validate = () => {
     const e = {};
-    if (!form.firstName.trim())       e.firstName   = 'Requerido';
-    if (!form.lastName.trim())        e.lastName    = 'Requerido';
-    if (!form.phone.trim())           e.phone       = 'Requerido';
-    if (!form.city.trim())            e.city        = 'Requerido';
-    if (!form.region.trim())          e.region      = 'Requerido';
-    if (!form.address.trim())         e.address     = 'Requerido';
-    if (!form.email.trim())           e.email       = 'Requerido';
-    if (!salePrice || salePrice <= 0) e.salePrice   = 'Precio inválido';
-    if (!form.logisticsId)            e.logisticsId = 'Seleccioná una transportadora';
+    if (!form.firstName.trim()) e.firstName   = 'Requerido';
+    if (!form.lastName.trim())  e.lastName    = 'Requerido';
+    if (!form.phone.trim())     e.phone       = 'Requerido';
+    if (!form.city.trim())      e.city        = 'Requerido';
+    if (!form.region.trim())    e.region      = 'Requerido';
+    if (!form.address.trim())   e.address     = 'Requerido';
+    if (!form.email.trim())     e.email       = 'Requerido';
+    if (!form.logisticsId)      e.logisticsId = 'Seleccioná una transportadora';
+    items.forEach(item => {
+      if (!getSalePrice(item.id) || getSalePrice(item.id) <= 0)
+        e[`price_${item.id}`] = 'Requerido';
+    });
     return e;
   };
 
@@ -261,25 +264,45 @@ const OrderForm = () => {
             {/* Productos de la orden */}
             <div className="of-field">
               <label className="of-label">Productos</label>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {items.map(item => (
-                  <div key={item.id} className="of-product-box" style={{ alignItems: 'center' }}>
-                    {item.image && <img src={item.image} alt={item.name} className="of-product-img" />}
-                    <div className="of-product-info" style={{ flex: 1 }}>
-                      <span className="of-product-name">{item.name}</span>
-                      <span className="of-product-cost">{formatCurrency(item.price)}</span>
+                  <div key={item.id} style={{ border: '1.5px solid #e5e7eb', borderRadius: '9px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {/* Producto info + qty + remove */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      {item.image && <img src={item.image} alt={item.name} className="of-product-img" style={{ flexShrink: 0 }} />}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <span className="of-product-name">{item.name}</span>
+                        <span className="of-product-cost" style={{ display: 'block' }}>Costo: {formatCurrency(item.price)}</span>
+                      </div>
+                      <div className="of-qty" style={{ flexShrink: 0 }}>
+                        <button className="of-qty-btn" onClick={() => updateQty(item.id, item.quantity - 1)} disabled={item.quantity <= 1}>−</button>
+                        <span className="of-qty-val">{item.quantity}</span>
+                        <button className="of-qty-btn" onClick={() => updateQty(item.id, item.quantity + 1)}>+</button>
+                      </div>
+                      <button onClick={() => removeItem(item.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px', fontSize: '16px', flexShrink: 0 }}>×</button>
                     </div>
-                    <div className="of-qty" style={{ flexShrink: 0 }}>
-                      <button className="of-qty-btn" onClick={() => updateQty(item.id, item.quantity - 1)} disabled={item.quantity <= 1}>−</button>
-                      <span className="of-qty-val">{item.quantity}</span>
-                      <button className="of-qty-btn" onClick={() => updateQty(item.id, item.quantity + 1)}>+</button>
+                    {/* Precio de venta por item */}
+                    <div>
+                      <label className="of-label" style={{ marginBottom: '4px', display: 'block' }}>
+                        Precio de venta <span className="of-req">*</span>
+                      </label>
+                      <div className={`of-price-wrap ${errors[`price_${item.id}`] ? 'err' : ''}`}>
+                        <span className="of-price-sign">Gs.</span>
+                        <input
+                          className="of-price-input"
+                          type="number"
+                          placeholder="0"
+                          min="0"
+                          value={salePrices[item.id] || ''}
+                          onChange={e => setSalePrice(item.id, e.target.value)}
+                        />
+                      </div>
+                      {errors[`price_${item.id}`] && <span className="of-err">{errors[`price_${item.id}`]}</span>}
                     </div>
-                    <button onClick={() => removeItem(item.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px', marginLeft: '4px', fontSize: '16px' }}>×</button>
                   </div>
                 ))}
               </div>
 
-              {/* Botón agregar más productos */}
               <button
                 className="of-toggle-btn"
                 style={{ marginTop: '8px', width: '100%', justifyContent: 'center' }}
@@ -291,19 +314,18 @@ const OrderForm = () => {
                 Agregar otro producto
               </button>
 
-              {/* Lista de productos del proveedor */}
               {showProductList && (
                 <div style={{ border: '1.5px solid #e5e7eb', borderRadius: '9px', overflow: 'hidden', marginTop: '6px' }}>
                   {loadingProducts ? (
                     <p style={{ padding: '12px', fontSize: '13px', color: '#9ca3af', textAlign: 'center' }}>Cargando productos...</p>
-                  ) : supplierProducts.length === 0 ? (
+                  ) : supplierProducts.filter(p => !items.find(i => i.id === p.id)).length === 0 ? (
                     <p style={{ padding: '12px', fontSize: '13px', color: '#9ca3af', textAlign: 'center' }}>No hay otros productos disponibles</p>
                   ) : (
                     supplierProducts.filter(p => !items.find(i => i.id === p.id)).map(p => (
                       <div
                         key={p.id}
                         onClick={() => addItem(p)}
-                        style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', cursor: 'pointer', borderBottom: '1px solid #f3f4f6', transition: 'background 0.2s' }}
+                        style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', cursor: 'pointer', borderBottom: '1px solid #f3f4f6', background: 'white', transition: 'background 0.2s' }}
                         onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'}
                         onMouseLeave={e => e.currentTarget.style.background = 'white'}
                       >
@@ -324,16 +346,6 @@ const OrderForm = () => {
                   )}
                 </div>
               )}
-            </div>
-
-            {/* Precio de venta */}
-            <div className="of-field">
-              <label className="of-label">Precio de Venta por unidad <span className="of-req">*</span></label>
-              <div className={`of-price-wrap ${errors.salePrice ? 'err' : ''}`}>
-                <span className="of-price-sign">Gs.</span>
-                <input className="of-price-input" type="number" placeholder="0" min="0" value={form.salePrice} onChange={e => handleChange('salePrice', e.target.value)} />
-              </div>
-              {errors.salePrice && <span className="of-err">{errors.salePrice}</span>}
             </div>
           </div>
 
@@ -401,16 +413,19 @@ const OrderForm = () => {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              {items.map(item => (
-                <div key={item.id} className="of-summary-product">
-                  {item.image && <img src={item.image} alt={item.name} className="of-sum-img" />}
-                  <div className="of-sum-product-info">
-                    <span className="of-sum-name">{item.name}</span>
-                    <span className="of-sum-qty">x{item.quantity} unidad{item.quantity > 1 ? 'es' : ''}</span>
+              {items.map(item => {
+                const sp = getSalePrice(item.id);
+                return (
+                  <div key={item.id} className="of-summary-product">
+                    {item.image && <img src={item.image} alt={item.name} className="of-sum-img" />}
+                    <div className="of-sum-product-info">
+                      <span className="of-sum-name">{item.name}</span>
+                      <span className="of-sum-qty">x{item.quantity} · Costo: {formatCurrency(item.price)}</span>
+                    </div>
+                    <span className="of-sum-price">{sp > 0 ? formatCurrency(sp * item.quantity) : '—'}</span>
                   </div>
-                  <span className="of-sum-price">{salePrice > 0 ? formatCurrency(salePrice * item.quantity) : '—'}</span>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <div className="of-breakdown">
