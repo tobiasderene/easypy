@@ -112,7 +112,7 @@
 .product-image-container {
   position: relative;
   width: 100%;
-  aspect-ratio: 1;
+  aspect-ratio: 3/2;
   overflow: hidden;
   background: var(--gray-100);
 }
