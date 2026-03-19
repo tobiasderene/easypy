@@ -3,7 +3,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useSearc
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import ProviderSidebar from './components/ProviderSidebar';
-import CartSidebar from './components/CartSidebar';
 import LoginMinimal from './pages/Login';
 import Signup from './pages/SignUp';
 import Catalog from './pages/Catalog';
@@ -25,18 +24,11 @@ import './App.css';
 export const UserContext = createContext(null);
 export const useUser = () => useContext(UserContext);
 
-// ─── Context de carrito ───────────────────────────────
-export const CartContext = createContext(null);
-export const useCart = () => useContext(CartContext);
-
 // ─── Layout ───────────────────────────────────────────
 const Layout = ({ children }) => {
   const { user } = useUser();
-  const { cart, isCartOpen, setIsCartOpen, updateQuantity, removeFromCart, clearCart } = useCart();
-  const [isSidebarOpen, setIsSidebarOpen]   = useState(false);
-  const [walletBalance, setWalletBalance]   = useState(null);
-
-  const cartItemsCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [walletBalance, setWalletBalance] = useState(null);
 
   useEffect(() => {
     if (user?.user_id) {
@@ -55,8 +47,6 @@ const Layout = ({ children }) => {
         onMenuClick={() => setIsSidebarOpen(true)}
         onSearch={(v) => console.log('Searching:', v)}
         onUserClick={() => console.log('User profile clicked')}
-        onCartClick={() => setIsCartOpen(true)}
-        cartItemsCount={cartItemsCount}
       />
 
       {user?.user_role === 'provider' ? (
@@ -64,15 +54,6 @@ const Layout = ({ children }) => {
       ) : (
         <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
       )}
-
-      <CartSidebar
-        isOpen={isCartOpen}
-        onClose={() => setIsCartOpen(false)}
-        cart={cart}
-        updateQuantity={updateQuantity}
-        removeFromCart={removeFromCart}
-        clearCart={clearCart}
-      />
 
       <main>{children}</main>
     </>
@@ -105,21 +86,20 @@ const PublicRoute = ({ children }) => {
   if (user) {
     if (user.user_status === 'pending') return <PendingApproval />;
     if (user.user_role === 'provider') return <Navigate to="/provider-orders" replace />;
-    if (user.user_role === 'admin') return <Navigate to="/admin" replace />;
+    if (user.user_role === 'admin')    return <Navigate to="/admin" replace />;
     return <Navigate to="/catalogo" replace />;
   }
   return children;
 };
 
-// ─── Dashboard: maneja redirect de Google ─────────────
+// ─── Dashboard ────────────────────────────────────────
 const Dashboard = () => {
   const { user, setUser } = useUser();
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
+  const [searchParams]    = useSearchParams();
+  const navigate          = useNavigate();
 
   useEffect(() => {
     const token = searchParams.get('token');
-
     if (token) {
       exchangeSession(token)
         .then(() => getMe())
@@ -148,69 +128,9 @@ const Dashboard = () => {
   return <div className="loading-screen">Cargando...</div>;
 };
 
-// ─── Cart Provider ────────────────────────────────────
-const CartProvider = ({ children }) => {
-  const [cart, setCart] = useState([]);
-  const [isCartOpen, setIsCartOpen] = useState(false);
-
-  const addToCart = (product, provider) => {
-    if (cart.length > 0 && cart[0].provider !== provider) {
-      alert(`Solo puedes agregar productos del mismo proveedor.\nTu carrito actual contiene productos de: ${cart[0].provider}`);
-      return false;
-    }
-
-    setCart(prevCart => {
-      const existingItem = prevCart.find(item => item.id === product.id);
-      if (existingItem) {
-        return prevCart.map(item =>
-          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
-        );
-      } else {
-        return [...prevCart, { ...product, provider, quantity: 1 }];
-      }
-    });
-
-    alert('Producto agregado al carrito');
-    return true;
-  };
-
-  const updateQuantity = (productId, newQuantity) => {
-    if (newQuantity < 1) return;
-    setCart(prevCart =>
-      prevCart.map(item =>
-        item.id === productId ? { ...item, quantity: newQuantity } : item
-      )
-    );
-  };
-
-  const removeFromCart = (productId) => {
-    setCart(prevCart => prevCart.filter(item => item.id !== productId));
-  };
-
-  const clearCart = () => {
-    if (window.confirm('¿Estás seguro de vaciar el carrito?')) {
-      setCart([]);
-    }
-  };
-
-  return (
-    <CartContext.Provider value={{
-      cart,
-      isCartOpen,
-      setIsCartOpen,
-      addToCart,
-      updateQuantity,
-      removeFromCart,
-      clearCart
-    }}>
-      {children}
-    </CartContext.Provider>
-  );
-};
-
 // ─── App ──────────────────────────────────────────────
 function App() {
-  const [user, setUser] = useState(null);
+  const [user, setUser]   = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -222,42 +142,40 @@ function App() {
 
   return (
     <UserContext.Provider value={{ user, setUser, loading }}>
-      <CartProvider>
-        <Router>
-          <Routes>
-            <Route path="/login"     element={<PublicRoute><LoginMinimal /></PublicRoute>} />
-            <Route path="/signup"    element={<PublicRoute><Signup /></PublicRoute>} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/order/new" element={<ProtectedRoute withLayout={false}><OrderForm /></ProtectedRoute>} />
+      <Router>
+        <Routes>
+          <Route path="/login"     element={<PublicRoute><LoginMinimal /></PublicRoute>} />
+          <Route path="/signup"    element={<PublicRoute><Signup /></PublicRoute>} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/order/new" element={<ProtectedRoute withLayout={false}><OrderForm /></ProtectedRoute>} />
 
-            {/* Rutas seller */}
-            <Route path="/catalogo"      element={<ProtectedRoute><Catalog /></ProtectedRoute>} />
-            <Route path="/proveedor"     element={<ProtectedRoute><Proveedor /></ProtectedRoute>} />
-            <Route path="/proveedores"   element={<ProtectedRoute><Providers /></ProtectedRoute>} />
-            <Route path="/transacciones" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
-            <Route path="/wallet"        element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
-            <Route path="/product/:id"   element={<ProtectedRoute><ProductPage /></ProtectedRoute>} />
+          {/* Rutas seller */}
+          <Route path="/catalogo"      element={<ProtectedRoute><Catalog /></ProtectedRoute>} />
+          <Route path="/proveedor"     element={<ProtectedRoute><Proveedor /></ProtectedRoute>} />
+          <Route path="/proveedores"   element={<ProtectedRoute><Providers /></ProtectedRoute>} />
+          <Route path="/transacciones" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
+          <Route path="/wallet"        element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
+          <Route path="/product/:id"   element={<ProtectedRoute><ProductPage /></ProtectedRoute>} />
 
-            {/* Rutas provider */}
-            <Route path="/provider-orders"  element={<ProtectedRoute><ProviderOrders /></ProtectedRoute>} />
-            <Route path="/provider-catalog" element={<ProtectedRoute><ProviderCatalog /></ProtectedRoute>} />
-            <Route path="/add-product"      element={<ProtectedRoute><AddProductForm /></ProtectedRoute>} />
+          {/* Rutas provider */}
+          <Route path="/provider-orders"  element={<ProtectedRoute><ProviderOrders /></ProtectedRoute>} />
+          <Route path="/provider-catalog" element={<ProtectedRoute><ProviderCatalog /></ProtectedRoute>} />
+          <Route path="/add-product"      element={<ProtectedRoute><AddProductForm /></ProtectedRoute>} />
 
-            {/* Rutas admin */}
-            <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
+          {/* Rutas admin */}
+          <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
 
-            <Route path="/" element={<Dashboard />} />
-            <Route path="*" element={
-              <ProtectedRoute>
-                <div style={{ padding: '40px', textAlign: 'center' }}>
-                  <h1>404 - Página no encontrada</h1>
-                  <p>La página que buscas no existe.</p>
-                </div>
-              </ProtectedRoute>
-            } />
-          </Routes>
-        </Router>
-      </CartProvider>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="*" element={
+            <ProtectedRoute>
+              <div style={{ padding: '40px', textAlign: 'center' }}>
+                <h1>404 - Página no encontrada</h1>
+                <p>La página que buscas no existe.</p>
+              </div>
+            </ProtectedRoute>
+          } />
+        </Routes>
+      </Router>
     </UserContext.Provider>
   );
 }

@@ -1,7 +1,6 @@
 // Header.jsx
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingCart } from 'lucide-react';
 import '../styles/header.css';
 
 const Header = ({
@@ -11,8 +10,6 @@ const Header = ({
   onMenuClick,
   onSearch,
   onUserClick,
-  onCartClick,
-  cartItemsCount = 0
 }) => {
   const navigate = useNavigate();
 
@@ -66,13 +63,6 @@ const Header = ({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
           </svg>
           <span>{formatBalance(userBalance)}</span>
-        </button>
-
-        <button className="cart-button" onClick={onCartClick} aria-label="Abrir carrito">
-          <ShoppingCart size={20} strokeWidth={2} />
-          {cartItemsCount > 0 && (
-            <span className="cart-badge">{cartItemsCount}</span>
-          )}
         </button>
 
         <button className="user-button" onClick={onUserClick}>
