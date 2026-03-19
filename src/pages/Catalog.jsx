@@ -113,10 +113,6 @@ const Catalog = () => {
 
   return (
     <div className="catalog-container">
-      <div className="catalog-header">
-        <h1 className="catalog-title">Catálogo de Productos</h1>
-      </div>
-
       <div className="catalog-filters">
         {filters.map(filter => (
           <button key={filter.id} className={`filter-button ${activeFilter === filter.id ? 'active' : ''}`} onClick={() => setActiveFilter(filter.id)}>
