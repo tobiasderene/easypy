@@ -22,9 +22,10 @@ const Sidebar = ({ isOpen, onClose }) => {
   };
 
   const handleLogout = async () => {
-    setUser(null);      // primero limpiar el estado
-    await logout();     // después llamar al backend
-    navigate('/login');
+    localStorage.removeItem('auth_token'); // limpiar primero
+    setUser(null);
+    try { await logout(); } catch {}       // intentar limpiar cookie
+    navigate('/login', { replace: true }); // replace para no volver atrás
     onClose();
   };
 
