@@ -22,8 +22,8 @@ const Sidebar = ({ isOpen, onClose }) => {
   };
 
   const handleLogout = async () => {
-    await logout();
-    setUser(null);
+    setUser(null);      // primero limpiar el estado
+    await logout();     // después llamar al backend
     navigate('/login');
     onClose();
   };
