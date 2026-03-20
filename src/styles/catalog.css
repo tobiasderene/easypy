@@ -195,7 +195,7 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  height: calc(13px * 1.4 * 2); /* exactamente 2 líneas */
+  height: calc(13px * 1.8 * 2); /* exactamente 2 líneas */
   min-height: unset;
 }
 
