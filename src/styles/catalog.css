@@ -195,7 +195,8 @@
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  min-height: 36px;
+  height: calc(13px * 1.4 * 2); /* exactamente 2 líneas */
+  min-height: unset;
 }
 
 .product-provider {
