@@ -6,8 +6,8 @@ import '../styles/catalog.css';
 const Catalog = () => {
   const navigate = useNavigate();
   const [activeFilters, setActiveFilters] = useState(['all']);
-  const [products, setProducts]         = useState([]);
-  const [loading, setLoading]           = useState(true);
+  const [products, setProducts]           = useState([]);
+  const [loading, setLoading]             = useState(true);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -19,9 +19,27 @@ const Catalog = () => {
               try {
                 const images  = await getProductImages(p.product_id);
                 const primary = images.find(img => img.is_primary) || images[0];
-                return { id: p.product_id, name: p.product_name, provider: p.user_id, price: parseFloat(p.product_base_cost), image: primary?.image_url || null, badge: null, category: p.product_category };
+                return {
+                  id:              p.product_id,
+                  name:            p.product_name,
+                  provider:        p.user_id,
+                  price:           parseFloat(p.product_base_cost),
+                  suggestedPrice:  p.suggested_price ? parseFloat(p.suggested_price) : null,
+                  image:           primary?.image_url || null,
+                  badge:           null,
+                  category:        p.product_category,
+                };
               } catch {
-                return { id: p.product_id, name: p.product_name, provider: p.user_id, price: parseFloat(p.product_base_cost), image: null, badge: null, category: p.product_category };
+                return {
+                  id:              p.product_id,
+                  name:            p.product_name,
+                  provider:        p.user_id,
+                  price:           parseFloat(p.product_base_cost),
+                  suggestedPrice:  p.suggested_price ? parseFloat(p.suggested_price) : null,
+                  image:           null,
+                  badge:           null,
+                  category:        p.product_category,
+                };
               }
             })
           );
@@ -39,10 +57,7 @@ const Catalog = () => {
   const filters    = categories.map(cat => ({ id: cat, label: cat === 'all' ? 'Todos' : cat.charAt(0).toUpperCase() + cat.slice(1) }));
 
   const toggleFilter = (catId) => {
-    if (catId === 'all') {
-      setActiveFilters(['all']);
-      return;
-    }
+    if (catId === 'all') { setActiveFilters(['all']); return; }
     setActiveFilters(prev => {
       const withoutAll = prev.filter(f => f !== 'all');
       if (withoutAll.includes(catId)) {
@@ -53,9 +68,7 @@ const Catalog = () => {
     });
   };
 
-  const filtered = activeFilters.includes('all')
-    ? products
-    : products.filter(p => activeFilters.includes(p.category));
+  const filtered = activeFilters.includes('all') ? products : products.filter(p => activeFilters.includes(p.category));
 
   const formatPrice = (price) =>
     new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', minimumFractionDigits: 0 }).format(price);
@@ -95,8 +108,13 @@ const Catalog = () => {
         </div>
         <div className="product-footer">
           <div>
-            <div className="product-price-label">Precio</div>
+            <div className="product-price-label">Precio de compra</div>
             <div className="product-price">{formatPrice(product.price)}</div>
+            {product.suggestedPrice && (
+              <div className="product-suggested-price">
+                Venta sugerida: {formatPrice(product.suggestedPrice)}
+              </div>
+            )}
           </div>
           <button className="add-to-cart-btn" onClick={(e) => handleBuy(product, e)}>
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="13" height="13">

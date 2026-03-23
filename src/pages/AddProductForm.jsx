@@ -10,17 +10,12 @@ const AddProductForm = () => {
   const { user } = useUser();
 
   const [formData, setFormData] = useState({
-    name: '',
-    sku: '',
-    description: '',
-    category: '',
-    price: '',
-    discount: '0',
-    images: []
+    name: '', sku: '', description: '', category: '',
+    price: '', discount: '0', suggested_price: '', images: []
   });
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors]             = useState({});
   const [previewImages, setPreviewImages] = useState([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSubmitting, setIsSubmitting]   = useState(false);
 
   const categories = [
     { value: '', label: 'Selecciona una categoría' },
@@ -77,20 +72,19 @@ const AddProductForm = () => {
 
     setIsSubmitting(true);
     try {
-      // 1. Crear el producto
       const product = await createProduct({
-        product_name: formData.name,
-        product_sku: formData.sku,
+        product_name:        formData.name,
+        product_sku:         formData.sku,
         product_description: formData.description,
-        product_category: formData.category,
-        product_base_cost: parseFloat(formData.price),
-        product_discount: parseFloat(formData.discount) || 0,
-        product_status: 'active',
-        user_id: user.user_id,
-        created_at: new Date().toISOString(),
+        product_category:    formData.category,
+        product_base_cost:   parseFloat(formData.price),
+        product_discount:    parseFloat(formData.discount) || 0,
+        product_status:      'active',
+        user_id:             user.user_id,
+        suggested_price:     formData.suggested_price ? parseFloat(formData.suggested_price) : null,
+        created_at:          new Date().toISOString(),
       });
 
-      // 2. Subir imágenes
       await Promise.all(
         formData.images.map((file, index) =>
           uploadProductImage(product.product_id, file, index === 0, index)
@@ -222,6 +216,16 @@ const AddProductForm = () => {
                   <input type="number" id="discount" name="discount" value={formData.discount} onChange={handleInputChange}
                     placeholder="0" min="0" max="100" step="1" />
                 </div>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="suggested_price">Precio Sugerido de Venta (Gs.)</label>
+                <div className="input-with-icon">
+                  <span className="currency-symbol">Gs.</span>
+                  <input type="number" id="suggested_price" name="suggested_price" value={formData.suggested_price}
+                    onChange={handleInputChange} placeholder="0" min="0" step="100" />
+                </div>
+                <span className="char-count" style={{ marginTop: '4px' }}>Opcional — visible para los vendedores en el catálogo</span>
               </div>
 
             </div>
