@@ -16,6 +16,7 @@ import ProviderCatalog from './pages/ProviderCatalog';
 import AddProductForm from './pages/AddProductForm';
 import AdminPage from './pages/Adminpage';
 import PendingApproval from './pages/PendingApproval';
+import Settings from './pages/Settings';
 import OrderForm from './components/OrderForm';
 import { getMe, exchangeSession, getWalletByUser } from './services/api';
 import './App.css';
@@ -130,7 +131,7 @@ const Dashboard = () => {
 
 // ─── App ──────────────────────────────────────────────
 function App() {
-  const [user, setUser]   = useState(null);
+  const [user, setUser]       = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -150,12 +151,13 @@ function App() {
           <Route path="/order/new" element={<ProtectedRoute withLayout={false}><OrderForm /></ProtectedRoute>} />
 
           {/* Rutas seller */}
-          <Route path="/catalogo"      element={<ProtectedRoute><Catalog /></ProtectedRoute>} />
-          <Route path="/proveedor"     element={<ProtectedRoute><Proveedor /></ProtectedRoute>} />
-          <Route path="/proveedores"   element={<ProtectedRoute><Providers /></ProtectedRoute>} />
-          <Route path="/transacciones" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
-          <Route path="/wallet"        element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
-          <Route path="/product/:id"   element={<ProtectedRoute><ProductPage /></ProtectedRoute>} />
+          <Route path="/catalogo"       element={<ProtectedRoute><Catalog /></ProtectedRoute>} />
+          <Route path="/proveedor"      element={<ProtectedRoute><Proveedor /></ProtectedRoute>} />
+          <Route path="/proveedores"    element={<ProtectedRoute><Providers /></ProtectedRoute>} />
+          <Route path="/transacciones"  element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
+          <Route path="/wallet"         element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
+          <Route path="/product/:id"    element={<ProtectedRoute><ProductPage /></ProtectedRoute>} />
+          <Route path="/configuracion"  element={<ProtectedRoute><Settings /></ProtectedRoute>} />
 
           {/* Rutas provider */}
           <Route path="/provider-orders"  element={<ProtectedRoute><ProviderOrders /></ProtectedRoute>} />
