@@ -1,58 +1,61 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { registerLocal, registerGoogle, getMe } from '../services/api';
+import { registerLocal, registerGoogle, getMe, updateUser, uploadProfileImage } from '../services/api';
 import { useUser } from '../App';
 import '../styles/signup.css';
 
 const Signup = () => {
-  const [userType, setUserType] = useState('seller');
-  const [showPassword, setShowPassword] = useState(false);
+  const [userType, setUserType]                   = useState('seller');
+  const [showPassword, setShowPassword]           = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [isGoogleSignup, setIsGoogleSignup] = useState(false);
-  const [googleId, setGoogleId] = useState('');
+  const [error, setError]                         = useState('');
+  const [isLoading, setIsLoading]                 = useState(false);
+  const [isGoogleSignup, setIsGoogleSignup]       = useState(false);
+  const [googleId, setGoogleId]                   = useState('');
+  const [avatarFile, setAvatarFile]               = useState(null);
+  const [avatarPreview, setAvatarPreview]         = useState(null);
+  const fileInputRef                              = useRef(null);
 
-  const navigate = useNavigate();
+  const navigate      = useNavigate();
   const [searchParams] = useSearchParams();
-  const { setUser } = useUser();
+  const { setUser }   = useUser();
 
   const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    phone: '',
-    password: '',
-    confirmPassword: '',
-    terms: false
+    fullName: '', email: '', phone: '',
+    password: '', confirmPassword: '', terms: false,
+    country: '', city: '', address: '',
   });
 
   useEffect(() => {
-    const name = searchParams.get('name');
-    const email = searchParams.get('email');
+    const name     = searchParams.get('name');
+    const email    = searchParams.get('email');
     const provider = searchParams.get('provider');
-    const gid = searchParams.get('google_id');
+    const gid      = searchParams.get('google_id');
 
     if (provider === 'google' && email) {
       setIsGoogleSignup(true);
       setGoogleId(gid || '');
-      setFormData(prev => ({
-        ...prev,
-        fullName: name || '',
-        email: email || '',
-      }));
+      setFormData(prev => ({ ...prev, fullName: name || '', email: email || '' }));
     }
   }, []);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
+    setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
     if (error) setError('');
   };
 
-  const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const handleAvatarChange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setAvatarFile(file);
+    setAvatarPreview(URL.createObjectURL(file));
+  };
+
+  const getInitials = (name) =>
+    (name || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+
+  const validateEmail    = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const validatePassword = (password) => password.length >= 8;
 
   const handleSubmit = async (e) => {
@@ -67,18 +70,44 @@ const Signup = () => {
       if (formData.password !== formData.confirmPassword) return setError('Las contraseñas no coinciden');
     }
 
+    if (userType === 'provider') {
+      if (!formData.country.trim()) return setError('Por favor ingresa tu país');
+      if (!formData.city.trim())    return setError('Por favor ingresa tu ciudad');
+    }
+
     if (!formData.terms) return setError('Debes aceptar los términos y condiciones');
 
     setIsLoading(true);
     try {
+      // 1. Crear cuenta
       if (isGoogleSignup) {
         await registerGoogle(formData.email, formData.fullName, userType, googleId);
       } else {
         await registerLocal(formData.email, formData.fullName, formData.password, userType);
       }
+
+      // 2. Obtener usuario creado
       const user = await getMe();
+
+      // 3. Actualizar ubicación si es proveedor
+      if (userType === 'provider' && (formData.country || formData.city || formData.address)) {
+        await updateUser(user.user_id, {
+          country: formData.country || undefined,
+          city:    formData.city    || undefined,
+          address: formData.address || undefined,
+        });
+      }
+
+      // 4. Subir foto de perfil si se seleccionó
+      if (avatarFile) {
+        await uploadProfileImage(avatarFile);
+      }
+
+      // 5. Redirigir
       setUser(user);
+      if (user.user_status === 'pending') return; // PendingApproval lo maneja App.jsx
       navigate(user.user_role === 'provider' ? '/provider-orders' : '/catalogo');
+
     } catch (err) {
       setError(err.message || 'Error al crear la cuenta. Por favor intenta de nuevo.');
     } finally {
@@ -105,12 +134,7 @@ const Signup = () => {
           </div>
 
           {isGoogleSignup && (
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: '8px',
-              background: '#f0fdf4', border: '1px solid #bbf7d0',
-              borderRadius: '8px', padding: '10px 14px', marginBottom: '16px',
-              fontSize: '13px', color: '#15803d'
-            }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '10px 14px', marginBottom: '16px', fontSize: '13px', color: '#15803d' }}>
               <svg width="16" height="16" viewBox="0 0 48 48">
                 <path fill="#4CAF50" d="M24 44c5.2 0 9.9-1.8 13.5-4.7l-6.2-5.2C29.4 35.6 26.8 36 24 36c-5.2 0-9.6-2.9-11.3-7.1l-6.6 4.8C9.6 39.6 16.3 44 24 44z"/>
                 <path fill="#1976D2" d="M43.6 20H24v8h11.3c-.9 2.4-2.5 4.4-4.6 5.8l6.2 5.2C40.7 35.7 44 30.3 44 24c0-1.3-.1-2.7-.4-4z"/>
@@ -125,6 +149,7 @@ const Signup = () => {
 
           <form className="signup-form" onSubmit={handleSubmit}>
 
+            {/* Tipo de cuenta */}
             <div className="form-group">
               <label>Tipo de cuenta</label>
               <div className="user-type-selector">
@@ -153,6 +178,33 @@ const Signup = () => {
               </div>
             </div>
 
+            {/* Foto de perfil */}
+            <div className="form-group">
+              <label>Foto de perfil <span style={{ color: '#9ca3af', fontWeight: 400 }}>(opcional)</span></label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  style={{ width: '64px', height: '64px', borderRadius: '50%', overflow: 'hidden', background: 'linear-gradient(135deg, #aacdfe, #056EB7)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, border: '2px solid #e5e7eb', position: 'relative' }}
+                >
+                  {avatarPreview ? (
+                    <img src={avatarPreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <span style={{ fontSize: '20px', fontWeight: '800', color: 'white' }}>
+                      {getInitials(formData.fullName) || '?'}
+                    </span>
+                  )}
+                </div>
+                <div>
+                  <button type="button" onClick={() => fileInputRef.current?.click()} style={{ padding: '7px 16px', background: '#056EB7', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>
+                    {avatarPreview ? 'Cambiar foto' : 'Subir foto'}
+                  </button>
+                  <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>JPG, PNG o WEBP</p>
+                </div>
+                <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleAvatarChange} style={{ display: 'none' }} />
+              </div>
+            </div>
+
+            {/* Datos básicos */}
             <div className="form-group">
               <label htmlFor="fullName">Nombre completo</label>
               <div className="input-wrapper">
@@ -163,12 +215,7 @@ const Signup = () => {
             <div className="form-group">
               <label htmlFor="email">Correo electrónico</label>
               <div className="input-wrapper">
-                <input
-                  type="email" id="email" name="email" placeholder="correo@ejemplo.com"
-                  value={formData.email} onChange={handleInputChange} required
-                  disabled={isGoogleSignup}
-                  style={isGoogleSignup ? { background: '#f9fafb', color: '#6b7280', cursor: 'not-allowed' } : {}}
-                />
+                <input type="email" id="email" name="email" placeholder="correo@ejemplo.com" value={formData.email} onChange={handleInputChange} required disabled={isGoogleSignup} style={isGoogleSignup ? { background: '#f9fafb', color: '#6b7280', cursor: 'not-allowed' } : {}} />
               </div>
             </div>
 
@@ -205,6 +252,36 @@ const Signup = () => {
                   </div>
                 </div>
               </>
+            )}
+
+            {/* Ubicación — solo para proveedores */}
+            {userType === 'provider' && (
+              <div style={{ border: '1.5px solid #e5e7eb', borderRadius: '10px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', background: '#f9fafb' }}>
+                <p style={{ fontSize: '13px', fontWeight: '700', color: '#1f2937', margin: 0 }}>
+                  Ubicación del proveedor
+                </p>
+
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label htmlFor="country">País <span style={{ color: '#ef4444' }}>*</span></label>
+                  <div className="input-wrapper">
+                    <input type="text" id="country" name="country" placeholder="Ej: Paraguay" value={formData.country} onChange={handleInputChange} />
+                  </div>
+                </div>
+
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label htmlFor="city">Ciudad <span style={{ color: '#ef4444' }}>*</span></label>
+                  <div className="input-wrapper">
+                    <input type="text" id="city" name="city" placeholder="Ej: Asunción" value={formData.city} onChange={handleInputChange} />
+                  </div>
+                </div>
+
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label htmlFor="address">Dirección <span style={{ color: '#9ca3af', fontWeight: 400 }}>(opcional)</span></label>
+                  <div className="input-wrapper">
+                    <input type="text" id="address" name="address" placeholder="Ej: Av. España 1234" value={formData.address} onChange={handleInputChange} />
+                  </div>
+                </div>
+              </div>
             )}
 
             <div className="form-group">
