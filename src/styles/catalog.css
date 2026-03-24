@@ -24,7 +24,7 @@
 
 .catalog-container {
   min-height: 100vh;
-  padding: 20px;
+  padding: 10px;
   background: var(--gray-50);
 }
 
@@ -32,7 +32,7 @@
 .catalog-header {
   text-align: center;
   margin-bottom: 24px;
-  padding-top: 12px;
+  padding-top: 10px;
 }
 
 .catalog-title {
@@ -112,7 +112,7 @@
 .product-image-container {
   position: relative;
   width: 100%;
-  aspect-ratio: 3/2;
+  aspect-ratio: 4/3;
   overflow: hidden;
   background: var(--gray-100);
 }
