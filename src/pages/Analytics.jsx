@@ -258,7 +258,7 @@ const Analytics = () => {
                 </div>
                 <div className="an-wallet-item">
                   <span className="an-wallet-label">Total histórico</span>
-                  <span className="an-wallet-value blue">{formatCurrency((wallet?.balance_available || 0) + (wallet?.balance_pending || 0))}</span>
+                  <span className="an-wallet-value blue">{formatCurrency((parseFloat(wallet?.balance_available) || 0) + (parseFloat(wallet?.balance_pending) || 0))}</span>
                 </div>
               </div>
 
