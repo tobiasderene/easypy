@@ -14,9 +14,10 @@ import Wallet from './pages/Wallet';
 import ProviderOrders from './pages/ProviderOrders';
 import ProviderCatalog from './pages/ProviderCatalog';
 import AddProductForm from './pages/AddProductForm';
-import AdminPage from './pages/Adminpage';
+import AdminPage from './pages/AdminPage';
 import PendingApproval from './pages/PendingApproval';
 import Settings from './pages/Settings';
+import AuthCallback from './pages/AuthCallback';
 import OrderForm from './components/OrderForm';
 import { getMe, exchangeSession, getWalletByUser } from './services/api';
 import './App.css';
@@ -91,18 +92,18 @@ const PublicRoute = ({ children }) => {
   return children;
 };
 
-// ─── Dashboard ────────────────────────────────────────
+// ─── Dashboard (legacy — por si queda algún redirect viejo) ──────────────────
 const Dashboard = () => {
   const { user, setUser } = useUser();
   const [searchParams]    = useSearchParams();
   const navigate          = useNavigate();
-  const handled           = useRef(false); // guard contra doble ejecución (StrictMode)
+  const handled           = useRef(false);
 
   const redirectUser = (u) => {
     if (u.user_status === 'pending') return;
-    if (u.user_role === 'provider') navigate('/provider-orders', { replace: true });
-    else if (u.user_role === 'admin') navigate('/admin', { replace: true });
-    else navigate('/catalogo', { replace: true });
+    if (u.user_role === 'provider')      navigate('/provider-orders', { replace: true });
+    else if (u.user_role === 'admin')    navigate('/admin', { replace: true });
+    else                                 navigate('/catalogo', { replace: true });
   };
 
   useEffect(() => {
@@ -110,15 +111,10 @@ const Dashboard = () => {
     handled.current = true;
 
     const token = searchParams.get('token');
-
     if (token) {
-      // Viene de Google OAuth — canjear temp token
       exchangeSession(token)
         .then(() => getMe())
-        .then((u) => {
-          if (u) { setUser(u); redirectUser(u); }
-          else navigate('/login', { replace: true });
-        })
+        .then((u) => { if (u) { setUser(u); redirectUser(u); } else navigate('/login', { replace: true }); })
         .catch(() => navigate('/login', { replace: true }));
     } else if (user) {
       redirectUser(user);
@@ -146,19 +142,20 @@ function App() {
     <UserContext.Provider value={{ user, setUser, loading }}>
       <Router>
         <Routes>
-          <Route path="/login"     element={<PublicRoute><LoginMinimal /></PublicRoute>} />
-          <Route path="/signup"    element={<PublicRoute><Signup /></PublicRoute>} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/order/new" element={<ProtectedRoute withLayout={false}><OrderForm /></ProtectedRoute>} />
+          <Route path="/login"          element={<PublicRoute><LoginMinimal /></PublicRoute>} />
+          <Route path="/signup"         element={<PublicRoute><Signup /></PublicRoute>} />
+          <Route path="/dashboard"      element={<Dashboard />} />
+          <Route path="/auth/callback"  element={<AuthCallback />} />
+          <Route path="/order/new"      element={<ProtectedRoute withLayout={false}><OrderForm /></ProtectedRoute>} />
 
           {/* Rutas seller */}
-          <Route path="/catalogo"      element={<ProtectedRoute><Catalog /></ProtectedRoute>} />
-          <Route path="/proveedor"     element={<ProtectedRoute><Proveedor /></ProtectedRoute>} />
-          <Route path="/proveedores"   element={<ProtectedRoute><Providers /></ProtectedRoute>} />
-          <Route path="/transacciones" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
-          <Route path="/wallet"        element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
-          <Route path="/product/:id"   element={<ProtectedRoute><ProductPage /></ProtectedRoute>} />
-          <Route path="/configuracion" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+          <Route path="/catalogo"       element={<ProtectedRoute><Catalog /></ProtectedRoute>} />
+          <Route path="/proveedor"      element={<ProtectedRoute><Proveedor /></ProtectedRoute>} />
+          <Route path="/proveedores"    element={<ProtectedRoute><Providers /></ProtectedRoute>} />
+          <Route path="/transacciones"  element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
+          <Route path="/wallet"         element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
+          <Route path="/product/:id"    element={<ProtectedRoute><ProductPage /></ProtectedRoute>} />
+          <Route path="/configuracion"  element={<ProtectedRoute><Settings /></ProtectedRoute>} />
 
           {/* Rutas provider */}
           <Route path="/provider-orders"  element={<ProtectedRoute><ProviderOrders /></ProtectedRoute>} />
