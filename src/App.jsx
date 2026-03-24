@@ -17,6 +17,7 @@ import AddProductForm from './pages/AddProductForm';
 import AdminPage from './pages/AdminPage';
 import PendingApproval from './pages/PendingApproval';
 import Settings from './pages/Settings';
+import Analytics from './pages/Analytics';
 import AuthCallback from './pages/AuthCallback';
 import OrderForm from './components/OrderForm';
 import { getMe, exchangeSession, getWalletByUser } from './services/api';
@@ -92,7 +93,7 @@ const PublicRoute = ({ children }) => {
   return children;
 };
 
-// ─── Dashboard (legacy — por si queda algún redirect viejo) ──────────────────
+// ─── Dashboard ────────────────────────────────────────
 const Dashboard = () => {
   const { user, setUser } = useUser();
   const [searchParams]    = useSearchParams();
@@ -101,9 +102,9 @@ const Dashboard = () => {
 
   const redirectUser = (u) => {
     if (u.user_status === 'pending') return;
-    if (u.user_role === 'provider')      navigate('/provider-orders', { replace: true });
-    else if (u.user_role === 'admin')    navigate('/admin', { replace: true });
-    else                                 navigate('/catalogo', { replace: true });
+    if (u.user_role === 'provider')   navigate('/provider-orders', { replace: true });
+    else if (u.user_role === 'admin') navigate('/admin', { replace: true });
+    else                              navigate('/catalogo', { replace: true });
   };
 
   useEffect(() => {
@@ -142,20 +143,21 @@ function App() {
     <UserContext.Provider value={{ user, setUser, loading }}>
       <Router>
         <Routes>
-          <Route path="/login"          element={<PublicRoute><LoginMinimal /></PublicRoute>} />
-          <Route path="/signup"         element={<PublicRoute><Signup /></PublicRoute>} />
-          <Route path="/dashboard"      element={<Dashboard />} />
-          <Route path="/auth/callback"  element={<AuthCallback />} />
-          <Route path="/order/new"      element={<ProtectedRoute withLayout={false}><OrderForm /></ProtectedRoute>} />
+          <Route path="/login"         element={<PublicRoute><LoginMinimal /></PublicRoute>} />
+          <Route path="/signup"        element={<PublicRoute><Signup /></PublicRoute>} />
+          <Route path="/dashboard"     element={<Dashboard />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/order/new"     element={<ProtectedRoute withLayout={false}><OrderForm /></ProtectedRoute>} />
 
           {/* Rutas seller */}
-          <Route path="/catalogo"       element={<ProtectedRoute><Catalog /></ProtectedRoute>} />
-          <Route path="/proveedor"      element={<ProtectedRoute><Proveedor /></ProtectedRoute>} />
-          <Route path="/proveedores"    element={<ProtectedRoute><Providers /></ProtectedRoute>} />
-          <Route path="/transacciones"  element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
-          <Route path="/wallet"         element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
-          <Route path="/product/:id"    element={<ProtectedRoute><ProductPage /></ProtectedRoute>} />
-          <Route path="/configuracion"  element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+          <Route path="/catalogo"      element={<ProtectedRoute><Catalog /></ProtectedRoute>} />
+          <Route path="/proveedor"     element={<ProtectedRoute><Proveedor /></ProtectedRoute>} />
+          <Route path="/proveedores"   element={<ProtectedRoute><Providers /></ProtectedRoute>} />
+          <Route path="/transacciones" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
+          <Route path="/wallet"        element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
+          <Route path="/product/:id"   element={<ProtectedRoute><ProductPage /></ProtectedRoute>} />
+          <Route path="/configuracion" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+          <Route path="/analytics"     element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
 
           {/* Rutas provider */}
           <Route path="/provider-orders"  element={<ProtectedRoute><ProviderOrders /></ProtectedRoute>} />
