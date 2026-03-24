@@ -37,7 +37,6 @@ const AuthCallback = () => {
       .then(res => res.json())
       .then(async (data) => {
         if (data.action === 'signup') {
-          // Usuario nuevo — mandarlo a signup con los datos de Google
           const params = new URLSearchParams({
             name:      data.name,
             email:     data.email,
@@ -48,7 +47,6 @@ const AuthCallback = () => {
           return;
         }
 
-        // Login exitoso — guardar token y redirigir
         if (data.token) {
           localStorage.setItem('auth_token', data.token);
         }
@@ -56,10 +54,10 @@ const AuthCallback = () => {
         const user = await getMe();
         if (user) {
           setUser(user);
-          if (user.user_status === 'pending') { navigate('/', { replace: true }); return; }
-          if (user.user_role === 'provider')  navigate('/provider-orders', { replace: true });
-          else if (user.user_role === 'admin') navigate('/admin', { replace: true });
-          else navigate('/catalogo', { replace: true });
+          if (user.user_status === 'pending')  { navigate('/', { replace: true }); return; }
+          if (user.user_role === 'provider')    navigate('/provider-orders', { replace: true });
+          else if (user.user_role === 'admin')  navigate('/admin', { replace: true });
+          else                                  navigate('/catalogo', { replace: true });
         } else {
           navigate('/login', { replace: true });
         }
@@ -70,12 +68,19 @@ const AuthCallback = () => {
   return (
     <div style={{
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      minHeight: '100vh', background: '#f9fafb', flexDirection: 'column', gap: '16px'
+      minHeight: '100vh', background: '#f9fafb',
     }}>
-      <div style={{ fontSize: '24px', fontWeight: '800', color: '#056EB7', letterSpacing: '-0.5px' }}>
-        EASYPY
-      </div>
-      <p style={{ fontSize: '14px', color: '#6b7280', margin: 0 }}>Iniciando sesión...</p>
+      <style>{`
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
+      <div style={{
+        width: '40px', height: '40px', borderRadius: '50%',
+        border: '3px solid #e5e7eb',
+        borderTopColor: '#056EB7',
+        animation: 'spin 0.75s linear infinite',
+      }} />
     </div>
   );
 };
