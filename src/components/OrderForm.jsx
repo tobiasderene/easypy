@@ -378,8 +378,8 @@ const OrderForm = () => {
               {geoError && <span className="of-err">{geoError}</span>}
               {coords && (
                 <span style={{ fontSize: '11px', color: '#6b7280' }}>
-                  📍 {coords.lat.toFixed(6)}, {coords.lng.toFixed(6)}
-                  {' '}— podés arrastrar el pin para ajustar
+                  📍 
+                  {' '}Arrastrar el pin para ajustar
                 </span>
               )}
             </div>
