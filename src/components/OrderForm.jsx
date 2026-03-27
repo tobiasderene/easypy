@@ -1,5 +1,5 @@
 // OrderForm.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useUser } from '../App';
 import { getLogistics, createOrder, getProducts, getProductImages } from '../services/api';
@@ -19,6 +19,21 @@ const COUNTRY_CODES = [
 ];
 
 const PLATFORM_COMMISSION = 0.05;
+const MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY;
+
+// ── Carga el script de Google Maps una sola vez ──────────────────────────────
+let mapsScriptLoaded = false;
+function loadMapsScript() {
+  if (mapsScriptLoaded || window.google?.maps) { mapsScriptLoaded = true; return Promise.resolve(); }
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${MAPS_API_KEY}`;
+    script.async = true;
+    script.onload  = () => { mapsScriptLoaded = true; resolve(); };
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+}
 
 const OrderForm = () => {
   const navigate = useNavigate();
@@ -36,6 +51,15 @@ const OrderForm = () => {
   const [loadingLogistics, setLoadingLogistics] = useState(true);
   const [submitting, setSubmitting]             = useState(false);
   const [submitError, setSubmitError]           = useState('');
+
+  // ── Mapa ──────────────────────────────────────────
+  const [showMap, setShowMap]       = useState(false);
+  const [geocoding, setGeocoding]   = useState(false);
+  const [geoError, setGeoError]     = useState('');
+  const [coords, setCoords]         = useState(null); // { lat, lng }
+  const mapRef                      = useRef(null);
+  const mapInstanceRef              = useRef(null);
+  const markerRef                   = useRef(null);
 
   const [form, setForm] = useState({
     firstName: '', lastName: '', countryCode: '+595', phone: '',
@@ -74,9 +98,82 @@ const OrderForm = () => {
       .finally(() => setLoadingProducts(false));
   }, [supplierId]);
 
-  // ── Cálculos por item ────────────────────────────────
-  const getSalePrice  = (id) => parseFloat(salePrices[id]) || 0;
-  const itemRecaudo   = (item) => getSalePrice(item.id) * item.quantity;
+  // ── Inicializar mapa cuando se muestra ────────────────────────────────────
+  const initMap = useCallback((lat, lng) => {
+    if (!mapRef.current || !window.google?.maps) return;
+
+    const center = { lat, lng };
+
+    if (!mapInstanceRef.current) {
+      mapInstanceRef.current = new window.google.maps.Map(mapRef.current, {
+        center,
+        zoom: 16,
+        mapTypeControl: false,
+        streetViewControl: false,
+        fullscreenControl: false,
+      });
+    } else {
+      mapInstanceRef.current.setCenter(center);
+    }
+
+    if (markerRef.current) {
+      markerRef.current.setPosition(center);
+    } else {
+      markerRef.current = new window.google.maps.Marker({
+        position: center,
+        map: mapInstanceRef.current,
+        draggable: true,
+        title: 'Arrastrá para ajustar la ubicación',
+      });
+
+      // Actualizar coordenadas cuando se mueve el pin
+      markerRef.current.addListener('dragend', (e) => {
+        const newLat = e.latLng.lat();
+        const newLng = e.latLng.lng();
+        setCoords({ lat: newLat, lng: newLng });
+      });
+    }
+
+    setCoords({ lat, lng });
+  }, []);
+
+  // ── Geocodificar dirección y mostrar mapa ─────────────────────────────────
+  const handleVerMap = async () => {
+    const address = [form.address, form.city, form.region, 'Paraguay']
+      .filter(Boolean).join(', ');
+
+    if (!form.address.trim() || !form.city.trim()) {
+      setGeoError('Ingresá al menos la dirección y la ciudad para ver el mapa');
+      return;
+    }
+
+    setGeoError('');
+    setGeocoding(true);
+
+    try {
+      await loadMapsScript();
+
+      const geocoder = new window.google.maps.Geocoder();
+      geocoder.geocode({ address }, (results, status) => {
+        if (status === 'OK' && results[0]) {
+          const loc = results[0].geometry.location;
+          setShowMap(true);
+          // Esperar al siguiente render para que mapRef esté disponible
+          setTimeout(() => initMap(loc.lat(), loc.lng()), 100);
+        } else {
+          setGeoError('No se encontró la dirección. Intentá con más detalle.');
+        }
+        setGeocoding(false);
+      });
+    } catch {
+      setGeoError('Error al cargar el mapa. Verificá tu conexión.');
+      setGeocoding(false);
+    }
+  };
+
+  // ── Cálculos ─────────────────────────────────────────────────────────────
+  const getSalePrice      = (id) => parseFloat(salePrices[id]) || 0;
+  const itemRecaudo       = (item) => getSalePrice(item.id) * item.quantity;
   const totalSupplierCost = items.reduce((s, i) => s + i.price * i.quantity, 0);
   const totalRecaudo      = items.reduce((s, i) => s + itemRecaudo(i), 0);
   const commission        = totalRecaudo * PLATFORM_COMMISSION;
@@ -89,6 +186,13 @@ const OrderForm = () => {
   const handleChange = (field, value) => {
     setForm(prev => ({ ...prev, [field]: value }));
     if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }));
+    // Si cambia la dirección, resetear mapa
+    if (['address', 'city', 'region'].includes(field)) {
+      setShowMap(false);
+      setCoords(null);
+      mapInstanceRef.current = null;
+      markerRef.current      = null;
+    }
   };
 
   const setSalePrice = (id, value) => {
@@ -156,6 +260,8 @@ const OrderForm = () => {
       recipient_region:             form.region,
       recipient_address:            form.address,
       recipient_address_complement: form.addressComplement || null,
+      recipient_lat:                coords?.lat ?? null,
+      recipient_lng:                coords?.lng ?? null,
       items: items.map(item => ({
         product_id:    item.id,
         quantity:      item.quantity,
@@ -255,6 +361,43 @@ const OrderForm = () => {
               </div>
             </div>
 
+            {/* ── Botón Ver en mapa ── */}
+            <div className="of-field">
+              <button
+                className="of-map-btn"
+                onClick={handleVerMap}
+                disabled={geocoding}
+                type="button"
+              >
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                {geocoding ? 'Buscando...' : showMap ? 'Actualizar mapa' : 'Ver en mapa'}
+              </button>
+              {geoError && <span className="of-err">{geoError}</span>}
+              {coords && (
+                <span style={{ fontSize: '11px', color: '#6b7280' }}>
+                  📍 {coords.lat.toFixed(6)}, {coords.lng.toFixed(6)}
+                  {' '}— podés arrastrar el pin para ajustar
+                </span>
+              )}
+            </div>
+
+            {/* ── Mini mapa ── */}
+            {showMap && (
+              <div
+                ref={mapRef}
+                style={{
+                  width: '100%',
+                  height: '220px',
+                  borderRadius: '10px',
+                  border: '1.5px solid #e5e7eb',
+                  overflow: 'hidden',
+                }}
+              />
+            )}
+
             <div className="of-field">
               <label className="of-label">Correo Electrónico <span className="of-req">*</span></label>
               <input className={`of-input ${errors.email ? 'err' : ''}`} type="email" placeholder="cliente@email.com" value={form.email} onChange={e => handleChange('email', e.target.value)} />
@@ -267,7 +410,6 @@ const OrderForm = () => {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {items.map(item => (
                   <div key={item.id} style={{ border: '1.5px solid #e5e7eb', borderRadius: '9px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {/* Producto info + qty + remove */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       {item.image && <img src={item.image} alt={item.name} className="of-product-img" style={{ flexShrink: 0 }} />}
                       <div style={{ flex: 1, minWidth: 0 }}>
@@ -281,21 +423,13 @@ const OrderForm = () => {
                       </div>
                       <button onClick={() => removeItem(item.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px', fontSize: '16px', flexShrink: 0 }}>×</button>
                     </div>
-                    {/* Precio de venta por item */}
                     <div>
                       <label className="of-label" style={{ marginBottom: '4px', display: 'block' }}>
                         Precio de venta <span className="of-req">*</span>
                       </label>
                       <div className={`of-price-wrap ${errors[`price_${item.id}`] ? 'err' : ''}`}>
                         <span className="of-price-sign">Gs.</span>
-                        <input
-                          className="of-price-input"
-                          type="number"
-                          placeholder="0"
-                          min="0"
-                          value={salePrices[item.id] || ''}
-                          onChange={e => setSalePrice(item.id, e.target.value)}
-                        />
+                        <input className="of-price-input" type="number" placeholder="0" min="0" value={salePrices[item.id] || ''} onChange={e => setSalePrice(item.id, e.target.value)} />
                       </div>
                       {errors[`price_${item.id}`] && <span className="of-err">{errors[`price_${item.id}`]}</span>}
                     </div>
@@ -303,14 +437,8 @@ const OrderForm = () => {
                 ))}
               </div>
 
-              <button
-                className="of-toggle-btn"
-                style={{ marginTop: '8px', width: '100%', justifyContent: 'center' }}
-                onClick={() => setShowProductList(!showProductList)}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 5v14M5 12h14" />
-                </svg>
+              <button className="of-toggle-btn" style={{ marginTop: '8px', width: '100%', justifyContent: 'center' }} onClick={() => setShowProductList(!showProductList)}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14" /></svg>
                 Agregar otro producto
               </button>
 
@@ -322,25 +450,17 @@ const OrderForm = () => {
                     <p style={{ padding: '12px', fontSize: '13px', color: '#9ca3af', textAlign: 'center' }}>No hay otros productos disponibles</p>
                   ) : (
                     supplierProducts.filter(p => !items.find(i => i.id === p.id)).map(p => (
-                      <div
-                        key={p.id}
-                        onClick={() => addItem(p)}
+                      <div key={p.id} onClick={() => addItem(p)}
                         style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', cursor: 'pointer', borderBottom: '1px solid #f3f4f6', background: 'white', transition: 'background 0.2s' }}
                         onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'}
                         onMouseLeave={e => e.currentTarget.style.background = 'white'}
                       >
-                        {p.image ? (
-                          <img src={p.image} alt={p.name} style={{ width: '36px', height: '36px', borderRadius: '6px', objectFit: 'cover', flexShrink: 0 }} />
-                        ) : (
-                          <div style={{ width: '36px', height: '36px', borderRadius: '6px', background: '#f3f4f6', flexShrink: 0 }} />
-                        )}
+                        {p.image ? <img src={p.image} alt={p.name} style={{ width: '36px', height: '36px', borderRadius: '6px', objectFit: 'cover', flexShrink: 0 }} /> : <div style={{ width: '36px', height: '36px', borderRadius: '6px', background: '#f3f4f6', flexShrink: 0 }} />}
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <p style={{ fontSize: '13px', fontWeight: '600', color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</p>
                           <p style={{ fontSize: '12px', color: '#056EB7', fontWeight: '600' }}>{formatCurrency(p.price)}</p>
                         </div>
-                        <svg width="16" height="16" fill="none" stroke="#056EB7" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v14M5 12h14" />
-                        </svg>
+                        <svg width="16" height="16" fill="none" stroke="#056EB7" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v14M5 12h14" /></svg>
                       </div>
                     ))
                   )}
@@ -385,13 +505,9 @@ const OrderForm = () => {
                 <div className="of-logistics">
                   {logistics.map(l => (
                     <button key={l.logistic_id} className={`of-logistics-opt ${form.logisticsId === l.logistic_id ? 'active' : ''}`} onClick={() => handleChange('logisticsId', l.logistic_id)}>
-                      <div className="of-logistics-info">
-                        <span className="of-logistics-name">{l.name}</span>
-                      </div>
+                      <div className="of-logistics-info"><span className="of-logistics-name">{l.name}</span></div>
                       <div className={`of-check ${form.logisticsId === l.logistic_id ? 'active' : ''}`}>
-                        {form.logisticsId === l.logistic_id && (
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5"><path d="M20 6L9 17l-5-5" /></svg>
-                        )}
+                        {form.logisticsId === l.logistic_id && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5"><path d="M20 6L9 17l-5-5" /></svg>}
                       </div>
                     </button>
                   ))}
@@ -449,6 +565,14 @@ const OrderForm = () => {
                 </span>
               </div>
             </div>
+
+            {/* Coordenadas en el resumen */}
+            {coords && (
+              <div style={{ background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: '8px', padding: '10px 12px', fontSize: '12px', color: '#16a34a' }}>
+                <strong>Ubicación confirmada</strong><br />
+                Lat: {coords.lat.toFixed(6)} · Lng: {coords.lng.toFixed(6)}
+              </div>
+            )}
 
             {submitError && (
               <div style={{ background: '#fef2f2', border: '1.5px solid #fecaca', borderRadius: '8px', padding: '10px 12px', fontSize: '13px', color: '#dc2626' }}>

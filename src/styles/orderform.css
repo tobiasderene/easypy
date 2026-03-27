@@ -564,6 +564,33 @@
   box-shadow: 0 6px 16px rgba(5,110,183,.4);
 }
 
+/* ─── Map Button ────────────────────────────── */
+.of-map-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1.5px solid #056EB7;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #056EB7;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: fit-content;
+}
+
+.of-map-btn:hover:not(:disabled) {
+  background: #dbeafe;
+  transform: translateY(-1px);
+}
+
+.of-map-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* ─── Responsive ────────────────────────────── */
 @media (max-width: 1024px) {
   .of-columns {
