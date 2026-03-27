@@ -60,6 +60,7 @@ const OrderForm = () => {
   const mapRef                      = useRef(null);
   const mapInstanceRef              = useRef(null);
   const markerRef                   = useRef(null);
+  const mapWrapRef                  = useRef(null);
 
   const [form, setForm] = useState({
     firstName: '', lastName: '', countryCode: '+595', phone: '',
@@ -159,7 +160,13 @@ const OrderForm = () => {
           const loc = results[0].geometry.location;
           setShowMap(true);
           // Esperar al siguiente render para que mapRef esté disponible
-          setTimeout(() => initMap(loc.lat(), loc.lng()), 100);
+          setTimeout(() => {
+            initMap(loc.lat(), loc.lng());
+            // Scroll hasta el mapa en desktop
+            if (mapWrapRef.current) {
+              mapWrapRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+          }, 150);
         } else {
           setGeoError('No se encontró la dirección. Intentá con más detalle.');
         }
@@ -378,23 +385,17 @@ const OrderForm = () => {
               {geoError && <span className="of-err">{geoError}</span>}
               {coords && (
                 <span style={{ fontSize: '11px', color: '#6b7280' }}>
-                  {' '}Arrastrar el pin para ajustar
+                  📍 {coords.lat.toFixed(6)}, {coords.lng.toFixed(6)}
+                  {' '}— podés arrastrar el pin para ajustar
                 </span>
               )}
             </div>
 
             {/* ── Mini mapa ── */}
             {showMap && (
-              <div
-                ref={mapRef}
-                style={{
-                  width: '100%',
-                  height: '220px',
-                  borderRadius: '10px',
-                  border: '1.5px solid #e5e7eb',
-                  overflow: 'hidden',
-                }}
-              />
+              <div ref={mapWrapRef} className="of-map-wrap">
+                <div ref={mapRef} className="of-map-container" />
+              </div>
             )}
 
             <div className="of-field">
@@ -564,6 +565,14 @@ const OrderForm = () => {
                 </span>
               </div>
             </div>
+
+            {/* Coordenadas en el resumen */}
+            {coords && (
+              <div style={{ background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: '8px', padding: '10px 12px', fontSize: '12px', color: '#16a34a' }}>
+                <strong>Ubicación confirmada</strong><br />
+                Lat: {coords.lat.toFixed(6)} · Lng: {coords.lng.toFixed(6)}
+              </div>
+            )}
 
             {submitError && (
               <div style={{ background: '#fef2f2', border: '1.5px solid #fecaca', borderRadius: '8px', padding: '10px 12px', fontSize: '13px', color: '#dc2626' }}>
