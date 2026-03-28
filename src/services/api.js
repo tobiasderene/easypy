@@ -39,17 +39,14 @@ const api = async (endpoint, options = {}) => {
   return data;
 };
 
-// ─── Auth ────────────────────────────────────────────
-export const getGoogleAuthUrl  = () => api("/auth/google");
-export const exchangeSession   = (token) => api("/auth/session", { method: "POST", body: JSON.stringify({ token }) });
+// ─── Auth ─────────────────────────────────────────────
+export const getGoogleAuthUrl = () => api("/auth/google");
+export const exchangeSession  = (token) => api("/auth/session", { method: "POST", body: JSON.stringify({ token }) });
 
 export const getMe = async () => {
   const res = await fetch(`${BASE_URL}/auth/me`, {
     credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...authHeaders(),
-    },
+    headers: { "Content-Type": "application/json", ...authHeaders() },
   });
   if (res.status === 401) return null;
   if (!res.ok) {
@@ -66,42 +63,32 @@ export const logout = async () => {
 };
 
 export const loginLocal = (email, password) =>
-  api("/auth/login", {
-    method: "POST",
-    body: JSON.stringify({ email, password }),
-  });
+  api("/auth/login", { method: "POST", body: JSON.stringify({ email, password }) });
 
 export const registerLocal = (email, name, password, userRole) =>
-  api("/auth/register", {
-    method: "POST",
-    body: JSON.stringify({ email, name, password, user_role: userRole }),
-  });
+  api("/auth/register", { method: "POST", body: JSON.stringify({ email, name, password, user_role: userRole }) });
 
 export const registerGoogle = (email, name, userRole, googleId) =>
-  api("/auth/register/google", {
-    method: "POST",
-    body: JSON.stringify({ email, name, user_role: userRole, google_id: googleId }),
-  });
+  api("/auth/register/google", { method: "POST", body: JSON.stringify({ email, name, user_role: userRole, google_id: googleId }) });
 
-// ─── Users ───────────────────────────────────────────
+// ─── Users ────────────────────────────────────────────
 export const getUsers = (params = {}) => {
   const query = new URLSearchParams(params).toString();
   return api(`/users${query ? `?${query}` : ''}`);
 };
 export const getProviders = () => api("/users/providers");
-
-export const updateUser = (userId, data) =>
+export const updateUser   = (userId, data) =>
   api(`/users/${userId}`, { method: "PATCH", body: JSON.stringify(data) });
 
-// ─── Products ────────────────────────────────────────
-export const getProducts    = (skip = 0, limit = 100) => api(`/products?skip=${skip}&limit=${limit}`);
-export const getMyProducts  = (skip = 0, limit = 100) => api(`/products/my-products?skip=${skip}&limit=${limit}`);
-export const getProduct     = (productId)             => api(`/products/${productId}`);
-export const createProduct  = (data)                  => api("/products", { method: "POST", body: JSON.stringify(data) });
-export const updateProduct  = (productId, data)       => api(`/products/${productId}`, { method: "PATCH", body: JSON.stringify(data) });
-export const deleteProduct  = (productId)             => api(`/products/${productId}`, { method: "DELETE" });
+// ─── Products ─────────────────────────────────────────
+export const getProducts   = (skip = 0, limit = 100) => api(`/products?skip=${skip}&limit=${limit}`);
+export const getMyProducts = (skip = 0, limit = 100) => api(`/products/my-products?skip=${skip}&limit=${limit}`);
+export const getProduct    = (productId)             => api(`/products/${productId}`);
+export const createProduct = (data)                  => api("/products", { method: "POST", body: JSON.stringify(data) });
+export const updateProduct = (productId, data)       => api(`/products/${productId}`, { method: "PATCH", body: JSON.stringify(data) });
+export const deleteProduct = (productId)             => api(`/products/${productId}`, { method: "DELETE" });
 
-// ─── Images ──────────────────────────────────────────
+// ─── Images ───────────────────────────────────────────
 export const getProductImages = (productId) => api(`/images/product/${productId}`);
 export const getProfileImage  = (userId)    => api(`/images/profile/${userId}`);
 export const deleteImage      = (imageId)   => api(`/images/${imageId}`, { method: "DELETE" });
@@ -110,25 +97,19 @@ export const uploadProductImage = (productId, file, isPrimary = false, position 
   const formData = new FormData();
   formData.append("file", file);
   return fetch(`${BASE_URL}/images/product/${productId}?is_primary=${isPrimary}&position=${position}`, {
-    method: "POST",
-    credentials: "include",
-    headers: authHeaders(),
-    body: formData,
-  }).then((res) => res.json());
+    method: "POST", credentials: "include", headers: authHeaders(), body: formData,
+  }).then(res => res.json());
 };
 
 export const uploadProfileImage = (file) => {
   const formData = new FormData();
   formData.append("file", file);
   return fetch(`${BASE_URL}/images/profile`, {
-    method: "POST",
-    credentials: "include",
-    headers: authHeaders(),
-    body: formData,
-  }).then((res) => res.json());
+    method: "POST", credentials: "include", headers: authHeaders(), body: formData,
+  }).then(res => res.json());
 };
 
-// ─── Orders ──────────────────────────────────────────
+// ─── Orders ───────────────────────────────────────────
 export const getOrders           = (skip = 0, limit = 100) => api(`/orders?skip=${skip}&limit=${limit}`);
 export const getOrder            = (orderId)       => api(`/orders/${orderId}`);
 export const getOrdersByBuyer    = (buyerId)       => api(`/orders/buyer/${buyerId}`);
@@ -139,29 +120,29 @@ export const getOrderHistory     = (orderId)       => api(`/orders/${orderId}/hi
 
 export const getOrdersByStatus = (status) =>
   fetch(`${BASE_URL}/orders/status/${status}`, {
-    credentials: "include",
-    headers: authHeaders(),
+    credentials: "include", headers: authHeaders(),
   }).then(r => r.json());
 
 export const confirmOrderAdmin = (orderId) =>
   fetch(`${BASE_URL}/orders/${orderId}/confirm/admin`, {
-    method: "POST",
-    credentials: "include",
-    headers: authHeaders(),
+    method: "POST", credentials: "include", headers: authHeaders(),
   }).then(r => { if (!r.ok) throw new Error(); return r.json(); });
 
 export const cancelOrderAdmin = (orderId) =>
   fetch(`${BASE_URL}/orders/${orderId}/cancel`, {
-    method: "POST",
-    credentials: "include",
-    headers: authHeaders(),
+    method: "POST", credentials: "include", headers: authHeaders(),
   }).then(r => { if (!r.ok) throw new Error(); return r.json(); });
 
 export const getOrdersBySupplierApi = (supplierId) => api(`/orders/supplier/${supplierId}`);
 export const confirmOrderSupplier   = (orderId)    => api(`/orders/${orderId}/confirm/supplier`, { method: "POST" });
-export const cancelOrderSupplier    = (orderId)    => api(`/orders/${orderId}/cancel`, { method: "POST" });
+export const cancelOrderSupplier    = (orderId)    => api(`/orders/${orderId}/cancel`,            { method: "POST" });
 
-// ─── Wallets ─────────────────────────────────────────
+// ─── Logistics orders ─────────────────────────────────
+export const getOrdersByLogistics  = (logisticId, limit = 200) => api(`/orders/logistics/${logisticId}?limit=${limit}`);
+export const pickupOrder           = (orderId) => api(`/orders/${orderId}/pickup`,  { method: "POST" });
+export const deliverOrder          = (orderId) => api(`/orders/${orderId}/deliver`, { method: "POST" });
+
+// ─── Wallets ──────────────────────────────────────────
 export const getWallet       = (walletId)       => api(`/wallets/${walletId}`);
 export const getWalletByUser = (userId)         => api(`/wallets/user/${userId}`);
 export const updateWallet    = (walletId, data) => api(`/wallets/${walletId}`, { method: "PATCH", body: JSON.stringify(data) });
@@ -185,6 +166,13 @@ export const createBankMovement           = (data)     => api("/bank-movements",
 export const getBankMovementsByStatus     = (status)   => api(`/bank-movements/status/${status}`);
 export const updateBankMovement           = (id, data) => api(`/bank-movements/${id}`, { method: "PATCH", body: JSON.stringify(data) });
 
-// ─── Logistics ───────────────────────────────────────
-export const getLogistics = ()           => api("/logistics");
-export const getLogistic  = (logisticId) => api(`/logistics/${logisticId}`);
+// ─── Logistics ────────────────────────────────────────
+export const getLogistics       = ()           => api("/logistics");
+export const getLogistic        = (logisticId) => api(`/logistics/${logisticId}`);
+export const getMyLogistics     = ()           => api("/logistics/me");
+export const createLogistics    = (data)       => api("/logistics", { method: "POST", body: JSON.stringify(data) });
+export const updateLogistics    = (id, data)   => api(`/logistics/${id}`, { method: "PATCH", body: JSON.stringify(data) });
+export const assignUserToLogistics = (logisticId, userId) =>
+  api(`/logistics/${logisticId}/assign/${userId}`, { method: "PATCH" });
+
+export default api;

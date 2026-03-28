@@ -1,0 +1,305 @@
+/* logistics.css */
+
+.lp-page {
+  padding: 20px 24px;
+  background: #f9fafb;
+  min-height: 100vh;
+}
+
+/* ─── Header ─────────────────────────────────── */
+.lp-header {
+  margin-bottom: 24px;
+}
+
+.lp-title {
+  font-size: 24px;
+  font-weight: 800;
+  color: #111827;
+  margin: 0 0 4px 0;
+  letter-spacing: -0.4px;
+}
+
+.lp-subtitle {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0;
+  font-weight: 500;
+}
+
+/* ─── Error ──────────────────────────────────── */
+.lp-error {
+  background: #fef2f2;
+  border: 1.5px solid #fecaca;
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: #dc2626;
+  font-weight: 500;
+}
+
+/* ─── Stats ──────────────────────────────────── */
+.lp-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.lp-stat {
+  border-radius: 12px;
+  padding: 16px;
+  border: 1.5px solid transparent;
+}
+
+.lp-stat-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin: 0 0 6px 0;
+}
+
+.lp-stat-value {
+  font-size: 28px;
+  font-weight: 800;
+  margin: 0;
+  letter-spacing: -1px;
+}
+
+/* ─── Filtros ────────────────────────────────── */
+.lp-filters {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.lp-filter-btn {
+  padding: 6px 14px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1.5px solid #e5e7eb;
+  background: white;
+  color: #6b7280;
+}
+
+.lp-filter-btn:hover {
+  border-color: #056EB7;
+  color: #056EB7;
+}
+
+.lp-filter-btn.active {
+  background: #056EB7;
+  border-color: #056EB7;
+  color: white;
+}
+
+.lp-filter-count {
+  margin-left: 5px;
+  opacity: 0.8;
+}
+
+/* ─── Empty ──────────────────────────────────── */
+.lp-empty {
+  text-align: center;
+  padding: 48px;
+  color: #9ca3af;
+  font-size: 14px;
+  background: white;
+  border-radius: 12px;
+  border: 1.5px solid #e5e7eb;
+}
+
+/* ─── Order list ─────────────────────────────── */
+.lp-orders {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ─── Order card ─────────────────────────────── */
+.lp-order {
+  background: white;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.lp-order:hover {
+  border-color: #d1d5db;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.lp-order-info {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ─── Order top row ──────────────────────────── */
+.lp-order-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.lp-order-id {
+  font-size: 13px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.lp-badge {
+  padding: 3px 10px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* ─── Order grid ─────────────────────────────── */
+.lp-order-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 16px;
+}
+
+.lp-order-field {
+  font-size: 12px;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.lp-order-field strong {
+  color: #374151;
+  font-weight: 600;
+}
+
+.lp-order-field.full {
+  grid-column: 1 / -1;
+}
+
+.lp-maps-link {
+  color: #056EB7;
+  font-weight: 600;
+  text-decoration: none;
+  font-size: 12px;
+}
+
+.lp-maps-link:hover {
+  text-decoration: underline;
+}
+
+/* ─── Order actions ──────────────────────────── */
+.lp-order-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.lp-price-label {
+  font-size: 11px;
+  color: #9ca3af;
+  margin: 0 0 2px 0;
+  text-align: right;
+}
+
+.lp-price-value {
+  font-size: 16px;
+  font-weight: 800;
+  color: #111827;
+  margin: 0;
+  text-align: right;
+}
+
+.lp-btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  color: white;
+}
+
+.lp-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.lp-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.lp-btn.pickup {
+  background: #16a34a;
+}
+
+.lp-btn.deliver {
+  background: #7c3aed;
+}
+
+/* ─── Loading ────────────────────────────────── */
+.lp-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 60vh;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+/* ─── Responsive ─────────────────────────────── */
+@media (max-width: 768px) {
+  .lp-page {
+    padding: 16px;
+  }
+
+  .lp-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .lp-order {
+    flex-direction: column;
+  }
+
+  .lp-order-actions {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .lp-order-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .lp-order-field.full {
+    grid-column: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .lp-stats {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+
+  .lp-stat-value {
+    font-size: 22px;
+  }
+}

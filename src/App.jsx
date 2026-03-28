@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useSearc
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import ProviderSidebar from './components/ProviderSidebar';
+import LogisticsSidebar from './components/LogisticsSidebar';
 import LoginMinimal from './pages/Login';
 import Signup from './pages/SignUp';
 import Catalog from './pages/Catalog';
@@ -20,6 +21,7 @@ import Settings from './pages/Settings';
 import Analytics from './pages/Analytics';
 import AuthCallback from './pages/AuthCallback';
 import OrderForm from './components/OrderForm';
+import LogisticsPanel from './pages/LogisticsPanel';
 import { getMe, exchangeSession, getWalletByUser } from './services/api';
 import './App.css';
 
@@ -41,6 +43,12 @@ const Layout = ({ children }) => {
     }
   }, [user]);
 
+  const renderSidebar = () => {
+    if (user?.user_role === 'provider')   return <ProviderSidebar  isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />;
+    if (user?.user_role === 'logistics')  return <LogisticsSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />;
+    return <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />;
+  };
+
   return (
     <>
       <Header
@@ -51,11 +59,7 @@ const Layout = ({ children }) => {
         onSearch={(v) => console.log('Searching:', v)}
         onUserClick={() => console.log('User profile clicked')}
       />
-      {user?.user_role === 'provider' ? (
-        <ProviderSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
-      ) : (
-        <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
-      )}
+      {renderSidebar()}
       <main>{children}</main>
     </>
   );
@@ -80,14 +84,25 @@ const AdminRoute = ({ children }) => {
   return <Layout>{children}</Layout>;
 };
 
+// ─── Ruta solo logistics ──────────────────────────────
+const LogisticsRoute = ({ children }) => {
+  const { user, loading } = useUser();
+  if (loading) return <div className="loading-screen">Cargando...</div>;
+  if (!user) return <Navigate to="/login" replace />;
+  if (user.user_status === 'pending') return <PendingApproval />;
+  if (user.user_role !== 'logistics') return <Navigate to="/" replace />;
+  return <Layout>{children}</Layout>;
+};
+
 // ─── Ruta pública ─────────────────────────────────────
 const PublicRoute = ({ children }) => {
   const { user, loading } = useUser();
   if (loading) return <div className="loading-screen">Cargando...</div>;
   if (user) {
-    if (user.user_status === 'pending') return <PendingApproval />;
-    if (user.user_role === 'provider') return <Navigate to="/provider-orders" replace />;
-    if (user.user_role === 'admin')    return <Navigate to="/admin" replace />;
+    if (user.user_status === 'pending')   return <PendingApproval />;
+    if (user.user_role === 'provider')    return <Navigate to="/provider-orders" replace />;
+    if (user.user_role === 'admin')       return <Navigate to="/admin" replace />;
+    if (user.user_role === 'logistics')   return <Navigate to="/logistics" replace />;
     return <Navigate to="/catalogo" replace />;
   }
   return children;
@@ -103,8 +118,9 @@ const Dashboard = () => {
   const redirectUser = (u) => {
     if (u.user_status === 'pending') return;
     if (u.user_role === 'provider')   navigate('/provider-orders', { replace: true });
-    else if (u.user_role === 'admin') navigate('/admin', { replace: true });
-    else                              navigate('/catalogo', { replace: true });
+    else if (u.user_role === 'admin') navigate('/admin',           { replace: true });
+    else if (u.user_role === 'logistics') navigate('/logistics',   { replace: true });
+    else                              navigate('/catalogo',         { replace: true });
   };
 
   useEffect(() => {
@@ -163,6 +179,9 @@ function App() {
           <Route path="/provider-orders"  element={<ProtectedRoute><ProviderOrders /></ProtectedRoute>} />
           <Route path="/provider-catalog" element={<ProtectedRoute><ProviderCatalog /></ProtectedRoute>} />
           <Route path="/add-product"      element={<ProtectedRoute><AddProductForm /></ProtectedRoute>} />
+
+          {/* Rutas logistics */}
+          <Route path="/logistics" element={<LogisticsRoute><LogisticsPanel /></LogisticsRoute>} />
 
           {/* Rutas admin */}
           <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
