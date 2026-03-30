@@ -176,3 +176,29 @@ export const assignUserToLogistics = (logisticId, userId) =>
   api(`/logistics/${logisticId}/assign/${userId}`, { method: "PATCH" });
 
 export default api;
+
+// ─── Deposits ─────────────────────────────────
+export const createDeposit = (walletId, amount, file) => {
+  const formData = new FormData();
+  formData.append("wallet_id", walletId);
+  formData.append("amount", amount);
+  formData.append("file", file);
+  return fetch(`${BASE_URL}/deposits`, {
+    method: "POST",
+    credentials: "include",
+    headers: authHeaders(),
+    body: formData,
+  }).then(async res => {
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Error desconocido" }));
+      throw new Error(err.detail || "Error al crear el depósito");
+    }
+    return res.json();
+  });
+};
+
+export const getMyDeposits      = (walletId) => api(`/deposits/wallet/${walletId}`);
+export const getDeposits        = ()         => api("/deposits");
+export const getDepositsByStatus = (status)  => api(`/deposits/status/${status}`);
+export const approveDeposit     = (id, notes = "") => api(`/deposits/${id}/approve?notes=${encodeURIComponent(notes)}`, { method: "POST" });
+export const rejectDeposit      = (id, notes = "") => api(`/deposits/${id}/reject?notes=${encodeURIComponent(notes)}`,  { method: "POST" });
