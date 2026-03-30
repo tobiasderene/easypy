@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { TrendingUp, TrendingDown, ArrowUpRight, ArrowDownLeft, Wallet as WalletIcon, Calendar } from 'lucide-react';
+import { TrendingUp, TrendingDown, ArrowUpRight, ArrowDownLeft, WalletIcon, Calendar } from 'lucide-react';
 import { useUser } from '../App';
 import { getWalletByUser, getTransactionsByWallet } from '../services/api';
 import DepositModal from '../components/DepositModal';
@@ -9,10 +9,10 @@ import '../styles/wallet.css';
 const Wallet = () => {
   const { user } = useUser();
 
-  const [wallet, setWallet]         = useState(null);
+  const [wallet, setWallet]             = useState(null);
   const [transactions, setTransactions] = useState([]);
-  const [loading, setLoading]       = useState(true);
-  const [activeTab, setActiveTab]   = useState('all');
+  const [loading, setLoading]           = useState(true);
+  const [activeTab, setActiveTab]       = useState('all');
   const [showDepositModal, setShowDepositModal]   = useState(false);
   const [showWithdrawModal, setShowWithdrawModal] = useState(false);
 
@@ -37,37 +37,37 @@ const Wallet = () => {
   const formatCurrency = (amount) =>
     new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', minimumFractionDigits: 0 }).format(amount || 0);
 
-  const formatDate = (dateString) =>
-    new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(dateString));
+  const formatDate = (dateString) => {
+    try {
+      return new Intl.DateTimeFormat('es-ES', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(dateString));
+    } catch { return '—'; }
+  };
 
   const filteredTransactions = transactions.filter(t => {
-    if (activeTab === 'all') return true;
-    if (activeTab === 'income') return t.transaction_direction === 'in';
+    if (activeTab === 'all')     return true;
+    if (activeTab === 'income')  return t.transaction_direction === 'in';
     if (activeTab === 'expense') return t.transaction_direction === 'out';
     return true;
   });
 
   const totalIncome = transactions
-    .filter(t => t.transaction_direction === 'in' && t.transaction_status === 'completed')
+    .filter(t => t.transaction_direction === 'in'  && t.transaction_status === 'completed')
     .reduce((sum, t) => sum + parseFloat(t.transaction_amount || 0), 0);
 
   const totalExpense = transactions
     .filter(t => t.transaction_direction === 'out' && t.transaction_status === 'completed')
     .reduce((sum, t) => sum + parseFloat(t.transaction_amount || 0), 0);
 
-  // Gráfico: últimas 7 transacciones agrupadas por día
+  // Gráfico: últimos 7 días
   const chartData = (() => {
-    const days = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+    const days  = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
     const today = new Date();
     return Array.from({ length: 7 }, (_, i) => {
       const d = new Date(today);
       d.setDate(today.getDate() - (6 - i));
       const dayName = days[d.getDay() === 0 ? 6 : d.getDay() - 1];
-      const dayTxs = transactions.filter(t => {
-        const td = new Date(t.created_at);
-        return td.toDateString() === d.toDateString();
-      });
-      const amount = dayTxs.reduce((sum, t) => {
+      const dayTxs  = transactions.filter(t => new Date(t.created_at).toDateString() === d.toDateString());
+      const amount  = dayTxs.reduce((sum, t) => {
         const val = parseFloat(t.transaction_amount || 0);
         return t.transaction_direction === 'in' ? sum + val : sum - val;
       }, parseFloat(wallet?.balance_available || 0));
@@ -91,8 +91,6 @@ const Wallet = () => {
   return (
     <div className="wallet-page">
       <div className="wallet-container">
-
-
 
         {/* Balance & Chart */}
         <div className="balance-chart-section">
@@ -121,7 +119,7 @@ const Wallet = () => {
                   <div className="stat-value">{formatCurrency(totalIncome)}</div>
                 </div>
               </div>
-              <div className="stat-divider"></div>
+              <div className="stat-divider" />
               <div className="stat-item">
                 <ArrowDownLeft size={16} className="icon-expense" />
                 <div>
@@ -152,7 +150,7 @@ const Wallet = () => {
             <div className="chart-container">
               <div className="chart">
                 {chartData.map((data, index) => {
-                  const range = maxAmount - minAmount || 1;
+                  const range         = maxAmount - minAmount || 1;
                   const heightPercent = ((data.amount - minAmount) / range) * 100;
                   return (
                     <div key={index} className="chart-bar-wrapper">
@@ -222,10 +220,15 @@ const Wallet = () => {
         </div>
       </div>
 
-      <DepositModal
-        isOpen={showDepositModal}
-        onClose={() => { setShowDepositModal(false); fetchData(); }}
-      />
+      {/* Modales — se montan solo cuando están abiertos */}
+      {showDepositModal && (
+        <DepositModal
+          walletId={wallet?.wallet_id}
+          onClose={() => setShowDepositModal(false)}
+          onSuccess={() => { fetchData(); }}
+        />
+      )}
+
       <WithdrawModal
         isOpen={showWithdrawModal}
         onClose={() => { setShowWithdrawModal(false); fetchData(); }}
