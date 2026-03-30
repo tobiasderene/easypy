@@ -1,5 +1,6 @@
+// WithdrawModal.jsx
 import React, { useState } from 'react';
-import { CheckCircle, X, AlertCircle, CreditCard } from 'lucide-react';
+import { CheckCircle, AlertCircle, CreditCard } from 'lucide-react';
 import { createWithdrawal } from '../services/api';
 import '../styles/withdrawmodal.css';
 
@@ -11,6 +12,9 @@ const WithdrawModal = ({ isOpen, onClose, walletId, availableBalance = 0 }) => {
   const [error, setError]             = useState('');
   const [loading, setLoading]         = useState(false);
 
+  const formatCurrency = (v) =>
+    new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', minimumFractionDigits: 0 }).format(v || 0);
+
   const handleAmountChange = (e) => {
     const v = e.target.value;
     if (v === '' || /^\d+$/.test(v)) { setAmount(v); setError(''); }
@@ -21,21 +25,20 @@ const WithdrawModal = ({ isOpen, onClose, walletId, availableBalance = 0 }) => {
     if (v === '' || /^[\d-]+$/.test(v)) { setBankAccount(v); setError(''); }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!amount || amount === '0') return setError('Por favor ingresa un monto válido');
-    if (parseInt(amount) < 50000) return setError('El monto mínimo de retiro es Gs. 50,000');
-    if (parseInt(amount) > availableBalance) return setError('El monto excede tu saldo disponible');
-    if (!bankEntity || bankEntity.trim().length < 3) return setError('Por favor ingresa el nombre de la entidad bancaria');
-    if (!bankAccount || bankAccount.length < 10) return setError('Por favor ingresa un número de cuenta válido');
+  const handleSubmit = async () => {
+    if (!amount || amount === '0')                    return setError('Ingresá un monto válido');
+    if (parseInt(amount) < 50000)                     return setError('El monto mínimo de retiro es Gs. 50,000');
+    if (parseInt(amount) > availableBalance)          return setError('El monto excede tu saldo disponible');
+    if (!bankEntity || bankEntity.trim().length < 3)  return setError('Ingresá el nombre de la entidad bancaria');
+    if (!bankAccount || bankAccount.length < 10)      return setError('Ingresá un número de cuenta válido');
 
     setLoading(true);
     try {
       await createWithdrawal({
-        wallet_id: walletId,
-        amount: parseInt(amount),
-        status: 'pending',
-        bank_name: bankEntity.trim(),
+        wallet_id:            walletId,
+        amount:               parseInt(amount),
+        status:               'pending',
+        bank_name:            bankEntity.trim(),
         bank_account_address: bankAccount.trim(),
       });
       setStep(2);
@@ -51,178 +54,172 @@ const WithdrawModal = ({ isOpen, onClose, walletId, availableBalance = 0 }) => {
     onClose();
   };
 
-  const formatCurrency = (value) => {
-    if (!value) return 'Gs. 0';
-    return new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', minimumFractionDigits: 0 }).format(value);
-  };
-
   if (!isOpen) return null;
 
   return (
-    <div className="modal-overlay" onClick={handleClose}>
-      <div className="modal-container" onClick={(e) => e.stopPropagation()}>
+    <div className="wm-overlay" onClick={(e) => e.target === e.currentTarget && handleClose()}>
+      <div className="wm-modal">
 
-        {/* Step 1 */}
-        {step === 1 && (
-          <>
-            <div className="modal-body">
-              <p className="modal-description">Ingresa el monto que deseas retirar de tu billetera</p>
+        {/* Header */}
+        <div className="wm-header">
+          <div>
+            <h2 className="wm-title">{step === 1 ? 'Retirar Dinero' : 'Solicitud enviada'}</h2>
+            <p className="wm-subtitle">{step === 1 ? 'Completá los datos para solicitar el retiro' : 'Tu solicitud fue procesada correctamente'}</p>
+          </div>
+          <button className="wm-close" onClick={handleClose}>
+            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
 
-              <div className="balance-display">
-                <span className="balance-amount">{formatCurrency(availableBalance)}</span>
-              </div>
+        {/* ── STEP 1 ── */}
+        {step === 1 && (<>
 
-              <form onSubmit={handleSubmit}>
-                {/* Monto */}
-                <div className="form-group">
-                  <label htmlFor="amount">Monto a retirar</label>
-                  <div className="amount-input-wrapper">
-                    <span className="currency-symbol">Gs.</span>
-                    <input
-                      type="text"
-                      id="amount"
-                      className="amount-input"
-                      placeholder="0"
-                      value={amount}
-                      onChange={handleAmountChange}
-                      autoFocus
-                    />
-                  </div>
-                  {amount && !error && (
-                    <div className="amount-preview">{formatCurrency(amount)}</div>
-                  )}
-                </div>
-
-                {/* Entidad bancaria */}
-                <div className="form-group">
-                  <label htmlFor="bankEntity">Entidad bancaria</label>
-                  <div className="bank-input-wrapper">
-                    <svg className="input-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <line x1="12" y1="1" x2="12" y2="23"></line>
-                      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-                    </svg>
-                    <input
-                      type="text"
-                      id="bankEntity"
-                      className="bank-input"
-                      placeholder="Ej: Banco Nacional, Itaú, BBVA..."
-                      value={bankEntity}
-                      onChange={(e) => { setBankEntity(e.target.value); setError(''); }}
-                    />
-                  </div>
-                </div>
-
-                {/* Cuenta bancaria */}
-                <div className="form-group">
-                  <label htmlFor="bankAccount">Número de cuenta bancaria</label>
-                  <div className="bank-input-wrapper">
-                    <CreditCard className="input-icon" size={20} />
-                    <input
-                      type="text"
-                      id="bankAccount"
-                      className="bank-input"
-                      placeholder="1234-5678-9012-3456"
-                      value={bankAccount}
-                      onChange={handleBankAccountChange}
-                      maxLength={19}
-                    />
-                  </div>
-                  {error && <span className="error-message">{error}</span>}
-                </div>
-
-                {/* Montos rápidos */}
-                <div className="quick-amounts">
-                  <span className="quick-label">Montos rápidos:</span>
-                  <div className="quick-buttons">
-                    {['100000', '500000', '1000000'].map((v, i) => (
-                      <button key={i} type="button" className="quick-btn" onClick={() => setAmount(v)}>
-                        {v === '100000' ? '100K' : v === '500000' ? '500K' : '1M'}
-                      </button>
-                    ))}
-                    <button type="button" className="quick-btn" onClick={() => setAmount(Math.floor(availableBalance).toString())}>
-                      Todo
-                    </button>
-                  </div>
-                </div>
-
-                <div className="info-box warning">
-                  <AlertCircle size={20} />
-                  <div>
-                    <p className="info-title">Importante:</p>
-                    <ul className="info-list">
-                      <li>El retiro mínimo es de Gs. 50,000</li>
-                      <li>La transferencia se procesará en 1-3 días hábiles</li>
-                    </ul>
-                  </div>
-                </div>
-
-                {amount && parseInt(amount) >= 50000 && (
-                  <div className="cost-summary">
-                    <div className="cost-row">
-                      <span>Monto a retirar:</span>
-                      <span>{formatCurrency(amount)}</span>
-                    </div>
-                  </div>
-                )}
-
-                <div className="modal-actions">
-                  <button type="button" className="btn-secondary" onClick={handleClose}>Cancelar</button>
-                  <button type="submit" className="btn-primary withdraw" disabled={loading}>
-                    {loading ? 'Enviando...' : 'Solicitar Retiro'}
-                  </button>
-                </div>
-              </form>
+          {/* Balance */}
+          <div className="wm-balance">
+            <div>
+              <p className="wm-balance-label">Saldo disponible</p>
+              <p className="wm-balance-amount">{formatCurrency(availableBalance)}</p>
             </div>
-          </>
-        )}
+          </div>
 
-        {/* Step 2 */}
+          {/* Monto */}
+          <div className="wm-field">
+            <label className="wm-label">Monto a retirar <span className="wm-req">*</span></label>
+            <div className="wm-amount-wrap">
+              <span className="wm-currency">Gs.</span>
+              <input
+                className="wm-amount-input"
+                type="text"
+                placeholder="0"
+                value={amount}
+                onChange={handleAmountChange}
+                autoFocus
+              />
+            </div>
+            {amount && !error && parseFloat(amount) > 0 && (
+              <span className="wm-amount-preview">{formatCurrency(parseInt(amount))}</span>
+            )}
+          </div>
+
+          {/* Montos rápidos */}
+          <div className="wm-quick">
+            <span className="wm-quick-label">Montos rápidos</span>
+            <div className="wm-quick-btns">
+              {['100000', '500000', '1000000'].map((v) => (
+                <button key={v} className="wm-quick-btn" onClick={() => { setAmount(v); setError(''); }}>
+                  {v === '100000' ? '100K' : v === '500000' ? '500K' : '1M'}
+                </button>
+              ))}
+              <button className="wm-quick-btn" onClick={() => { setAmount(Math.floor(availableBalance).toString()); setError(''); }}>
+                Todo
+              </button>
+            </div>
+          </div>
+
+          {/* Entidad bancaria */}
+          <div className="wm-field">
+            <label className="wm-label">Entidad bancaria <span className="wm-req">*</span></label>
+            <div className="wm-input-wrap">
+              <svg className="wm-input-icon" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <line x1="12" y1="1" x2="12" y2="23" />
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+              </svg>
+              <input
+                className="wm-input"
+                type="text"
+                placeholder="Ej: Itaú, Banco Nacional, BBVA..."
+                value={bankEntity}
+                onChange={(e) => { setBankEntity(e.target.value); setError(''); }}
+              />
+            </div>
+          </div>
+
+          {/* Número de cuenta */}
+          <div className="wm-field">
+            <label className="wm-label">Número de cuenta <span className="wm-req">*</span></label>
+            <div className="wm-input-wrap">
+              <CreditCard className="wm-input-icon" size={18} />
+              <input
+                className="wm-input"
+                type="text"
+                placeholder="1234-5678-9012-3456"
+                value={bankAccount}
+                onChange={handleBankAccountChange}
+                maxLength={19}
+              />
+            </div>
+          </div>
+
+          {/* Info */}
+          <div className="wm-info">
+            <AlertCircle size={14} style={{ flexShrink: 0, marginTop: 1, color: '#d97706' }} />
+            <div>
+              <p className="wm-info-title">Importante</p>
+              <ul className="wm-info-list">
+                <li>El retiro mínimo es de Gs. 50,000</li>
+                <li>La transferencia se procesa en 1-3 días hábiles</li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Resumen */}
+          {amount && parseInt(amount) >= 50000 && (
+            <div className="wm-summary">
+              <div className="wm-summary-row">
+                <span>Monto a retirar</span>
+                <span>{formatCurrency(parseInt(amount))}</span>
+              </div>
+            </div>
+          )}
+
+          {error && <div className="wm-error">{error}</div>}
+
+          <div className="wm-actions">
+            <button className="wm-btn-cancel" onClick={handleClose} disabled={loading}>Cancelar</button>
+            <button className="wm-btn-submit" onClick={handleSubmit} disabled={loading}>
+              {loading ? 'Enviando...' : 'Solicitar retiro'}
+            </button>
+          </div>
+
+        </>)}
+
+        {/* ── STEP 2 — Éxito ── */}
         {step === 2 && (
-          <>
-            <div className="modal-body">
-              <div className="success-content">
-                <div className="success-icon-large"><CheckCircle size={64} /></div>
-                <h3>Tu solicitud ha sido procesada</h3>
+          <div className="wm-success">
+            <div className="wm-success-icon">
+              <CheckCircle size={36} />
+            </div>
+            <p className="wm-success-title">Solicitud enviada</p>
 
-                <div className="confirmation-details">
-                  <div className="confirmation-row">
-                    <span className="confirmation-label">Monto solicitado:</span>
-                    <span className="confirmation-value">{formatCurrency(amount)}</span>
-                  </div>
-                  <div className="confirmation-row">
-                    <span className="confirmation-label">Entidad bancaria:</span>
-                    <span className="confirmation-value">{bankEntity}</span>
-                  </div>
-                  <div className="confirmation-row">
-                    <span className="confirmation-label">Cuenta destino:</span>
-                    <span className="confirmation-value">{bankAccount}</span>
-                  </div>
-                  <div className="confirmation-row">
-                    <span className="confirmation-label">Estado:</span>
-                    <span className="status-badge processing">En proceso</span>
-                  </div>
-                  <div className="confirmation-row">
-                    <span className="confirmation-label">Fecha:</span>
-                    <span className="confirmation-value">
-                      {new Date().toLocaleDateString('es-PY', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                  </div>
-                  <div className="confirmation-row">
-                    <span className="confirmation-label">Tiempo estimado:</span>
-                    <span className="confirmation-value">1-3 días hábiles</span>
-                  </div>
+            <div className="wm-success-details">
+              {[
+                ['Monto solicitado', formatCurrency(parseInt(amount))],
+                ['Entidad bancaria', bankEntity],
+                ['Cuenta destino',   bankAccount],
+                ['Tiempo estimado',  '1-3 días hábiles'],
+              ].map(([label, value]) => (
+                <div key={label} className="wm-detail-row">
+                  <span className="wm-detail-label">{label}</span>
+                  <span className="wm-detail-value">{value}</span>
                 </div>
-
-                <div className="info-box success">
-                  <CheckCircle size={20} />
-                  <p>El dinero será transferido a tu cuenta bancaria. Recibirás una notificación cuando el retiro sea completado.</p>
-                </div>
-
-                <button className="btn-primary full-width" onClick={handleClose}>Entendido</button>
+              ))}
+              <div className="wm-detail-row">
+                <span className="wm-detail-label">Estado</span>
+                <span className="wm-status-badge">En proceso</span>
               </div>
             </div>
-          </>
+
+            <div className="wm-success-info">
+              <CheckCircle size={14} style={{ flexShrink: 0, marginTop: 1 }} />
+              <span>El dinero será transferido a tu cuenta bancaria cuando el retiro sea aprobado.</span>
+            </div>
+
+            <button className="wm-btn-full" onClick={handleClose}>Entendido</button>
+          </div>
         )}
+
       </div>
     </div>
   );
