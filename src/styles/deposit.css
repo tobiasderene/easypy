@@ -28,10 +28,13 @@
 /* ─── Header ─────────────────────────────────── */
 .dm-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: flex-start;
   gap: 12px;
+  position: relative;
 }
+
+
 
 .dm-title {
   font-size: 20px;
