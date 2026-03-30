@@ -66,11 +66,6 @@ const WithdrawModal = ({ isOpen, onClose, walletId, availableBalance = 0 }) => {
             <h2 className="wm-title">{step === 1 ? 'Retirar Dinero' : 'Solicitud enviada'}</h2>
             <p className="wm-subtitle">{step === 1 ? 'Completá los datos para solicitar el retiro' : 'Tu solicitud fue procesada correctamente'}</p>
           </div>
-          <button className="wm-close" onClick={handleClose}>
-            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
         </div>
 
         {/* ── STEP 1 ── */}
