@@ -29,9 +29,10 @@
 /* ─── Header ─────────────────────────────────── */
 .wm-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: flex-start;
   gap: 12px;
+  position: relative;
 }
 
 .wm-title {
