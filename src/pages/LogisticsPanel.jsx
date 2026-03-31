@@ -8,18 +8,20 @@ import '../styles/logistics.css';
 const STATUS_LABELS = {
   pending:    { label: 'Pendiente',  color: '#2563eb', bg: '#eff6ff' },
   confirmed:  { label: 'Para retirar', color: '#16a34a', bg: '#dcfce7' },
-  processing: { label: 'En camino',  color: '#d97706', bg: '#fef3c7' },
+  ready_for_pickup: { label: 'Listo para retirar', color: '#16a34a', bg: '#dcfce7' },
+  in_transit: { label: 'En camino',  color: '#d97706', bg: '#fef3c7' },
+  processing: { label: 'Procesando', color: '#8b5cf6', bg: '#f5f3ff' },
   completed:  { label: 'Entregado',  color: '#7c3aed', bg: '#f5f3ff' },
   cancelled:  { label: 'Cancelado',  color: '#dc2626', bg: '#fef2f2' },
 };
 
-const FILTERS = ['all', 'confirmed', 'processing', 'completed', 'cancelled'];
+const FILTERS = ['all', 'confirmed', 'ready_for_pickup', 'in_transit', 'completed', 'cancelled'];
 
 const STATS_CONFIG = [
-  { key: 'total',      label: 'Total órdenes',  color: '#056EB7', bg: '#eff6ff', border: '#056EB720' },
-  { key: 'confirmed',  label: 'Para retirar',   color: '#16a34a', bg: '#dcfce7', border: '#16a34a20' },
-  { key: 'processing', label: 'En camino',      color: '#d97706', bg: '#fef3c7', border: '#d9770620' },
-  { key: 'completed',  label: 'Entregadas',     color: '#7c3aed', bg: '#f5f3ff', border: '#7c3aed20' },
+  { key: 'total',            label: 'Total órdenes',      color: '#056EB7', bg: '#eff6ff', border: '#056EB720' },
+  { key: 'ready_for_pickup', label: 'Listos para retirar', color: '#16a34a', bg: '#dcfce7', border: '#16a34a20' },
+  { key: 'in_transit',       label: 'En camino',           color: '#d97706', bg: '#fef3c7', border: '#d9770620' },
+  { key: 'completed',        label: 'Entregadas',          color: '#7c3aed', bg: '#f5f3ff', border: '#7c3aed20' },
 ];
 
 const LogisticsPanel = () => {
@@ -57,7 +59,7 @@ const LogisticsPanel = () => {
     setUpdating(orderId);
     try {
       await pickupOrder(orderId);
-      setOrders(prev => prev.map(o => o.order_id === orderId ? { ...o, status: 'processing' } : o));
+      setOrders(prev => prev.map(o => o.order_id === orderId ? { ...o, status: 'in_transit' } : o));
     } catch (e) {
       alert('Error al confirmar retiro: ' + (e.message || 'Error desconocido'));
     } finally {
@@ -89,10 +91,10 @@ const LogisticsPanel = () => {
   const filtered = filter === 'all' ? orders : orders.filter(o => o.status === filter);
 
   const stats = {
-    total:      orders.length,
-    confirmed:  orders.filter(o => o.status === 'confirmed').length,
-    processing: orders.filter(o => o.status === 'processing').length,
-    completed:  orders.filter(o => o.status === 'completed').length,
+    total:            orders.length,
+    ready_for_pickup: orders.filter(o => o.status === 'ready_for_pickup').length,
+    in_transit:       orders.filter(o => o.status === 'in_transit').length,
+    completed:        orders.filter(o => o.status === 'completed').length,
   };
 
   if (loading) return <div className="lp-loading">Cargando panel...</div>;
@@ -200,7 +202,7 @@ const LogisticsPanel = () => {
                     <p className="lp-price-value">{formatCurrency(order.final_price)}</p>
                   </div>
 
-                  {order.status === 'confirmed' && (
+                  {order.status === 'ready_for_pickup' && (
                     <button
                       className="lp-btn pickup"
                       onClick={() => handlePickup(order.order_id)}
@@ -210,7 +212,7 @@ const LogisticsPanel = () => {
                     </button>
                   )}
 
-                  {order.status === 'processing' && (
+                  {order.status === 'in_transit' && (
                     <button
                       className="lp-btn deliver"
                       onClick={() => handleDeliver(order.order_id)}

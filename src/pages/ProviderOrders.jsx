@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Package, Eye, CheckCircle, XCircle, Truck, Clock, Search, Filter } from 'lucide-react';
 import { useUser } from '../App';
-import { getOrdersBySupplierApi, confirmOrderSupplier, cancelOrderSupplier } from '../services/api';
+import { getOrdersBySupplierApi, confirmOrderSupplier, cancelOrderSupplier, markOrderReadyForPickup } from '../services/api';
 import OrderDetailsModal from '../components/Orderdetailsmodal';
 import '../styles/providerorders.css';
 
@@ -23,6 +23,12 @@ const statusConfig = {
     icon: Package,
     color: '#8b5cf6',
     bgColor: '#f5f3ff'
+  },
+  ready_for_pickup: {
+    label: 'Listo para retirar',
+    icon: Truck,
+    color: '#16a34a',
+    bgColor: '#dcfce7'
   },
   cancelled: {
     label: 'Cancelado',
@@ -80,9 +86,9 @@ const ProviderOrders = () => {
   const handleReadyForDelivery = async (orderId) => {
     setProcessingId(orderId);
     try {
-      await confirmOrderSupplier(orderId);
+      await markOrderReadyForPickup(orderId);
       setOrders(prev =>
-        prev.map(o => o.order_id === orderId ? { ...o, status: 'processing' } : o)
+        prev.map(o => o.order_id === orderId ? { ...o, status: 'ready_for_pickup' } : o)
       );
     } catch {
       alert('Ocurrió un error. Intentá de nuevo.');
@@ -261,7 +267,7 @@ const ProviderOrders = () => {
                       </div>
 
                       {/* Botón listo para entrega — solo cuando está confirmed */}
-                      {order.status === 'confirmed' && (
+                      {order.status === 'processing' && (
                         <button
                           className="btn-ready-delivery"
                           onClick={() => handleReadyForDelivery(order.order_id)}
