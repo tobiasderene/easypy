@@ -138,6 +138,7 @@ body {
   border: 2px solid var(--gray-200);
   aspect-ratio: 1;
   margin-bottom: 16px;
+  max-width: 400px;
 }
 
 .main-image {
