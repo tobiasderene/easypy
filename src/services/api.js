@@ -202,3 +202,9 @@ export const getDeposits        = ()         => api("/deposits");
 export const getDepositsByStatus = (status)  => api(`/deposits/status/${status}`);
 export const approveDeposit     = (id, notes = "") => api(`/deposits/${id}/approve?notes=${encodeURIComponent(notes)}`, { method: "POST" });
 export const rejectDeposit      = (id, notes = "") => api(`/deposits/${id}/reject?notes=${encodeURIComponent(notes)}`,  { method: "POST" });
+
+// ─── Notifications ────────────────────────────
+export const getNotifications        = ()   => api('/notifications');
+export const getUnreadCount          = ()   => api('/notifications/unread-count');
+export const markNotificationRead    = (id) => api(`/notifications/${id}/read`, { method: 'PATCH' });
+export const markAllNotificationsRead = ()  => api('/notifications/read-all', { method: 'PATCH' });
