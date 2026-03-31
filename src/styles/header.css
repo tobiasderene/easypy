@@ -1,4 +1,5 @@
 /* Header.css */
+
 .header {
   background: white;
   border-bottom: 2px solid #e5e7eb;
@@ -22,9 +23,7 @@
   margin-left: 1rem;
 }
 
-.burger-button:hover {
-  opacity: 0.7;
-}
+.burger-button:hover { opacity: 0.7; }
 
 .burger-line {
   width: 24px;
@@ -41,20 +40,6 @@
   background: white;
   min-width: 80px;
   justify-content: center;
-}
-
-.logo-easy {
-  font-size: 18px;
-  text-transform: uppercase;
-  color: #056EB7;
-  letter-spacing: 0.5px;
-}
-
-.logo-drop {
-  font-size: 18px;
-  text-transform: uppercase;
-  color: #056EB7;
-  letter-spacing: 0.5px;
 }
 
 .logo-img {
@@ -84,9 +69,7 @@
   border-color: #056EB7;
 }
 
-.search-input::placeholder {
-  color: #9ca3af;
-}
+.search-input::placeholder { color: #9ca3af; }
 
 .search-icon {
   position: absolute;
@@ -106,6 +89,7 @@
   margin-left: auto;
 }
 
+/* ─── Wallet ─────────────────────────────────── */
 .wallet {
   display: flex;
   align-items: center;
@@ -121,16 +105,11 @@
   transition: all 0.3s ease;
 }
 
-.wallet:hover {
-  background: #DBEAFE;
-}
+.wallet:hover { background: #DBEAFE; }
 
-.wallet-icon {
-  width: 20px;
-  height: 20px;
-}
+.wallet-icon { width: 20px; height: 20px; }
 
-/* Cart Button */
+/* ─── Cart ───────────────────────────────────── */
 .cart-button {
   position: relative;
   display: flex;
@@ -146,22 +125,7 @@
   transition: all 0.3s ease;
 }
 
-.cart-button svg {
-  width: 20px !important;
-  height: 20px !important;
-  display: block;
-}
-
-.cart-button:hover {
-  background: #DBEAFE;
-}
-
-.cart-icon {
-  width: 20px !important;
-  height: 20px !important;
-  display: block;
-  flex-shrink: 0;
-}
+.cart-button:hover { background: #DBEAFE; }
 
 .cart-badge {
   position: absolute;
@@ -181,6 +145,7 @@
   line-height: 1;
 }
 
+/* ─── User ───────────────────────────────────── */
 .user-button {
   display: flex;
   align-items: center;
@@ -194,9 +159,7 @@
   margin-right: 1rem;
 }
 
-.user-button:hover {
-  border-color: #056EB7;
-}
+.user-button:hover { border-color: #056EB7; }
 
 .user-avatar {
   width: 36px;
@@ -224,40 +187,203 @@
   color: #374151;
 }
 
+/* ─── Notifications ──────────────────────────── */
+.notif-wrap {
+  position: relative;
+}
+
+.notif-btn {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  background: white;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.notif-btn:hover {
+  border-color: #056EB7;
+  color: #056EB7;
+  background: #eff6ff;
+}
+
+.notif-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  background: #dc2626;
+  color: white;
+  font-size: 10px;
+  font-weight: 800;
+  border-radius: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  border: 2px solid white;
+  line-height: 1;
+}
+
+/* ─── Dropdown ───────────────────────────────── */
+.notif-dropdown {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 340px;
+  background: white;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 14px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
+  z-index: 500;
+  overflow: hidden;
+}
+
+.notif-dropdown-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px;
+  border-bottom: 1.5px solid #f3f4f6;
+}
+
+.notif-dropdown-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: #111827;
+}
+
+.notif-read-all {
+  font-size: 11px;
+  font-weight: 600;
+  color: #056EB7;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: opacity 0.2s;
+}
+
+.notif-read-all:hover { opacity: 0.7; }
+
+/* ─── List ───────────────────────────────────── */
+.notif-list {
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.notif-list::-webkit-scrollbar       { width: 4px; }
+.notif-list::-webkit-scrollbar-track { background: transparent; }
+.notif-list::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 2px; }
+
+.notif-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 32px 16px;
+  color: #9ca3af;
+  font-size: 13px;
+}
+
+/* ─── Item ───────────────────────────────────── */
+.notif-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background 0.15s;
+  border-bottom: 1px solid #f9fafb;
+  position: relative;
+}
+
+.notif-item:hover         { background: #f9fafb; }
+.notif-item.unread        { background: #fafbff; }
+.notif-item:last-child    { border-bottom: none; }
+
+.notif-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.notif-content   { flex: 1; min-width: 0; }
+
+.notif-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 2px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.notif-message {
+  font-size: 12px;
+  color: #6b7280;
+  margin: 0 0 4px 0;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.notif-time {
+  font-size: 11px;
+  color: #9ca3af;
+  margin: 0;
+  font-weight: 500;
+}
+
+.notif-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+/* ─── Responsive ─────────────────────────────── */
 @media (max-width: 768px) {
   .header {
     padding: 12px 0px;
     gap: 12px;
   }
 
-  .logo {
-    min-width: 60px;
-  }
+  .logo        { min-width: 60px; }
+  .search-container { max-width: 300px; }
+  .wallet      { padding: 6px 12px; }
+  .user-name   { display: none; }
 
-  .logo-easy,
-  .logo-drop {
-    font-size: 14px;
-  }
-
-  .search-container {
-    max-width: 300px;
-  }
-
-  .wallet {
-    padding: 6px 12px;
-  }
-
-  .user-name {
-    display: none;
+  .notif-dropdown {
+    width: 300px;
+    right: -50px;
   }
 }
 
 @media (max-width: 480px) {
-  .search-container {
-    display: none;
-  }
+  .search-container { display: none; }
+  .wallet span      { display: none; }
 
-  .wallet span {
-    display: none;
+  .notif-dropdown {
+    width: 280px;
+    right: -70px;
   }
 }
