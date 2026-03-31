@@ -46,6 +46,7 @@ const ProviderOrders = () => {
   const [statusFilter, setStatusFilter]   = useState('all');
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showModal, setShowModal]         = useState(false);
+  const [processingId, setProcessingId]   = useState(null);
 
   useEffect(() => {
     if (user?.user_id) fetchOrders();
@@ -74,6 +75,20 @@ const ProviderOrders = () => {
     return new Intl.DateTimeFormat('es-PY', {
       year: 'numeric', month: 'short', day: 'numeric'
     }).format(date);
+  };
+
+  const handleReadyForDelivery = async (orderId) => {
+    setProcessingId(orderId);
+    try {
+      await confirmOrderSupplier(orderId);
+      setOrders(prev =>
+        prev.map(o => o.order_id === orderId ? { ...o, status: 'processing' } : o)
+      );
+    } catch {
+      alert('Ocurrió un error. Intentá de nuevo.');
+    } finally {
+      setProcessingId(null);
+    }
   };
 
   const handleUpdateOrderStatus = async (orderId, newStatus) => {
@@ -205,6 +220,8 @@ const ProviderOrders = () => {
             filteredOrders.map(order => {
               const cfg        = statusConfig[order.status] || statusConfig.pending;
               const StatusIcon = cfg.icon;
+              const isReady    = processingId === order.order_id;
+
               return (
                 <div key={order.order_id} className="order-card">
                   <div className="order-main">
@@ -242,6 +259,19 @@ const ProviderOrders = () => {
                         <StatusIcon size={16} />
                         <span>{cfg.label}</span>
                       </div>
+
+                      {/* Botón listo para entrega — solo cuando está confirmed */}
+                      {order.status === 'confirmed' && (
+                        <button
+                          className="btn-ready-delivery"
+                          onClick={() => handleReadyForDelivery(order.order_id)}
+                          disabled={isReady}
+                        >
+                          <Truck size={16} />
+                          <span>{isReady ? 'Procesando...' : 'Listo para entrega'}</span>
+                        </button>
+                      )}
+
                       <button
                         className="btn-view-details"
                         onClick={() => { setSelectedOrder(order); setShowModal(true); }}
