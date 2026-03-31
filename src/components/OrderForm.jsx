@@ -570,14 +570,6 @@ const OrderForm = () => {
               </div>
             </div>
 
-            {/* Coordenadas en el resumen */}
-            {coords && (
-              <div style={{ background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: '8px', padding: '10px 12px', fontSize: '12px', color: '#16a34a' }}>
-                <strong>Ubicación confirmada</strong><br />
-                Lat: {coords.lat.toFixed(6)} · Lng: {coords.lng.toFixed(6)}
-              </div>
-            )}
-
             {submitError && (
               <div style={{ background: '#fef2f2', border: '1.5px solid #fecaca', borderRadius: '8px', padding: '10px 12px', fontSize: '13px', color: '#dc2626' }}>
                 {submitError}
