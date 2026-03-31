@@ -282,7 +282,7 @@ const OrderForm = () => {
       navigate('/catalogo', { replace: true });
     } catch (err) {
       if (err.message?.includes('Saldo insuficiente')) {
-        setSubmitError('No tenés saldo suficiente para cubrir el costo de esta orden.');
+        setSubmitError(err.message || 'No tenés saldo suficiente para cubrir el costo del proveedor.');
       } else {
         setSubmitError(err.message || 'Ocurrió un error al crear la orden');
       }
@@ -385,7 +385,8 @@ const OrderForm = () => {
               {geoError && <span className="of-err">{geoError}</span>}
               {coords && (
                 <span style={{ fontSize: '11px', color: '#6b7280' }}>
-                  {' '}Arrastra el pin para ajustar
+                  📍 {coords.lat.toFixed(6)}, {coords.lng.toFixed(6)}
+                  {' '}— podés arrastrar el pin para ajustar
                 </span>
               )}
             </div>
@@ -492,7 +493,11 @@ const OrderForm = () => {
                   Sin Recaudo
                 </button>
               </div>
-              <p className="of-hint">{form.collectionType === 'con_recaudo' ? '✓ El cliente paga contra entrega.' : '✓ Pago recibido, solo se despacha.'}</p>
+              <p className="of-hint">
+                {form.collectionType === 'con_recaudo'
+                  ? '✓ El cliente paga contra entrega. No necesitás saldo previo.'
+                  : '✓ Ya cobraste del cliente. Se reservará el costo del proveedor de tu wallet.'}
+              </p>
             </div>
 
             <div className="of-field">
@@ -564,6 +569,14 @@ const OrderForm = () => {
                 </span>
               </div>
             </div>
+
+            {/* Coordenadas en el resumen */}
+            {coords && (
+              <div style={{ background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: '8px', padding: '10px 12px', fontSize: '12px', color: '#16a34a' }}>
+                <strong>Ubicación confirmada</strong><br />
+                Lat: {coords.lat.toFixed(6)} · Lng: {coords.lng.toFixed(6)}
+              </div>
+            )}
 
             {submitError && (
               <div style={{ background: '#fef2f2', border: '1.5px solid #fecaca', borderRadius: '8px', padding: '10px 12px', fontSize: '13px', color: '#dc2626' }}>
