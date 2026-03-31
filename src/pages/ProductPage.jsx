@@ -64,9 +64,13 @@ const ProductPage = () => {
     </div>
   );
 
-  const currentImage  = images[selectedImage]?.image_url || null;
-  const discount      = product.product_discount ? parseFloat(product.product_discount) : 0;
-  const originalPrice = discount > 0 ? parseFloat(product.product_base_cost) / (1 - discount / 100) : null;
+  const currentImage    = images[selectedImage]?.image_url || null;
+  const discount        = product.product_discount ? parseFloat(product.product_discount) : 0;
+  const originalPrice   = discount > 0 ? parseFloat(product.product_base_cost) / (1 - discount / 100) : null;
+  const suggestedPrice  = product.suggested_price ? parseFloat(product.suggested_price) : null;
+  const suggestedMargin = suggestedPrice
+    ? Math.round(((suggestedPrice - parseFloat(product.product_base_cost)) / suggestedPrice) * 100)
+    : null;
 
   return (
     <div className="product-page">
@@ -115,12 +119,50 @@ const ProductPage = () => {
 
             <h1 className="product-title">{product.product_name}</h1>
 
+            {/* Precios */}
             <div className="price-section">
               <div className="price-row">
                 <span className="current-price">{formatPrice(product.product_base_cost)}</span>
                 {originalPrice && <span className="original-price">{formatPrice(originalPrice)}</span>}
               </div>
-              {discount > 0 && <div className="save-text">Ahorrás {discount}% con este precio</div>}
+              {discount > 0 && (
+                <div className="save-text">Ahorrás {discount}% con este precio</div>
+              )}
+
+              {/* Precio sugerido */}
+              {suggestedPrice && (
+                <div style={{
+                  marginTop: '12px',
+                  paddingTop: '12px',
+                  borderTop: '1.5px dashed #bfdbfe',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '8px',
+                }}>
+                  <div>
+                    <p style={{ fontSize: '11px', fontWeight: '700', color: '#056EB7', textTransform: 'uppercase', letterSpacing: '0.4px', margin: '0 0 2px 0' }}>
+                      Precio sugerido de venta
+                    </p>
+                    <p style={{ fontSize: '22px', fontWeight: '800', color: '#16a34a', margin: 0 }}>
+                      {formatPrice(suggestedPrice)}
+                    </p>
+                  </div>
+                  {suggestedMargin > 0 && (
+                    <div style={{
+                      background: '#f0fdf4',
+                      border: '1.5px solid #86efac',
+                      borderRadius: '8px',
+                      padding: '6px 12px',
+                      textAlign: 'center',
+                    }}>
+                      <p style={{ fontSize: '10px', color: '#16a34a', fontWeight: '600', margin: '0 0 1px 0' }}>Margen estimado</p>
+                      <p style={{ fontSize: '16px', fontWeight: '800', color: '#16a34a', margin: 0 }}>{suggestedMargin}%</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {product.product_description && <p className="description">{product.product_description}</p>}
@@ -136,7 +178,7 @@ const ProductPage = () => {
             </div>
 
             <div className="stock-info">
-              <span className="stock-dot"></span>
+              <span className="stock-dot" />
               <span className="stock-text">{product.product_status === 'active' ? 'Disponible' : 'No disponible'}</span>
             </div>
 
@@ -157,7 +199,13 @@ const ProductPage = () => {
         </div>
 
         <div className="specs-grid">
-          {[['Nombre', product.product_name], ['SKU', product.product_sku], ['Categoría', product.product_category], ['Estado', product.product_status === 'active' ? 'Disponible' : 'No disponible']].map(([label, value]) => (
+          {[
+            ['Nombre',    product.product_name],
+            ['SKU',       product.product_sku],
+            ['Categoría', product.product_category],
+            ['Estado',    product.product_status === 'active' ? 'Disponible' : 'No disponible'],
+            ...(suggestedPrice ? [['Precio sugerido', formatPrice(suggestedPrice)]] : []),
+          ].map(([label, value]) => (
             <div key={label} className="spec-item">
               <div className="spec-label">{label}:</div>
               <div className="spec-value">{value || '—'}</div>
