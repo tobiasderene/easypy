@@ -76,10 +76,10 @@ const ProviderCatalog = () => {
   const categories = [...new Set(products.map(p => p.product_category))];
 
   const stats = {
-    totalProducts: products.length,
+    totalProducts:  products.length,
     activeProducts: products.filter(p => p.product_status === 'active').length,
-    totalRevenue: 0, // sin datos de ventas por ahora
-    lowStock: 0,
+    outOfStock:     products.filter(p => p.product_status === 'out_of_stock').length,
+    lowStock:       products.filter(p => p.stock_available > 0 && p.stock_available <= 5).length,
   };
 
   if (loading) return <div className="provider-catalog-page" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}><p>Cargando productos...</p></div>;
@@ -124,8 +124,8 @@ const ProviderCatalog = () => {
           <div className="catalog-stat-card">
             <div className="stat-icon revenue"><TrendingUp size={24} /></div>
             <div className="stat-info">
-              <span className="stat-label">Inactivos</span>
-              <span className="stat-value">{stats.totalProducts - stats.activeProducts}</span>
+              <span className="stat-label">Sin stock</span>
+              <span className="stat-value">{stats.outOfStock}</span>
             </div>
           </div>
         </div>
@@ -150,6 +150,7 @@ const ProviderCatalog = () => {
                 <option value="all">Todos los estados</option>
                 <option value="active">Activos</option>
                 <option value="inactive">Inactivos</option>
+                <option value="out_of_stock">Sin stock</option>
               </select>
             </div>
             <div className="filter-item">
@@ -183,6 +184,9 @@ const ProviderCatalog = () => {
                   {product.product_status === 'inactive' && (
                     <div className="out-of-stock-badge">Inactivo</div>
                   )}
+                  {product.product_status === 'out_of_stock' && (
+                    <div className="out-of-stock-badge" style={{ background: '#dc2626' }}>Sin stock</div>
+                  )}
                 </div>
 
                 <div className="catalog-product-info">
@@ -207,6 +211,10 @@ const ProviderCatalog = () => {
                     <div className="detail-row">
                       <span className="detail-label">Categoría:</span>
                       <span className="detail-value">{product.product_category}</span>
+                    </div>
+                    <div className="detail-row">
+                      <span className="detail-label">Descuento:</span>
+                      <span className="detail-value">{product.product_discount}%</span>
                     </div>
                   </div>
 

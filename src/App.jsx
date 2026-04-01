@@ -22,6 +22,7 @@ import Analytics from './pages/Analytics';
 import AuthCallback from './pages/AuthCallback';
 import OrderForm from './components/OrderForm';
 import LogisticsPanel from './pages/LogisticsPanel';
+import EditProductForm from './pages/EditProductForm';
 import { getMe, exchangeSession, getWalletByUser } from './services/api';
 import './App.css';
 
@@ -204,6 +205,7 @@ function App() {
           <Route path="/provider-orders"  element={<ProviderRoute><ProviderOrders /></ProviderRoute>} />
           <Route path="/provider-catalog" element={<ProviderRoute><ProviderCatalog /></ProviderRoute>} />
           <Route path="/add-product"      element={<ProviderRoute><AddProductForm /></ProviderRoute>} />
+          <Route path="/edit-product/:id"  element={<ProviderRoute><EditProductForm /></ProviderRoute>} />
 
           {/* Rutas logistics */}
           <Route path="/logistics" element={<LogisticsRoute><LogisticsPanel /></LogisticsRoute>} />
