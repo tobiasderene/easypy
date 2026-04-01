@@ -11,7 +11,7 @@ const AddProductForm = () => {
 
   const [formData, setFormData] = useState({
     name: '', sku: '', description: '', category: '',
-    price: '', discount: '0', suggested_price: '', images: []
+    price: '', discount: '0', suggested_price: '', stock: '', images: []
   });
   const [errors, setErrors]             = useState({});
   const [previewImages, setPreviewImages] = useState([]);
@@ -82,6 +82,8 @@ const AddProductForm = () => {
         product_status:      'active',
         user_id:             user.user_id,
         suggested_price:     formData.suggested_price ? parseFloat(formData.suggested_price) : null,
+        stock_available:     formData.stock ? parseInt(formData.stock) : 0,
+        stock_reserved:      0,
         created_at:          new Date().toISOString(),
       });
 
@@ -226,6 +228,18 @@ const AddProductForm = () => {
                     onChange={handleInputChange} placeholder="0" min="0" step="100" />
                 </div>
                 <span className="char-count" style={{ marginTop: '4px' }}>Opcional — visible para los vendedores en el catálogo</span>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="stock">Stock disponible *</label>
+                <div className="input-with-icon">
+                  <Package size={18} />
+                  <input type="number" id="stock" name="stock" value={formData.stock}
+                    onChange={handleInputChange} placeholder="0" min="0" step="1"
+                    className={errors.stock ? 'error' : ''} />
+                </div>
+                {errors.stock && <span className="error-text">{errors.stock}</span>}
+                <span className="char-count" style={{ marginTop: '4px' }}>Unidades disponibles para vender</span>
               </div>
 
             </div>
