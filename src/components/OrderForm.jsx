@@ -385,7 +385,7 @@ const OrderForm = () => {
               {geoError && <span className="of-err">{geoError}</span>}
               {coords && (
                 <span style={{ fontSize: '11px', color: '#6b7280' }}>
-                  {' '}— podés arrastrar el pin para ajustar
+                  {' '} Arrastra el pin para ajustar
                 </span>
               )}
             </div>
