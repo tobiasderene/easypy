@@ -1,101 +1,122 @@
-/* admin.css */
+/* adminpage.css */
 
-.admin-container {
+.admin-page {
   min-height: 100vh;
   background: #f9fafb;
-  padding: 28px 24px;
+  padding: 24px;
 }
 
-/* Header */
+/* ─── Header ─────────────────────────────────── */
 .admin-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
   margin-bottom: 28px;
+  flex-wrap: wrap;
 }
 
-.admin-title {
-  font-size: 26px;
+.admin-header-left h1 {
+  font-size: 24px;
   font-weight: 800;
   color: #111827;
-  letter-spacing: -0.5px;
-  margin-bottom: 4px;
+  letter-spacing: -0.4px;
+  margin: 0 0 4px 0;
 }
 
-.admin-subtitle {
-  font-size: 14px;
+.admin-header-left p {
+  font-size: 13px;
   color: #6b7280;
+  margin: 0;
 }
 
-/* Tabs */
-.admin-tabs {
+.admin-header-actions {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ─── Tabs ───────────────────────────────────── */
+.admin-tabs {
+  display: flex;
+  gap: 4px;
   margin-bottom: 24px;
   border-bottom: 2px solid #e5e7eb;
-  padding-bottom: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
+
+.admin-tabs::-webkit-scrollbar { display: none; }
 
 .admin-tab {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
+  gap: 6px;
+  padding: 10px 18px;
   background: none;
   border: none;
   border-bottom: 3px solid transparent;
   margin-bottom: -2px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: #6b7280;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 
-.admin-tab:hover {
-  color: #056EB7;
-}
+.admin-tab:hover { color: #056EB7; }
 
 .admin-tab.active {
   color: #056EB7;
   border-bottom-color: #056EB7;
 }
 
-.tab-icon {
-  font-size: 16px;
+.tab-icon { font-size: 15px; }
+
+.tab-badge {
+  background: #eff6ff;
+  color: #056EB7;
+  border: 1px solid #bfdbfe;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 100px;
+  min-width: 18px;
+  text-align: center;
 }
 
-/* Body */
-.admin-body {
-  max-width: 900px;
-}
-
-/* Tab content */
+/* ─── Tab content ────────────────────────────── */
 .tab-content {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  max-width: 900px;
 }
 
 .tab-header {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   margin-bottom: 4px;
 }
 
 .tab-title {
-  font-size: 18px;
+  font-size: 17px;
   font-weight: 700;
   color: #111827;
+  margin: 0;
 }
 
 .tab-count {
-  background: #EFF6FF;
+  background: #eff6ff;
   color: #056EB7;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   padding: 3px 10px;
-  border-radius: 999px;
-  border: 1px solid #BFDBFE;
+  border-radius: 100px;
+  border: 1px solid #bfdbfe;
 }
 
 .tab-loading {
@@ -105,53 +126,53 @@
   font-size: 14px;
 }
 
-/* Empty state */
-.empty-state {
+/* ─── Empty ──────────────────────────────────── */
+.admin-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   padding: 60px 20px;
   color: #9ca3af;
-  font-size: 14px;
+  font-size: 13px;
+  background: white;
+  border-radius: 12px;
+  border: 1.5px solid #e5e7eb;
 }
 
-.empty-icon {
-  font-size: 40px;
-}
+.admin-empty-icon { font-size: 36px; }
 
-/* Card list */
-.card-list {
+/* ─── Card list ──────────────────────────────── */
+.admin-card-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
-/* Admin card */
+/* ─── Admin card ─────────────────────────────── */
 .admin-card {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
   background: white;
-  border: 2px solid #e5e7eb;
+  border: 1.5px solid #e5e7eb;
   border-radius: 12px;
-  padding: 16px 20px;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  padding: 14px 18px;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .admin-card:hover {
-  border-color: #BFDBFE;
-  box-shadow: 0 2px 8px rgba(5, 110, 183, 0.08);
+  border-color: #bfdbfe;
+  box-shadow: 0 2px 8px rgba(5, 110, 183, 0.07);
 }
 
-/* Avatar */
-.card-avatar {
-  width: 44px;
-  height: 44px;
+.admin-card-avatar {
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
   background: #056EB7;
   color: white;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
   display: flex;
   align-items: center;
@@ -159,192 +180,235 @@
   flex-shrink: 0;
 }
 
-.card-avatar--money {
-  background: #EFF6FF;
-  border: 2px solid #BFDBFE;
+.admin-card-avatar.emoji {
+  background: #eff6ff;
+  border: 1.5px solid #bfdbfe;
   font-size: 20px;
 }
 
-/* Card info */
-.card-info {
+.admin-card-info {
   flex: 1;
   min-width: 0;
 }
 
-.card-name {
-  font-size: 15px;
+.admin-card-name {
+  font-size: 14px;
   font-weight: 700;
   color: #111827;
-  margin-bottom: 2px;
+  margin: 0 0 2px 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.card-sub {
-  font-size: 13px;
-  color: #6b7280;
-  margin-bottom: 1px;
-}
-
-.card-desc {
+.admin-card-sub {
   font-size: 12px;
+  color: #6b7280;
+  margin: 0 0 1px 0;
+}
+
+.admin-card-desc {
+  font-size: 11px;
   color: #9ca3af;
-  margin-top: 4px;
+  margin: 3px 0 0 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-/* Card meta */
-.card-meta {
+.admin-card-meta {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+.admin-card-date {
+  font-size: 11px;
+  color: #9ca3af;
+  margin: 0;
+}
+
+.admin-card-amount {
+  font-size: 14px;
+  font-weight: 800;
+  color: #056EB7;
+  margin: 0;
+}
+
+.admin-card-actions {
+  display: flex;
   gap: 6px;
   flex-shrink: 0;
 }
 
-.card-date {
-  font-size: 12px;
-  color: #9ca3af;
-}
-
-/* Card actions */
-.card-actions {
-  display: flex;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-/* Badges */
-.badge {
+/* ─── Badges ─────────────────────────────────── */
+.admin-badge {
   display: inline-block;
-  padding: 3px 10px;
-  border-radius: 999px;
-  font-size: 11px;
+  padding: 2px 9px;
+  border-radius: 100px;
+  font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.4px;
+  letter-spacing: 0.3px;
 }
 
-.badge-pending  { background: #FEF3C7; color: #d97706; }
-.badge-active   { background: #D1FAE5; color: #059669; }
-.badge-inactive { background: #FEE2E2; color: #dc2626; }
+.badge-pending    { background: #fef3c7; color: #d97706; }
+.badge-active     { background: #d1fae5; color: #059669; }
+.badge-inactive   { background: #fee2e2; color: #dc2626; }
+.badge-approved   { background: #d1fae5; color: #059669; }
+.badge-rejected   { background: #fee2e2; color: #dc2626; }
+.badge-confirmed  { background: #d1fae5; color: #059669; }
+.badge-processing { background: #eff6ff; color: #056EB7; }
+.badge-cancelled  { background: #fee2e2; color: #dc2626; }
+.badge-completed  { background: #f5f3ff; color: #7c3aed; }
 
-/* Buttons */
-.btn {
+/* ─── Buttons ────────────────────────────────── */
+.admin-btn {
   padding: 7px 14px;
   border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 700;
   border: none;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s;
   white-space: nowrap;
 }
 
-.btn-primary {
+.admin-btn-primary {
   background: #056EB7;
   color: white;
 }
 
-.btn-primary:hover {
-  background: #045A94;
-}
+.admin-btn-primary:hover { background: #045A94; }
 
-.btn-ghost {
+.admin-btn-ghost {
   background: #f3f4f6;
   color: #374151;
+  border: 1.5px solid #e5e7eb;
 }
 
-.btn-ghost:hover {
-  background: #e5e7eb;
+.admin-btn-ghost:hover { background: #e5e7eb; }
+
+.admin-btn-success {
+  background: #dcfce7;
+  color: #16a34a;
+  border: 1px solid #86efac;
 }
 
-.btn-success {
-  background: #D1FAE5;
-  color: #059669;
-  border: 1px solid #6EE7B7;
-}
+.admin-btn-success:hover { background: #bbf7d0; }
 
-.btn-success:hover {
-  background: #A7F3D0;
-}
-
-.btn-danger {
-  background: #FEE2E2;
+.admin-btn-danger {
+  background: #fee2e2;
   color: #dc2626;
-  border: 1px solid #FCA5A5;
+  border: 1px solid #fca5a5;
 }
 
-.btn-danger:hover {
-  background: #FECACA;
+.admin-btn-danger:hover { background: #fecaca; }
+
+.admin-btn-blue {
+  background: #eff6ff;
+  color: #056EB7;
+  border: 1px solid #bfdbfe;
 }
 
-/* Modal */
-.modal-overlay {
+.admin-btn-blue:hover { background: #dbeafe; }
+
+/* ─── Modal ──────────────────────────────────── */
+.admin-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.45);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  padding: 16px;
 }
 
-.modal {
+.admin-modal {
   background: white;
   border-radius: 14px;
-  padding: 28px 32px;
-  max-width: 400px;
-  width: 90%;
+  padding: 28px;
+  max-width: 420px;
+  width: 100%;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
 }
 
-.modal-message {
-  font-size: 15px;
+.admin-modal-title {
+  font-size: 16px;
+  font-weight: 800;
   color: #111827;
-  font-weight: 500;
-  margin-bottom: 24px;
+  margin: 0 0 8px 0;
+}
+
+.admin-modal-msg {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0 0 24px 0;
   line-height: 1.5;
 }
 
-.modal-actions {
+.admin-modal-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
+  gap: 8px;
 }
 
-.badge-processing { background: #EFF6FF; color: #056EB7; border: 1px solid #BFDBFE; }
+/* ─── Deposit image ──────────────────────────── */
+.deposit-receipt {
+  width: 100%;
+  max-height: 160px;
+  object-fit: contain;
+  border-radius: 8px;
+  border: 1.5px solid #e5e7eb;
+  margin-top: 6px;
+  cursor: pointer;
+}
 
-/* Responsive */
-@media (max-width: 640px) {
-  .admin-container {
-    padding: 16px 12px;
-  }
+/* ─── Responsive ─────────────────────────────── */
+@media (max-width: 768px) {
+  .admin-page { padding: 16px 12px; }
 
   .admin-card {
     flex-wrap: wrap;
-    gap: 12px;
+    gap: 10px;
   }
 
-  .card-meta {
+  .admin-card-meta {
     flex-direction: row;
     align-items: center;
+    width: 100%;
+    justify-content: space-between;
   }
 
-  .card-actions {
+  .admin-card-actions {
     width: 100%;
   }
 
-  .btn {
+  .admin-btn {
     flex: 1;
     text-align: center;
   }
 
   .admin-tab {
-    padding: 10px 12px;
-    font-size: 13px;
+    padding: 8px 12px;
+    font-size: 12px;
   }
+
+  .admin-header-actions {
+    width: 100%;
+  }
+
+  .admin-header-actions .admin-btn {
+    flex: 1;
+    text-align: center;
+    padding: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-header-left h1 { font-size: 20px; }
+  .tab-icon { display: none; }
 }

@@ -4,6 +4,8 @@ import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import ProviderSidebar from './components/ProviderSidebar';
 import LogisticsSidebar from './components/LogisticsSidebar';
+import AdminSidebar from './components/AdminSidebar';
+import CreateLogisticsUser from './pages/CreateLogisticsUser';
 import LoginMinimal from './pages/Login';
 import Signup from './pages/SignUp';
 import Catalog from './pages/Catalog';
@@ -47,6 +49,7 @@ const Layout = ({ children }) => {
   const renderSidebar = () => {
     if (user?.user_role === 'provider')  return <ProviderSidebar  isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />;
     if (user?.user_role === 'logistics') return <LogisticsSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />;
+    if (user?.user_role === 'admin')     return <AdminSidebar     isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />;
     return <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />;
   };
 
@@ -212,6 +215,7 @@ function App() {
 
           {/* Rutas admin */}
           <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
+          <Route path="/admin/create-logistics" element={<AdminRoute><CreateLogisticsUser /></AdminRoute>} />
 
           <Route path="/" element={<Dashboard />} />
           <Route path="*" element={

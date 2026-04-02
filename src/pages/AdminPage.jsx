@@ -1,433 +1,374 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getUsers, updateUser } from '../services/api';
-import { getWithdrawalsByStatus, updateWithdrawal } from '../services/api';
-import { getBankMovementsByStatus, updateBankMovement } from '../services/api';
-import { getOrdersByStatus, confirmOrderAdmin, cancelOrderAdmin } from '../services/api';
+import {
+  getUsers, updateUser,
+  getWithdrawalsByStatus, updateWithdrawal,
+  getDeposits, getDepositsByStatus, approveDeposit, rejectDeposit,
+  getOrdersByStatus, confirmOrderAdmin, cancelOrderAdmin,
+} from '../services/api';
 import '../styles/adminpage.css';
 
 const TABS = [
   { id: 'providers',   label: 'Proveedores', icon: '🏭' },
-  { id: 'withdrawals', label: 'Egresos',     icon: '💸' },
-  { id: 'deposits',    label: 'Ingresos',    icon: '💰' },
   { id: 'orders',      label: 'Órdenes',     icon: '📦' },
+  { id: 'deposits',    label: 'Ingresos',    icon: '💰' },
+  { id: 'withdrawals', label: 'Egresos',     icon: '💸' },
 ];
+
+// ─── Helpers ──────────────────────────────────────────
+const formatCurrency = (v) =>
+  new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', minimumFractionDigits: 0 }).format(v || 0);
+
+const formatDate = (d) => {
+  try { return new Date(d).toLocaleDateString('es-PY', { day: '2-digit', month: 'short', year: 'numeric' }); }
+  catch { return '—'; }
+};
 
 const StatusBadge = ({ status }) => {
   const map = {
-    pending:    { label: 'Pendiente',  cls: 'badge-pending'    },
-    active:     { label: 'Activo',     cls: 'badge-active'     },
-    inactive:   { label: 'Inactivo',   cls: 'badge-inactive'   },
-    approved:   { label: 'Aprobado',   cls: 'badge-active'     },
-    rejected:   { label: 'Rechazado',  cls: 'badge-inactive'   },
-    confirmed:  { label: 'Confirmado', cls: 'badge-active'     },
-    processing: { label: 'En proceso', cls: 'badge-processing' },
-    cancelled:  { label: 'Cancelado',  cls: 'badge-inactive'   },
+    pending:          { label: 'Pendiente',   cls: 'badge-pending'    },
+    active:           { label: 'Activo',      cls: 'badge-active'     },
+    inactive:         { label: 'Inactivo',    cls: 'badge-inactive'   },
+    approved:         { label: 'Aprobado',    cls: 'badge-approved'   },
+    rejected:         { label: 'Rechazado',   cls: 'badge-rejected'   },
+    confirmed:        { label: 'Confirmado',  cls: 'badge-confirmed'  },
+    processing:       { label: 'En proceso',  cls: 'badge-processing' },
+    ready_for_pickup: { label: 'Listo',       cls: 'badge-confirmed'  },
+    in_transit:       { label: 'En tránsito', cls: 'badge-processing' },
+    cancelled:        { label: 'Cancelado',   cls: 'badge-cancelled'  },
+    completed:        { label: 'Completado',  cls: 'badge-completed'  },
   };
   const s = map[status] || { label: status, cls: 'badge-pending' };
-  return <span className={`badge ${s.cls}`}>{s.label}</span>;
+  return <span className={`admin-badge ${s.cls}`}>{s.label}</span>;
 };
 
-const ConfirmModal = ({ message, onConfirm, onCancel }) => (
-  <div className="modal-overlay">
-    <div className="modal">
-      <p className="modal-message">{message}</p>
-      <div className="modal-actions">
-        <button className="btn btn-ghost" onClick={onCancel}>Cancelar</button>
-        <button className="btn btn-primary" onClick={onConfirm}>Confirmar</button>
+const ConfirmModal = ({ title, message, onConfirm, onCancel, confirmLabel = 'Confirmar', danger = false }) => (
+  <div className="admin-modal-overlay" onClick={(e) => e.target === e.currentTarget && onCancel()}>
+    <div className="admin-modal">
+      <p className="admin-modal-title">{title}</p>
+      <p className="admin-modal-msg">{message}</p>
+      <div className="admin-modal-actions">
+        <button className="admin-btn admin-btn-ghost" onClick={onCancel}>Cancelar</button>
+        <button className={`admin-btn ${danger ? 'admin-btn-danger' : 'admin-btn-primary'}`} onClick={onConfirm}>
+          {confirmLabel}
+        </button>
       </div>
     </div>
   </div>
 );
 
-// ─── Tab: Proveedores ────────────────────────────────
+// ─── Tab: Proveedores ─────────────────────────────────
 const ProvidersTab = () => {
   const [providers, setProviders] = useState([]);
   const [loading, setLoading]     = useState(true);
   const [modal, setModal]         = useState(null);
 
-  useEffect(() => { fetchProviders(); }, []);
+  useEffect(() => {
+    getUsers({ role: 'provider', status: 'pending' })
+      .then(d => setProviders(d || []))
+      .catch(() => setProviders([]))
+      .finally(() => setLoading(false));
+  }, []);
 
-  const fetchProviders = async () => {
-    try {
-      const data = await getUsers({ role: 'provider', status: 'pending' });
-      setProviders(data || []);
-    } catch {
-      setProviders([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleAction = (provider, action) => {
-    const label = action === 'active' ? 'habilitar' : 'rechazar';
+  const handleAction = (p, action) => {
     setModal({
-      message: `¿Estás seguro de que querés ${label} a ${provider.user_nickname}?`,
-      onConfirm: () => applyAction(provider.user_id, action),
+      title:        action === 'active' ? 'Habilitar proveedor' : 'Rechazar proveedor',
+      message:      `¿Querés ${action === 'active' ? 'habilitar' : 'rechazar'} a ${p.user_nickname}?`,
+      confirmLabel: action === 'active' ? 'Habilitar' : 'Rechazar',
+      danger:       action !== 'active',
+      onConfirm:    async () => {
+        setModal(null);
+        await updateUser(p.user_id, { user_status: action });
+        setProviders(prev => prev.filter(x => x.user_id !== p.user_id));
+      },
     });
   };
 
-  const applyAction = async (userId, status) => {
-    setModal(null);
-    try {
-      await updateUser(userId, { user_status: status });
-      setProviders(prev => prev.filter(p => p.user_id !== userId));
-    } catch {
-      alert('Ocurrió un error. Intentá de nuevo.');
-    }
-  };
-
-  if (loading) return <div className="tab-loading">Cargando proveedores...</div>;
+  if (loading) return <div className="tab-loading">Cargando...</div>;
 
   return (
     <div className="tab-content">
       <div className="tab-header">
         <h2 className="tab-title">Proveedores pendientes</h2>
-        <span className="tab-count">{providers.length} pendientes</span>
+        <span className="tab-count">{providers.length}</span>
       </div>
-
       {providers.length === 0 ? (
-        <div className="empty-state">
-          <span className="empty-icon">✅</span>
-          <p>No hay proveedores pendientes de aprobación</p>
-        </div>
+        <div className="admin-empty"><span className="admin-empty-icon">✅</span><p>Sin proveedores pendientes</p></div>
       ) : (
-        <div className="card-list">
+        <div className="admin-card-list">
           {providers.map(p => (
             <div key={p.user_id} className="admin-card">
-              <div className="card-avatar">{p.user_nickname?.[0]?.toUpperCase() || '?'}</div>
-              <div className="card-info">
-                <p className="card-name">{p.user_nickname}</p>
-                <p className="card-sub">{p.email}</p>
-                {p.user_description && <p className="card-desc">{p.user_description}</p>}
+              <div className="admin-card-avatar">{p.user_nickname?.[0]?.toUpperCase() || '?'}</div>
+              <div className="admin-card-info">
+                <p className="admin-card-name">{p.user_nickname}</p>
+                <p className="admin-card-sub">{p.email}</p>
+                {p.user_description && <p className="admin-card-desc">{p.user_description}</p>}
               </div>
-              <div className="card-meta">
+              <div className="admin-card-meta">
                 <StatusBadge status={p.user_status} />
-                <p className="card-date">{new Date(p.created_at).toLocaleDateString('es-PY')}</p>
+                <p className="admin-card-date">{formatDate(p.created_at)}</p>
               </div>
-              <div className="card-actions">
-                <button className="btn btn-success" onClick={() => handleAction(p, 'active')}>
-                  Habilitar
-                </button>
-                <button className="btn btn-danger" onClick={() => handleAction(p, 'inactive')}>
-                  Rechazar
-                </button>
+              <div className="admin-card-actions">
+                <button className="admin-btn admin-btn-success" onClick={() => handleAction(p, 'active')}>Habilitar</button>
+                <button className="admin-btn admin-btn-danger"  onClick={() => handleAction(p, 'inactive')}>Rechazar</button>
               </div>
             </div>
           ))}
         </div>
       )}
-
-      {modal && (
-        <ConfirmModal
-          message={modal.message}
-          onConfirm={modal.onConfirm}
-          onCancel={() => setModal(null)}
-        />
-      )}
+      {modal && <ConfirmModal {...modal} onCancel={() => setModal(null)} />}
     </div>
   );
 };
 
-// ─── Tab: Egresos ────────────────────────────────────
-const WithdrawalsTab = () => {
-  const [withdrawals, setWithdrawals] = useState([]);
-  const [loading, setLoading]         = useState(true);
-  const [modal, setModal]             = useState(null);
-
-  useEffect(() => { fetchWithdrawals(); }, []);
-
-  const fetchWithdrawals = async () => {
-    try {
-      const data = await getWithdrawalsByStatus('pending');
-      setWithdrawals(data || []);
-    } catch {
-      setWithdrawals([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleAction = (w, status) => {
-    const label = status === 'approved' ? 'aprobar' : 'rechazar';
-    setModal({
-      message: `¿Estás seguro de que querés ${label} el retiro de ${formatAmount(w.amount)}?`,
-      onConfirm: () => applyAction(w.withdrawls_id, status),
-    });
-  };
-
-  const applyAction = async (id, status) => {
-    setModal(null);
-    try {
-      await updateWithdrawal(id, { status });
-      setWithdrawals(prev => prev.filter(w => w.withdrawls_id !== id));
-    } catch {
-      alert('Ocurrió un error. Intentá de nuevo.');
-    }
-  };
-
-  const formatAmount = (amount) =>
-    new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', minimumFractionDigits: 0 }).format(amount);
-
-  if (loading) return <div className="tab-loading">Cargando egresos...</div>;
-
-  return (
-    <div className="tab-content">
-      <div className="tab-header">
-        <h2 className="tab-title">Solicitudes de egreso</h2>
-        <span className="tab-count">{withdrawals.length} pendientes</span>
-      </div>
-
-      {withdrawals.length === 0 ? (
-        <div className="empty-state">
-          <span className="empty-icon">✅</span>
-          <p>No hay solicitudes de egreso pendientes</p>
-        </div>
-      ) : (
-        <div className="card-list">
-          {withdrawals.map(w => (
-            <div key={w.withdrawls_id} className="admin-card">
-              <div className="card-avatar card-avatar--money">💸</div>
-              <div className="card-info">
-                <p className="card-name">{formatAmount(w.amount)}</p>
-                <p className="card-sub">Banco: {w.bank_name}</p>
-                <p className="card-sub">Cuenta: {w.bank_account_address}</p>
-              </div>
-              <div className="card-meta">
-                <StatusBadge status={w.status} />
-                <p className="card-date">{new Date(w.created_at).toLocaleDateString('es-PY')}</p>
-              </div>
-              <div className="card-actions">
-                <button className="btn btn-success" onClick={() => handleAction(w, 'approved')}>
-                  Aprobar
-                </button>
-                <button className="btn btn-danger" onClick={() => handleAction(w, 'rejected')}>
-                  Rechazar
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {modal && (
-        <ConfirmModal
-          message={modal.message}
-          onConfirm={modal.onConfirm}
-          onCancel={() => setModal(null)}
-        />
-      )}
-    </div>
-  );
-};
-
-// ─── Tab: Ingresos ───────────────────────────────────
-const DepositsTab = () => {
-  const [deposits, setDeposits] = useState([]);
-  const [loading, setLoading]   = useState(true);
-  const [modal, setModal]       = useState(null);
-
-  useEffect(() => { fetchDeposits(); }, []);
-
-  const fetchDeposits = async () => {
-    try {
-      const data = await getBankMovementsByStatus('pending');
-      const ingresos = (data || []).filter(d => d.bank_movement_type === 'ingreso');
-      setDeposits(ingresos);
-    } catch {
-      setDeposits([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleAction = (d, status) => {
-    const label = status === 'confirmed' ? 'confirmar' : 'rechazar';
-    setModal({
-      message: `¿Estás seguro de que querés ${label} el ingreso de ${formatAmount(d.amount)}?`,
-      onConfirm: () => applyAction(d.bank_movement_id, status),
-    });
-  };
-
-  const applyAction = async (id, status) => {
-    setModal(null);
-    try {
-      await updateBankMovement(id, { status });
-      setDeposits(prev => prev.filter(d => d.bank_movement_id !== id));
-    } catch {
-      alert('Ocurrió un error. Intentá de nuevo.');
-    }
-  };
-
-  const formatAmount = (amount) =>
-    new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', minimumFractionDigits: 0 }).format(amount);
-
-  if (loading) return <div className="tab-loading">Cargando ingresos...</div>;
-
-  return (
-    <div className="tab-content">
-      <div className="tab-header">
-        <h2 className="tab-title">Confirmaciones de ingreso</h2>
-        <span className="tab-count">{deposits.length} pendientes</span>
-      </div>
-
-      {deposits.length === 0 ? (
-        <div className="empty-state">
-          <span className="empty-icon">✅</span>
-          <p>No hay ingresos pendientes de confirmación</p>
-        </div>
-      ) : (
-        <div className="card-list">
-          {deposits.map(d => (
-            <div key={d.bank_movement_id} className="admin-card">
-              <div className="card-avatar card-avatar--money">💰</div>
-              <div className="card-info">
-                <p className="card-name">{formatAmount(d.amount)}</p>
-                <p className="card-sub">Ref: {d.reference_number}</p>
-              </div>
-              <div className="card-meta">
-                <StatusBadge status={d.status} />
-                <p className="card-date">{new Date(d.created_at).toLocaleDateString('es-PY')}</p>
-              </div>
-              <div className="card-actions">
-                <button className="btn btn-success" onClick={() => handleAction(d, 'confirmed')}>
-                  Confirmar
-                </button>
-                <button className="btn btn-danger" onClick={() => handleAction(d, 'rejected')}>
-                  Rechazar
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {modal && (
-        <ConfirmModal
-          message={modal.message}
-          onConfirm={modal.onConfirm}
-          onCancel={() => setModal(null)}
-        />
-      )}
-    </div>
-  );
-};
-
-// ─── Tab: Órdenes ────────────────────────────────────
+// ─── Tab: Órdenes ─────────────────────────────────────
 const OrdersTab = () => {
   const [orders, setOrders]   = useState([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal]     = useState(null);
 
-  useEffect(() => { fetchOrders(); }, []);
+  useEffect(() => {
+    getOrdersByStatus('pending')
+      .then(d => setOrders(d || []))
+      .catch(() => setOrders([]))
+      .finally(() => setLoading(false));
+  }, []);
 
-  const fetchOrders = async () => {
-    try {
-      const data = await getOrdersByStatus('pending');
-      setOrders(data || []);
-    } catch {
-      setOrders([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const handleConfirm = (o) => setModal({
+    title: 'Confirmar orden',
+    message: `¿Confirmás la orden #${o.order_id} por ${formatCurrency(o.final_price)}?`,
+    confirmLabel: 'Confirmar',
+    onConfirm: async () => {
+      setModal(null);
+      await confirmOrderAdmin(o.order_id);
+      setOrders(prev => prev.filter(x => x.order_id !== o.order_id));
+    },
+  });
 
-  const formatCurrency = (v) =>
-    new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', minimumFractionDigits: 0 }).format(v);
+  const handleCancel = (o) => setModal({
+    title: 'Cancelar orden',
+    message: `¿Cancelás la orden #${o.order_id}? Esta acción no se puede deshacer.`,
+    confirmLabel: 'Cancelar orden',
+    danger: true,
+    onConfirm: async () => {
+      setModal(null);
+      await cancelOrderAdmin(o.order_id);
+      setOrders(prev => prev.filter(x => x.order_id !== o.order_id));
+    },
+  });
 
-  const handleConfirm = (order) => {
-    setModal({
-      message: `¿Confirmás la orden #${order.order_id} por ${formatCurrency(order.final_price)}?`,
-      onConfirm: () => applyAction(order.order_id, 'confirm'),
-    });
-  };
-
-  const handleCancel = (order) => {
-    setModal({
-      message: `¿Cancelás la orden #${order.order_id}? Esta acción no se puede deshacer.`,
-      onConfirm: () => applyAction(order.order_id, 'cancel'),
-    });
-  };
-
-  const applyAction = async (orderId, action) => {
-    setModal(null);
-    try {
-      if (action === 'confirm') await confirmOrderAdmin(orderId);
-      else                      await cancelOrderAdmin(orderId);
-      setOrders(prev => prev.filter(o => o.order_id !== orderId));
-    } catch {
-      alert('Ocurrió un error. Intentá de nuevo.');
-    }
-  };
-
-  if (loading) return <div className="tab-loading">Cargando órdenes...</div>;
+  if (loading) return <div className="tab-loading">Cargando...</div>;
 
   return (
     <div className="tab-content">
       <div className="tab-header">
         <h2 className="tab-title">Órdenes pendientes</h2>
-        <span className="tab-count">{orders.length} pendientes</span>
+        <span className="tab-count">{orders.length}</span>
       </div>
-
       {orders.length === 0 ? (
-        <div className="empty-state">
-          <span className="empty-icon">✅</span>
-          <p>No hay órdenes pendientes de confirmación</p>
-        </div>
+        <div className="admin-empty"><span className="admin-empty-icon">✅</span><p>Sin órdenes pendientes</p></div>
       ) : (
-        <div className="card-list">
+        <div className="admin-card-list">
           {orders.map(o => (
             <div key={o.order_id} className="admin-card">
-              <div className="card-avatar card-avatar--money">📦</div>
-              <div className="card-info">
-                <p className="card-name">Orden #{o.order_id}</p>
-                <p className="card-sub">Destinatario: {o.recipient_name}</p>
-                <p className="card-sub">
-                  {o.recipient_city}{o.recipient_region ? `, ${o.recipient_region}` : ''}
-                </p>
+              <div className="admin-card-avatar emoji">📦</div>
+              <div className="admin-card-info">
+                <p className="admin-card-name">Orden #{o.order_id}</p>
+                <p className="admin-card-sub">Destinatario: {o.recipient_name || '—'}</p>
+                <p className="admin-card-sub">{o.recipient_city}{o.recipient_region ? `, ${o.recipient_region}` : ''}</p>
               </div>
-              <div className="card-meta">
+              <div className="admin-card-meta">
                 <StatusBadge status={o.status} />
-                <p className="card-name" style={{ color: '#056EB7' }}>
-                  {formatCurrency(o.final_price)}
-                </p>
-                <p className="card-date">
-                  {new Date(o.created_at).toLocaleDateString('es-PY')}
-                </p>
+                <p className="admin-card-amount">{formatCurrency(o.final_price)}</p>
+                <p className="admin-card-date">{formatDate(o.created_at)}</p>
               </div>
-              <div className="card-actions">
-                <button className="btn btn-success" onClick={() => handleConfirm(o)}>
-                  Confirmar
-                </button>
-                <button className="btn btn-danger" onClick={() => handleCancel(o)}>
-                  Cancelar
-                </button>
+              <div className="admin-card-actions">
+                <button className="admin-btn admin-btn-success" onClick={() => handleConfirm(o)}>Confirmar</button>
+                <button className="admin-btn admin-btn-danger"  onClick={() => handleCancel(o)}>Cancelar</button>
               </div>
             </div>
           ))}
         </div>
       )}
+      {modal && <ConfirmModal {...modal} onCancel={() => setModal(null)} />}
+    </div>
+  );
+};
 
-      {modal && (
-        <ConfirmModal
-          message={modal.message}
-          onConfirm={modal.onConfirm}
-          onCancel={() => setModal(null)}
-        />
+// ─── Tab: Ingresos (Depósitos) ────────────────────────
+const DepositsTab = () => {
+  const [deposits, setDeposits] = useState([]);
+  const [loading, setLoading]   = useState(true);
+  const [modal, setModal]       = useState(null);
+  const [preview, setPreview]   = useState(null);
+
+  useEffect(() => {
+    getDepositsByStatus('pending')
+      .then(d => setDeposits(d || []))
+      .catch(() => setDeposits([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleApprove = (d) => setModal({
+    title: 'Aprobar depósito',
+    message: `¿Aprobás el depósito de ${formatCurrency(d.amount)}? El saldo será acreditado inmediatamente.`,
+    confirmLabel: 'Aprobar',
+    onConfirm: async () => {
+      setModal(null);
+      await approveDeposit(d.deposit_id);
+      setDeposits(prev => prev.filter(x => x.deposit_id !== d.deposit_id));
+    },
+  });
+
+  const handleReject = (d) => setModal({
+    title: 'Rechazar depósito',
+    message: `¿Rechazás el depósito de ${formatCurrency(d.amount)}?`,
+    confirmLabel: 'Rechazar',
+    danger: true,
+    onConfirm: async () => {
+      setModal(null);
+      await rejectDeposit(d.deposit_id);
+      setDeposits(prev => prev.filter(x => x.deposit_id !== d.deposit_id));
+    },
+  });
+
+  if (loading) return <div className="tab-loading">Cargando...</div>;
+
+  return (
+    <div className="tab-content">
+      <div className="tab-header">
+        <h2 className="tab-title">Depósitos pendientes</h2>
+        <span className="tab-count">{deposits.length}</span>
+      </div>
+      {deposits.length === 0 ? (
+        <div className="admin-empty"><span className="admin-empty-icon">✅</span><p>Sin depósitos pendientes</p></div>
+      ) : (
+        <div className="admin-card-list">
+          {deposits.map(d => (
+            <div key={d.deposit_id} className="admin-card" style={{ flexWrap: 'wrap' }}>
+              <div className="admin-card-avatar emoji">💰</div>
+              <div className="admin-card-info">
+                <p className="admin-card-name">{formatCurrency(d.amount)}</p>
+                <p className="admin-card-sub">Usuario ID: {d.user_id}</p>
+                <p className="admin-card-sub">Wallet ID: {d.wallet_id}</p>
+                {/* Comprobante */}
+                {d.signed_url && (
+                  <img
+                    src={d.signed_url}
+                    alt="Comprobante"
+                    className="deposit-receipt"
+                    onClick={() => setPreview(d.signed_url)}
+                  />
+                )}
+              </div>
+              <div className="admin-card-meta">
+                <StatusBadge status={d.status} />
+                <p className="admin-card-date">{formatDate(d.created_at)}</p>
+              </div>
+              <div className="admin-card-actions">
+                <button className="admin-btn admin-btn-success" onClick={() => handleApprove(d)}>Aprobar</button>
+                <button className="admin-btn admin-btn-danger"  onClick={() => handleReject(d)}>Rechazar</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {modal && <ConfirmModal {...modal} onCancel={() => setModal(null)} />}
+
+      {/* Preview comprobante */}
+      {preview && (
+        <div className="admin-modal-overlay" onClick={() => setPreview(null)}>
+          <img src={preview} alt="Comprobante" style={{ maxWidth: '90vw', maxHeight: '90vh', borderRadius: '12px' }} />
+        </div>
       )}
     </div>
   );
 };
 
-// ─── Página principal ────────────────────────────────
-const AdminPage = () => {
-  const [activeTab, setActiveTab] = useState('providers');
+// ─── Tab: Egresos ─────────────────────────────────────
+const WithdrawalsTab = () => {
+  const [withdrawals, setWithdrawals] = useState([]);
+  const [loading, setLoading]         = useState(true);
+  const [modal, setModal]             = useState(null);
+
+  useEffect(() => {
+    getWithdrawalsByStatus('pending')
+      .then(d => setWithdrawals(d || []))
+      .catch(() => setWithdrawals([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleAction = (w, status) => setModal({
+    title:        status === 'approved' ? 'Aprobar retiro' : 'Rechazar retiro',
+    message:      `¿${status === 'approved' ? 'Aprobás' : 'Rechazás'} el retiro de ${formatCurrency(w.amount)} al banco ${w.bank_name}?`,
+    confirmLabel: status === 'approved' ? 'Aprobar' : 'Rechazar',
+    danger:       status !== 'approved',
+    onConfirm:    async () => {
+      setModal(null);
+      await updateWithdrawal(w.withdrawls_id, { status });
+      setWithdrawals(prev => prev.filter(x => x.withdrawls_id !== w.withdrawls_id));
+    },
+  });
+
+  if (loading) return <div className="tab-loading">Cargando...</div>;
 
   return (
-    <div className="admin-container">
+    <div className="tab-content">
+      <div className="tab-header">
+        <h2 className="tab-title">Retiros pendientes</h2>
+        <span className="tab-count">{withdrawals.length}</span>
+      </div>
+      {withdrawals.length === 0 ? (
+        <div className="admin-empty"><span className="admin-empty-icon">✅</span><p>Sin retiros pendientes</p></div>
+      ) : (
+        <div className="admin-card-list">
+          {withdrawals.map(w => (
+            <div key={w.withdrawls_id} className="admin-card">
+              <div className="admin-card-avatar emoji">💸</div>
+              <div className="admin-card-info">
+                <p className="admin-card-name">{formatCurrency(w.amount)}</p>
+                <p className="admin-card-sub">Banco: {w.bank_name}</p>
+                <p className="admin-card-sub">Cuenta: {w.bank_account_address}</p>
+              </div>
+              <div className="admin-card-meta">
+                <StatusBadge status={w.status} />
+                <p className="admin-card-date">{formatDate(w.created_at)}</p>
+              </div>
+              <div className="admin-card-actions">
+                <button className="admin-btn admin-btn-success" onClick={() => handleAction(w, 'approved')}>Aprobar</button>
+                <button className="admin-btn admin-btn-danger"  onClick={() => handleAction(w, 'rejected')}>Rechazar</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      {modal && <ConfirmModal {...modal} onCancel={() => setModal(null)} />}
+    </div>
+  );
+};
+
+// ─── Página principal ─────────────────────────────────
+const AdminPage = () => {
+  const navigate             = useNavigate();
+  const [activeTab, setActiveTab] = useState('providers');
+
+  const tabCounts = {}; // se podría cargar conteos dinámicos acá
+
+  return (
+    <div className="admin-page">
       <div className="admin-header">
-        <h1 className="admin-title">Panel de Administración</h1>
-        <p className="admin-subtitle">Gestioná proveedores, egresos, ingresos y órdenes pendientes</p>
+        <div className="admin-header-left">
+          <h1>Panel de Administración</h1>
+          <p>Gestioná proveedores, órdenes, ingresos y egresos</p>
+        </div>
+        <div className="admin-header-actions">
+          <button
+            className="admin-btn admin-btn-blue"
+            onClick={() => navigate('/admin/create-logistics')}
+          >
+            + Crear usuario logístico
+          </button>
+        </div>
       </div>
 
       <div className="admin-tabs">
@@ -443,15 +384,12 @@ const AdminPage = () => {
         ))}
       </div>
 
-      <div className="admin-body">
-        {activeTab === 'providers'   && <ProvidersTab />}
-        {activeTab === 'withdrawals' && <WithdrawalsTab />}
-        {activeTab === 'deposits'    && <DepositsTab />}
-        {activeTab === 'orders'      && <OrdersTab />}
-      </div>
+      {activeTab === 'providers'   && <ProvidersTab />}
+      {activeTab === 'orders'      && <OrdersTab />}
+      {activeTab === 'deposits'    && <DepositsTab />}
+      {activeTab === 'withdrawals' && <WithdrawalsTab />}
     </div>
   );
 };
-
 
 export default AdminPage;
