@@ -53,8 +53,14 @@ const CreateLogisticsUser = () => {
     setError('');
 
     try {
+      // Guardar token del admin antes de crear el nuevo usuario
+      const adminToken = localStorage.getItem('auth_token');
+
       // 1. Crear el usuario con rol logistics
       const user = await registerLocal(form.email, form.nickname, form.password, 'logistics');
+
+      // Restaurar token del admin para las siguientes llamadas
+      if (adminToken) localStorage.setItem('auth_token', adminToken);
 
       // 2. Crear empresa nueva o usar existente
       let logisticId = form.logisticId;
