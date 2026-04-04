@@ -448,6 +448,88 @@
   cursor: not-allowed;
 }
 
+/* ─── Bulk selection bar ─────────────────────── */
+.bulk-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: #eff6ff;
+  border: 1.5px solid #bfdbfe;
+  border-radius: 10px;
+  padding: 10px 16px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.bulk-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.bulk-select-all {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: none;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: #056EB7;
+  cursor: pointer;
+  padding: 0;
+  transition: opacity 0.2s;
+}
+
+.bulk-select-all:hover { opacity: 0.75; }
+
+.bulk-count {
+  font-size: 12px;
+  font-weight: 700;
+  color: #056EB7;
+  background: white;
+  border: 1px solid #bfdbfe;
+  padding: 2px 10px;
+  border-radius: 100px;
+}
+
+.bulk-confirm-btn {
+  padding: 8px 20px;
+  background: #056EB7;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.bulk-confirm-btn:hover:not(:disabled) {
+  background: #045A94;
+  transform: translateY(-1px);
+}
+
+.bulk-confirm-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ─── Order card selected state ──────────────── */
+.order-card.selected {
+  border-color: #056EB7;
+  background: #f0f7ff;
+}
+
+.order-checkbox {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding-right: 4px;
+}
+
 /* Responsive */
 @media (max-width: 1024px) {
   .stats-grid {
