@@ -68,6 +68,9 @@ export const loginLocal = (email, password) =>
 export const registerLocal = (email, name, password, userRole) =>
   api("/auth/register", { method: "POST", body: JSON.stringify({ email, name, password, user_role: userRole }) });
 
+export const adminRegisterUser = (data) =>
+  api('/auth/register/admin', { method: 'POST', body: JSON.stringify(data) });
+
 export const registerGoogle = (email, name, userRole, googleId) =>
   api("/auth/register/google", { method: "POST", body: JSON.stringify({ email, name, user_role: userRole, google_id: googleId }) });
 
