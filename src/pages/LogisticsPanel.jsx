@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useUser } from '../App';
 import { useNavigate } from 'react-router-dom';
-import { getMyLogistics, getOrdersByLogistics, pickupOrder, deliverOrder } from '../services/api';
+import { getMyLogistics, getOrdersByLogistics, pickupOrder, deliverOrder, redeliveryOrder } from '../services/api';
 import '../styles/logistics.css';
 
 const STATUS_LABELS = {
@@ -13,9 +13,10 @@ const STATUS_LABELS = {
   processing: { label: 'Procesando', color: '#8b5cf6', bg: '#f5f3ff' },
   completed:  { label: 'Entregado',  color: '#7c3aed', bg: '#f5f3ff' },
   cancelled:  { label: 'Cancelado',  color: '#dc2626', bg: '#fef2f2' },
+  redelivery: { label: 'Recoordinando', color: '#7c3aed', bg: '#f5f3ff' },
 };
 
-const FILTERS = ['all', 'confirmed', 'ready_for_pickup', 'in_transit', 'completed', 'cancelled'];
+const FILTERS = ['all', 'confirmed', 'ready_for_pickup', 'in_transit', 'redelivery', 'completed', 'cancelled'];
 
 const STATS_CONFIG = [
   { key: 'total',            label: 'Total órdenes',      color: '#056EB7', bg: '#eff6ff', border: '#056EB720' },
@@ -74,6 +75,18 @@ const LogisticsPanel = () => {
       setOrders(prev => prev.map(o => o.order_id === orderId ? { ...o, status: 'completed' } : o));
     } catch (e) {
       alert('Error al confirmar entrega: ' + (e.message || 'Error desconocido'));
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  const handleRedelivery = async (orderId) => {
+    setUpdating(orderId);
+    try {
+      await redeliveryOrder(orderId);
+      setOrders(prev => prev.map(o => o.order_id === orderId ? { ...o, status: 'redelivery' } : o));
+    } catch (e) {
+      alert('Error al marcar recoordinación: ' + (e.message || 'Error desconocido'));
     } finally {
       setUpdating(null);
     }
@@ -219,6 +232,26 @@ const LogisticsPanel = () => {
                       disabled={isUpdating}
                     >
                       {isUpdating ? 'Procesando...' : 'Confirmar entrega'}
+                    </button>
+                  )}
+
+                  {order.status === 'in_transit' && (
+                    <button
+                      className="lp-btn redelivery"
+                      onClick={() => handleRedelivery(order.order_id)}
+                      disabled={isUpdating}
+                    >
+                      {isUpdating ? 'Procesando...' : 'No entregado'}
+                    </button>
+                  )}
+
+                  {order.status === 'redelivery' && (
+                    <button
+                      className="lp-btn pickup"
+                      onClick={() => handlePickup(order.order_id)}
+                      disabled={isUpdating}
+                    >
+                      {isUpdating ? 'Procesando...' : 'Reintentar entrega'}
                     </button>
                   )}
                 </div>
