@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useUser } from '../App';
 import { useNavigate } from 'react-router-dom';
 import { getMyLogistics, getOrdersByLogistics, pickupOrder, deliverOrder, redeliveryOrder, cancelOrderAdmin } from '../services/api';
-import '../styles/logistics.css';
+import '../styles/logisticspanel.css';
 
 const STATUS_LABELS = {
   pending:    { label: 'Pendiente',  color: '#2563eb', bg: '#eff6ff' },
