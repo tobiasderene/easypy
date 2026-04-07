@@ -7,10 +7,10 @@ import '../styles/adminpage.css';
 const CreateLogisticsUser = () => {
   const navigate = useNavigate();
 
-  const [logistics, setLogistics]   = useState([]);
-  const [step, setStep]             = useState(1); // 1: form, 2: success
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError]           = useState('');
+  const [logistics, setLogistics]     = useState([]);
+  const [step, setStep]               = useState(1);
+  const [submitting, setSubmitting]   = useState(false);
+  const [error, setError]             = useState('');
   const [createdUser, setCreatedUser] = useState(null);
 
   const [form, setForm] = useState({
@@ -18,7 +18,7 @@ const CreateLogisticsUser = () => {
     email:           '',
     password:        '',
     confirmPassword: '',
-    logisticOption:  'existing',  // 'existing' | 'new'
+    logisticOption:  'existing',
     logisticId:      '',
     newLogisticName: '',
     apiType:         'manual',
@@ -43,8 +43,14 @@ const CreateLogisticsUser = () => {
     if (!form.password)               return 'La contraseña es requerida';
     if (form.password.length < 8)     return 'La contraseña debe tener al menos 8 caracteres';
     if (form.password !== form.confirmPassword) return 'Las contraseñas no coinciden';
-    if (form.logisticOption === 'existing' && !form.logisticId) return 'Seleccioná una empresa logística';
-    if (form.logisticOption === 'new' && !form.newLogisticName.trim()) return 'Ingresá el nombre de la nueva empresa';
+    if (form.logisticOption === 'existing' && !form.logisticId)
+      return 'Seleccioná una empresa logística';
+    if (form.logisticOption === 'new' && !form.newLogisticName.trim())
+      return 'Ingresá el nombre de la nueva empresa';
+    if (form.logisticOption === 'new' && form.apiType === 'external_api') {
+      if (!form.apiUrl.trim()) return 'La URL de la API es requerida';
+      if (!form.apiKey.trim()) return 'El token de la API es requerido';
+    }
     return null;
   };
 
@@ -56,7 +62,7 @@ const CreateLogisticsUser = () => {
     setError('');
 
     try {
-      // 1. Crear usuario logístico sin tocar el token del admin
+      // 1. Crear usuario sin tocar el token del admin
       const user = await adminRegisterUser({
         email:     form.email,
         name:      form.nickname,
@@ -89,6 +95,16 @@ const CreateLogisticsUser = () => {
     }
   };
 
+  const resetForm = () => {
+    setStep(1);
+    setForm({
+      nickname: '', email: '', password: '', confirmPassword: '',
+      logisticOption: 'existing', logisticId: '', newLogisticName: '',
+      apiType: 'manual', apiUrl: '', apiKey: '',
+    });
+  };
+
+  // ── Step 2: Success ───────────────────────────────
   if (step === 2) return (
     <div className="admin-page">
       <div style={{ maxWidth: '520px', margin: '0 auto' }}>
@@ -108,23 +124,20 @@ const CreateLogisticsUser = () => {
             <p style={{ fontSize: '13px', color: '#374151', margin: '0 0 6px 0' }}>
               <strong>Email:</strong> {form.email}
             </p>
+            <p style={{ fontSize: '13px', color: '#374151', margin: '0 0 6px 0' }}>
+              <strong>Empresa:</strong> {form.logisticOption === 'new'
+                ? form.newLogisticName
+                : logistics.find(l => l.logistic_id === parseInt(form.logisticId))?.name || '—'}
+            </p>
             <p style={{ fontSize: '13px', color: '#374151', margin: 0 }}>
-              <strong>Empresa:</strong> {form.logisticOption === 'new' ? form.newLogisticName : logistics.find(l => l.logistic_id === parseInt(form.logisticId))?.name || '—'}
+              <strong>Integración:</strong> {form.logisticOption === 'new' && form.apiType === 'external_api' ? 'API externa automática' : 'Panel manual'}
             </p>
           </div>
           <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
-            <button
-              className="admin-btn admin-btn-ghost"
-              style={{ flex: 1 }}
-              onClick={() => { setStep(1); setForm({ nickname: '', email: '', password: '', confirmPassword: '', logisticOption: 'existing', logisticId: '', newLogisticName: '' }); }}
-            >
+            <button className="admin-btn admin-btn-ghost" style={{ flex: 1 }} onClick={resetForm}>
               Crear otro
             </button>
-            <button
-              className="admin-btn admin-btn-primary"
-              style={{ flex: 1 }}
-              onClick={() => navigate('/admin')}
-            >
+            <button className="admin-btn admin-btn-primary" style={{ flex: 1 }} onClick={() => navigate('/admin')}>
               Volver al panel
             </button>
           </div>
@@ -133,6 +146,7 @@ const CreateLogisticsUser = () => {
     </div>
   );
 
+  // ── Step 1: Form ──────────────────────────────────
   return (
     <div className="admin-page">
       <div className="admin-header">
@@ -148,87 +162,63 @@ const CreateLogisticsUser = () => {
       </div>
 
       <div style={{ maxWidth: '520px' }}>
-        <div style={{ background: 'white', border: '1.5px solid #e5e7eb', borderRadius: '16px', padding: '28px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div style={{
+          background: 'white', border: '1.5px solid #e5e7eb', borderRadius: '16px',
+          padding: '28px', display: 'flex', flexDirection: 'column', gap: '20px',
+        }}>
 
-          {/* Datos del usuario */}
+          {/* ── Datos del usuario ── */}
           <div>
-            <p style={{ fontSize: '13px', fontWeight: '700', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.4px', margin: '0 0 14px 0' }}>
-              Datos del usuario
-            </p>
+            <p style={sectionLabel}>Datos del usuario</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <Field label="Nombre de usuario *" error={null}>
-                <input
-                  className="of-input"
-                  placeholder="Ej: Transportes Ramírez"
-                  value={form.nickname}
-                  onChange={e => handleChange('nickname', e.target.value)}
-                />
+              <Field label="Nombre de usuario *">
+                <input className="of-input" placeholder="Ej: Transportes Ramírez"
+                  value={form.nickname} onChange={e => handleChange('nickname', e.target.value)} />
               </Field>
               <Field label="Email *">
-                <input
-                  className="of-input"
-                  type="email"
-                  placeholder="logistica@empresa.com"
-                  value={form.email}
-                  onChange={e => handleChange('email', e.target.value)}
-                />
+                <input className="of-input" type="email" placeholder="logistica@empresa.com"
+                  value={form.email} onChange={e => handleChange('email', e.target.value)} />
               </Field>
               <Field label="Contraseña *">
-                <input
-                  className="of-input"
-                  type="password"
-                  placeholder="Mínimo 8 caracteres"
-                  value={form.password}
-                  onChange={e => handleChange('password', e.target.value)}
-                />
+                <input className="of-input" type="password" placeholder="Mínimo 8 caracteres"
+                  value={form.password} onChange={e => handleChange('password', e.target.value)} />
               </Field>
               <Field label="Confirmar contraseña *">
-                <input
-                  className="of-input"
-                  type="password"
-                  placeholder="Repetí la contraseña"
-                  value={form.confirmPassword}
-                  onChange={e => handleChange('confirmPassword', e.target.value)}
-                />
+                <input className="of-input" type="password" placeholder="Repetí la contraseña"
+                  value={form.confirmPassword} onChange={e => handleChange('confirmPassword', e.target.value)} />
               </Field>
             </div>
           </div>
 
-          {/* Empresa logística */}
+          {/* ── Empresa logística ── */}
           <div style={{ borderTop: '1.5px solid #f3f4f6', paddingTop: '20px' }}>
-            <p style={{ fontSize: '13px', fontWeight: '700', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.4px', margin: '0 0 14px 0' }}>
-              Empresa logística
-            </p>
+            <p style={sectionLabel}>Empresa logística</p>
 
+            {/* Toggle existing / new */}
             <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
               {[
                 { value: 'existing', label: 'Empresa existente' },
                 { value: 'new',      label: 'Crear nueva empresa' },
               ].map(opt => (
-                <button
-                  key={opt.value}
-                  onClick={() => handleChange('logisticOption', opt.value)}
+                <button key={opt.value} onClick={() => handleChange('logisticOption', opt.value)}
                   style={{
-                    flex: 1, padding: '8px', borderRadius: '8px', fontSize: '12px', fontWeight: '700',
-                    cursor: 'pointer', transition: 'all 0.2s',
+                    flex: 1, padding: '8px', borderRadius: '8px', fontSize: '12px',
+                    fontWeight: '700', cursor: 'pointer', transition: 'all 0.2s',
                     background: form.logisticOption === opt.value ? '#056EB7' : 'white',
                     color:      form.logisticOption === opt.value ? 'white'   : '#6b7280',
                     border:     form.logisticOption === opt.value ? 'none'    : '1.5px solid #e5e7eb',
-                  }}
-                >
+                  }}>
                   {opt.label}
                 </button>
               ))}
             </div>
 
-            {form.logisticOption === 'existing' ? (
+            {/* Existing company */}
+            {form.logisticOption === 'existing' && (
               <Field label="Seleccioná la empresa *">
-                <select
-                  className="of-input"
-                  value={form.logisticId}
+                <select className="of-input" value={form.logisticId}
                   onChange={e => handleChange('logisticId', e.target.value)}
-                  style={{ background: 'white' }}
-                >
+                  style={{ background: 'white' }}>
                   <option value="">— Seleccioná —</option>
                   {logistics.map(l => (
                     <option key={l.logistic_id} value={l.logistic_id}>
@@ -237,65 +227,69 @@ const CreateLogisticsUser = () => {
                   ))}
                 </select>
               </Field>
-            ) : (
-              <Field label="Nombre de la empresa *">
-                <input
-                  className="of-input"
-                  placeholder="Ej: Transportes del Sur"
-                  value={form.newLogisticName}
-                  onChange={e => handleChange('newLogisticName', e.target.value)}
-                />
-              </Field>
+            )}
 
-              {/* Tipo de integración */}
-              <Field label="Tipo de integración">
-                <select
-                  className="of-input"
-                  value={form.apiType}
-                  onChange={e => handleChange('apiType', e.target.value)}
-                  style={{ background: 'white' }}
-                >
-                  <option value="manual">Manual — panel logístico</option>
-                  <option value="external_api">API externa — automático</option>
-                </select>
-              </Field>
+            {/* New company */}
+            {form.logisticOption === 'new' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <Field label="Nombre de la empresa *">
+                  <input className="of-input" placeholder="Ej: Transportes del Sur"
+                    value={form.newLogisticName}
+                    onChange={e => handleChange('newLogisticName', e.target.value)} />
+                </Field>
 
-              {form.apiType === 'external_api' && (<>
-                <Field label="URL base de la API *">
-                  <input
-                    className="of-input"
-                    placeholder="https://api.logistica.com"
-                    value={form.apiUrl}
-                    onChange={e => handleChange('apiUrl', e.target.value)}
-                  />
+                <Field label="Tipo de integración">
+                  <select className="of-input" value={form.apiType}
+                    onChange={e => handleChange('apiType', e.target.value)}
+                    style={{ background: 'white' }}>
+                    <option value="manual">Manual — panel logístico</option>
+                    <option value="external_api">API externa — automático</option>
+                  </select>
                 </Field>
-                <Field label="API Key / Token *">
-                  <input
-                    className="of-input"
-                    type="password"
-                    placeholder="Token de autenticación"
-                    value={form.apiKey}
-                    onChange={e => handleChange('apiKey', e.target.value)}
-                  />
-                </Field>
-                <div style={{ background: '#fffbeb', border: '1.5px solid #fde68a', borderRadius: '8px', padding: '10px 12px', fontSize: '12px', color: '#92400e' }}>
-                  ⚡ Modo automático — los paquetes se crearán en la API externa cuando el proveedor marque "Listo para retirar"
-                </div>
-              </>)}
+
+                {form.apiType === 'external_api' && (
+                  <>
+                    <Field label="URL base de la API *">
+                      <input className="of-input" placeholder="https://api.logistica.com"
+                        value={form.apiUrl}
+                        onChange={e => handleChange('apiUrl', e.target.value)} />
+                    </Field>
+                    <Field label="API Key / Token *">
+                      <input className="of-input" type="password"
+                        placeholder="Token de autenticación"
+                        value={form.apiKey}
+                        onChange={e => handleChange('apiKey', e.target.value)} />
+                    </Field>
+                    <div style={{
+                      background: '#fffbeb', border: '1.5px solid #fde68a',
+                      borderRadius: '8px', padding: '10px 12px',
+                      fontSize: '12px', color: '#92400e',
+                    }}>
+                      ⚡ Modo automático — los paquetes se crearán en la API externa cuando el proveedor marque "Listo para retirar"
+                    </div>
+                  </>
+                )}
+              </div>
             )}
           </div>
 
           {error && (
-            <div style={{ background: '#fef2f2', border: '1.5px solid #fecaca', borderRadius: '8px', padding: '10px 14px', fontSize: '13px', color: '#dc2626' }}>
+            <div style={{
+              background: '#fef2f2', border: '1.5px solid #fecaca',
+              borderRadius: '8px', padding: '10px 14px',
+              fontSize: '13px', color: '#dc2626',
+            }}>
               {error}
             </div>
           )}
 
           <div style={{ display: 'flex', gap: '10px' }}>
-            <button className="admin-btn admin-btn-ghost" style={{ flex: 0.5 }} onClick={() => navigate('/admin')} disabled={submitting}>
+            <button className="admin-btn admin-btn-ghost" style={{ flex: 0.5 }}
+              onClick={() => navigate('/admin')} disabled={submitting}>
               Cancelar
             </button>
-            <button className="admin-btn admin-btn-primary" style={{ flex: 1, padding: '12px' }} onClick={handleSubmit} disabled={submitting}>
+            <button className="admin-btn admin-btn-primary" style={{ flex: 1, padding: '12px' }}
+              onClick={handleSubmit} disabled={submitting}>
               {submitting ? 'Creando...' : 'Crear usuario logístico'}
             </button>
           </div>
@@ -306,7 +300,11 @@ const CreateLogisticsUser = () => {
   );
 };
 
-// ─── Helper component ─────────────────────────────────
+const sectionLabel = {
+  fontSize: '13px', fontWeight: '700', color: '#374151',
+  textTransform: 'uppercase', letterSpacing: '0.4px', margin: '0 0 14px 0',
+};
+
 const Field = ({ label, children }) => (
   <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
     <label style={{ fontSize: '11px', fontWeight: '700', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
