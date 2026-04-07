@@ -85,7 +85,7 @@ const Providers = () => {
             <div
               key={provider.user_id}
               className="provider-card"
-              onClick={() => navigate(`/proveedor/${provider.user_id}`)}
+              onClick={() => navigate(`/perfil-proveedor/${provider.user_id}`)}
               style={{ cursor: 'pointer' }}
             >
               {/* Avatar / Image */}
@@ -133,7 +133,7 @@ const Providers = () => {
 
                 <button
                   className="contact-provider-btn"
-                  onClick={(e) => { e.stopPropagation(); navigate(`/proveedor/${provider.user_id}`); }}
+                  onClick={(e) => { e.stopPropagation(); navigate(`/perfil-proveedor/${provider.user_id}`); }}
                 >
                   Ver perfil
                 </button>

@@ -85,7 +85,8 @@ export const updateUser   = (userId, data) =>
 
 // ─── Products ─────────────────────────────────────────
 export const getProducts   = (skip = 0, limit = 100) => api(`/products?skip=${skip}&limit=${limit}`);
-export const getMyProducts = (skip = 0, limit = 100) => api(`/products/my-products?skip=${skip}&limit=${limit}`);
+export const getMyProducts    = (skip = 0, limit = 100) => api(`/products/my-products?skip=${skip}&limit=${limit}`);
+export const getProductsByUser = (userId, skip = 0, limit = 100) => api(`/products/user/${userId}?skip=${skip}&limit=${limit}`);
 export const getProduct    = (productId)             => api(`/products/${productId}`);
 export const createProduct = (data)                  => api("/products", { method: "POST", body: JSON.stringify(data) });
 export const updateProduct = (productId, data)       => api(`/products/${productId}`, { method: "PATCH", body: JSON.stringify(data) });

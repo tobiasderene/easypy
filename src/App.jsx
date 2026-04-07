@@ -24,6 +24,7 @@ import Analytics from './pages/Analytics';
 import AuthCallback from './pages/AuthCallback';
 import OrderForm from './components/OrderForm';
 import LogisticsPanel from './pages/LogisticsPanel';
+import ProviderProfile from './pages/ProviderProfile';
 import EditProductForm from './pages/EditProductForm';
 import { getMe, exchangeSession, getWalletByUser } from './services/api';
 import './App.css';
@@ -203,6 +204,9 @@ function App() {
 
           {/* Configuración — disponible para seller y logistics */}
           <Route path="/configuracion" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+
+          {/* Perfil público de proveedor */}
+          <Route path="/perfil-proveedor/:id" element={<SellerRoute><ProviderProfile /></SellerRoute>} />
 
           {/* Rutas provider */}
           <Route path="/provider-orders"  element={<ProviderRoute><ProviderOrders /></ProviderRoute>} />
