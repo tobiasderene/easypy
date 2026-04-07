@@ -21,6 +21,9 @@ const CreateLogisticsUser = () => {
     logisticOption:  'existing',  // 'existing' | 'new'
     logisticId:      '',
     newLogisticName: '',
+    apiType:         'manual',
+    apiUrl:          '',
+    apiKey:          '',
   });
 
   useEffect(() => {
@@ -64,7 +67,13 @@ const CreateLogisticsUser = () => {
       // 2. Crear empresa nueva o usar existente
       let logisticId = form.logisticId;
       if (form.logisticOption === 'new') {
-        const newLogistic = await createLogistics({ name: form.newLogisticName, status: 'active' });
+        const newLogistic = await createLogistics({
+          name:     form.newLogisticName,
+          status:   'active',
+          api_type: form.apiType,
+          api_url:  form.apiType === 'external_api' ? form.apiUrl : null,
+          api_key:  form.apiType === 'external_api' ? form.apiKey : null,
+        });
         logisticId = newLogistic.logistic_id;
       }
 
@@ -237,6 +246,42 @@ const CreateLogisticsUser = () => {
                   onChange={e => handleChange('newLogisticName', e.target.value)}
                 />
               </Field>
+
+              {/* Tipo de integración */}
+              <Field label="Tipo de integración">
+                <select
+                  className="of-input"
+                  value={form.apiType}
+                  onChange={e => handleChange('apiType', e.target.value)}
+                  style={{ background: 'white' }}
+                >
+                  <option value="manual">Manual — panel logístico</option>
+                  <option value="external_api">API externa — automático</option>
+                </select>
+              </Field>
+
+              {form.apiType === 'external_api' && (<>
+                <Field label="URL base de la API *">
+                  <input
+                    className="of-input"
+                    placeholder="https://api.logistica.com"
+                    value={form.apiUrl}
+                    onChange={e => handleChange('apiUrl', e.target.value)}
+                  />
+                </Field>
+                <Field label="API Key / Token *">
+                  <input
+                    className="of-input"
+                    type="password"
+                    placeholder="Token de autenticación"
+                    value={form.apiKey}
+                    onChange={e => handleChange('apiKey', e.target.value)}
+                  />
+                </Field>
+                <div style={{ background: '#fffbeb', border: '1.5px solid #fde68a', borderRadius: '8px', padding: '10px 12px', fontSize: '12px', color: '#92400e' }}>
+                  ⚡ Modo automático — los paquetes se crearán en la API externa cuando el proveedor marque "Listo para retirar"
+                </div>
+              </>)}
             )}
           </div>
 

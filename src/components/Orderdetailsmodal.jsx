@@ -1,12 +1,10 @@
 import React from 'react';
-import { X, CheckCircle, XCircle, Package, Truck, MapPin, User } from 'lucide-react';
+import { X, CheckCircle, XCircle, Package, Truck, MapPin, User, Hash } from 'lucide-react';
 import '../styles/orderdetailsmodal.css';
 
 const OrderDetailsModal = ({ order, onClose, onUpdateStatus, statusConfig, formatCurrency, formatDate }) => {
 
-  const handleConfirm = () => {
-    onUpdateStatus(order.order_id, 'processing');
-  };
+  const handleConfirm = () => onUpdateStatus(order.order_id, 'processing');
 
   const handleReject = () => {
     if (window.confirm('¿Estás seguro de rechazar este pedido?')) {
@@ -20,46 +18,34 @@ const OrderDetailsModal = ({ order, onClose, onUpdateStatus, statusConfig, forma
         return (
           <div className="modal-actions">
             <button className="btn-action reject" onClick={handleReject}>
-              <XCircle size={18} />
-              Rechazar Pedido
+              <XCircle size={18} /> Rechazar Pedido
             </button>
             <button className="btn-action confirm" onClick={handleConfirm}>
-              <CheckCircle size={18} />
-              Confirmar Pedido
+              <CheckCircle size={18} /> Confirmar Pedido
             </button>
           </div>
         );
       case 'processing':
-        return (
-          <div className="info-box">
-            <span>🔄 Este pedido está siendo procesado</span>
-          </div>
-        );
+        return <div className="info-box"><span>🔄 El pedido está siendo preparado</span></div>;
+      case 'ready_for_pickup':
+        return <div className="info-box"><span>📦 Listo para ser retirado por la logística</span></div>;
+      case 'in_transit':
+        return <div className="info-box"><span>🚚 En camino al destinatario</span></div>;
+      case 'redelivery':
+        return <div className="info-box"><span>🔁 Recoordinando nueva fecha de entrega</span></div>;
       case 'cancelled':
-        return (
-          <div className="info-box">
-            <span>❌ Este pedido fue cancelado</span>
-          </div>
-        );
+        return <div className="info-box"><span>❌ Este pedido fue cancelado</span></div>;
       case 'completed':
-        return (
-          <div className="info-box">
-            <span>✅ Este pedido ya fue completado</span>
-          </div>
-        );
+        return <div className="info-box"><span>✅ Pedido entregado exitosamente</span></div>;
       case 'pending':
-        return (
-          <div className="info-box">
-            <span>⏳ Esperando confirmación del administrador</span>
-          </div>
-        );
+        return <div className="info-box"><span>⏳ Esperando confirmación del administrador</span></div>;
       default:
         return null;
     }
   };
 
   const cfg        = statusConfig[order.status] || statusConfig.pending;
-  const StatusIcon = cfg.icon;
+  const StatusIcon = cfg?.icon || Package;
 
   return (
     <div className="order-modal-overlay" onClick={onClose}>
@@ -71,20 +57,22 @@ const OrderDetailsModal = ({ order, onClose, onUpdateStatus, statusConfig, forma
             <h2>Detalles del Pedido</h2>
             <span className="order-modal-id">#{order.order_id}</span>
           </div>
-          <button className="modal-close-btn" onClick={onClose}>
-            <X size={20} />
-          </button>
+          <button className="modal-close-btn" onClick={onClose}><X size={20} /></button>
         </div>
 
         {/* Status Badge */}
         <div className="order-modal-status">
-          <div
-            className="status-badge-large"
-            style={{ backgroundColor: cfg.bgColor, color: cfg.color }}
-          >
+          <div className="status-badge-large" style={{ backgroundColor: cfg.bgColor, color: cfg.color }}>
             <StatusIcon size={20} />
             <span>{cfg.label}</span>
           </div>
+          {/* Tracking number — visible si existe */}
+          {order.tracking_number && (
+            <div className="tracking-badge">
+              <Hash size={14} />
+              <span>Guía: <strong>{order.tracking_number}</strong></span>
+            </div>
+          )}
         </div>
 
         {/* Body */}
@@ -147,6 +135,22 @@ const OrderDetailsModal = ({ order, onClose, onUpdateStatus, statusConfig, forma
                   </span>
                 </div>
               </div>
+              {order.recipient_lat && order.recipient_lng && (
+                <div className="detail-row">
+                  <MapPin size={18} />
+                  <div>
+                    <span className="detail-label">Ubicación</span>
+                    <a
+                      href={`https://www.google.com/maps?q=${order.recipient_lat},${order.recipient_lng}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: '#056EB7', fontWeight: '600', fontSize: '13px' }}
+                    >
+                      Ver en Google Maps
+                    </a>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -168,6 +172,14 @@ const OrderDetailsModal = ({ order, onClose, onUpdateStatus, statusConfig, forma
                   {order.collection_type === 'con_recaudo' ? 'Con recaudo' : 'Sin recaudo'}
                 </span>
               </div>
+              {order.tracking_number && (
+                <div className="detail-item">
+                  <span className="detail-label">Número de guía:</span>
+                  <span className="detail-value" style={{ fontWeight: '700', color: '#056EB7' }}>
+                    {order.tracking_number}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
