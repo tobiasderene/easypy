@@ -303,3 +303,15 @@
     font-size: 22px;
   }
 }
+
+.lp-btn.redelivery {
+  background: #7c3aed;
+}
+
+.lp-btn.cancel {
+  background: #dc2626;
+}
+
+.lp-btn.cancel:hover:not(:disabled) {
+  background: #b91c1c;
+}

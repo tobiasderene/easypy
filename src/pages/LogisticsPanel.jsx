@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useUser } from '../App';
 import { useNavigate } from 'react-router-dom';
-import { getMyLogistics, getOrdersByLogistics, pickupOrder, deliverOrder, redeliveryOrder } from '../services/api';
+import { getMyLogistics, getOrdersByLogistics, pickupOrder, deliverOrder, redeliveryOrder, cancelOrderAdmin } from '../services/api';
 import '../styles/logistics.css';
 
 const STATUS_LABELS = {
@@ -75,6 +75,19 @@ const LogisticsPanel = () => {
       setOrders(prev => prev.map(o => o.order_id === orderId ? { ...o, status: 'completed' } : o));
     } catch (e) {
       alert('Error al confirmar entrega: ' + (e.message || 'Error desconocido'));
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  const handleCancel = async (orderId) => {
+    if (!window.confirm('¿Cancelás esta orden? Esta acción no se puede deshacer.')) return;
+    setUpdating(orderId);
+    try {
+      await cancelOrderAdmin(orderId);
+      setOrders(prev => prev.map(o => o.order_id === orderId ? { ...o, status: 'cancelled' } : o));
+    } catch (e) {
+      alert('Error al cancelar: ' + (e.message || 'Error desconocido'));
     } finally {
       setUpdating(null);
     }
@@ -235,13 +248,23 @@ const LogisticsPanel = () => {
                     </button>
                   )}
 
-                  {order.status === 'in_transit' && (
+                  {order.status === 'in_transit' && (order.delivery_attempts ?? 0) < 1 && (
                     <button
                       className="lp-btn redelivery"
                       onClick={() => handleRedelivery(order.order_id)}
                       disabled={isUpdating}
                     >
                       {isUpdating ? 'Procesando...' : 'No entregado'}
+                    </button>
+                  )}
+
+                  {order.status === 'in_transit' && (order.delivery_attempts ?? 0) >= 1 && (
+                    <button
+                      className="lp-btn cancel"
+                      onClick={() => handleCancel(order.order_id)}
+                      disabled={isUpdating}
+                    >
+                      {isUpdating ? 'Procesando...' : 'Cancelar orden'}
                     </button>
                   )}
 
