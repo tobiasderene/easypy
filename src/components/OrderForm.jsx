@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useUser } from '../App';
-import { getLogistics, createOrder, getProducts, getProductImages } from '../services/api';
+import { getLogistics, createOrder, getProducts, getProductImages, searchCustomers, createCustomer, updateCustomer } from '../services/api';
 import '../styles/orderform.css';
 
 const COUNTRY_CODES = [
@@ -21,7 +21,6 @@ const COUNTRY_CODES = [
 const PLATFORM_COMMISSION = 0.05;
 const MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_KEY;
 
-// ── Carga el script de Google Maps una sola vez ──────────────────────────────
 let mapsScriptLoaded = false;
 function loadMapsScript() {
   if (mapsScriptLoaded || window.google?.maps) { mapsScriptLoaded = true; return Promise.resolve(); }
@@ -34,6 +33,15 @@ function loadMapsScript() {
     document.head.appendChild(script);
   });
 }
+
+// ── Formateadores de documento ────────────────────────────────────────────────
+const formatRUC = (value) => {
+  const digits = value.replace(/\D/g, '');
+  if (digits.length <= 1) return digits;
+  return digits.slice(0, -1) + '-' + digits.slice(-1);
+};
+
+const formatCedula = (value) => value.replace(/\D/g, '').slice(0, 8);
 
 const OrderForm = () => {
   const navigate = useNavigate();
@@ -52,20 +60,28 @@ const OrderForm = () => {
   const [submitting, setSubmitting]             = useState(false);
   const [submitError, setSubmitError]           = useState('');
 
-  // ── Mapa ──────────────────────────────────────────
-  const [showMap, setShowMap]       = useState(false);
-  const [geocoding, setGeocoding]   = useState(false);
-  const [geoError, setGeoError]     = useState('');
-  const [coords, setCoords]         = useState(null); // { lat, lng }
-  const mapRef                      = useRef(null);
-  const mapInstanceRef              = useRef(null);
-  const markerRef                   = useRef(null);
-  const mapWrapRef                  = useRef(null);
+  // ── Mapa ──────────────────────────────────────────────────────────────────
+  const [showMap, setShowMap]     = useState(false);
+  const [geocoding, setGeocoding] = useState(false);
+  const [geoError, setGeoError]   = useState('');
+  const [coords, setCoords]       = useState(null);
+  const mapRef                    = useRef(null);
+  const mapInstanceRef            = useRef(null);
+  const markerRef                 = useRef(null);
+  const mapWrapRef                = useRef(null);
+
+  // ── Autocompletado clientes ───────────────────────────────────────────────
+  const [suggestions, setSuggestions]               = useState([]);
+  const [showSuggestions, setShowSuggestions]       = useState(false);
+  const [selectedCustomerId, setSelectedCustomerId] = useState(null);
+  const searchTimeoutRef                            = useRef(null);
+  const autocompleteRef                             = useRef(null);
 
   const [form, setForm] = useState({
     firstName: '', lastName: '', countryCode: '+595', phone: '',
     city: '', region: '', address: '', addressComplement: '',
-    email: '', collectionType: 'con_recaudo', logisticsId: null,
+    email: '', docType: '', docNumber: '',
+    collectionType: 'con_recaudo', logisticsId: null,
   });
   const [errors, setErrors] = useState({});
 
@@ -99,73 +115,122 @@ const OrderForm = () => {
       .finally(() => setLoadingProducts(false));
   }, [supplierId]);
 
-  // ── Inicializar mapa cuando se muestra ────────────────────────────────────
+  // Cerrar sugerencias al click afuera
+  useEffect(() => {
+    const handler = (e) => {
+      if (autocompleteRef.current && !autocompleteRef.current.contains(e.target)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  // ── Búsqueda autocompletado ───────────────────────────────────────────────
+  const triggerSearch = (query) => {
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    if (query.length < 2) { setSuggestions([]); setShowSuggestions(false); return; }
+    searchTimeoutRef.current = setTimeout(async () => {
+      try {
+        const results = await searchCustomers(query);
+        setSuggestions(results || []);
+        setShowSuggestions((results || []).length > 0);
+      } catch { setSuggestions([]); }
+    }, 300);
+  };
+
+  const handleFirstName = (value) => {
+    setForm(prev => ({ ...prev, firstName: value }));
+    if (errors.firstName) setErrors(prev => ({ ...prev, firstName: '' }));
+    setSelectedCustomerId(null);
+    triggerSearch(`${value} ${form.lastName}`.trim() || value);
+  };
+
+  const handleLastName = (value) => {
+    setForm(prev => ({ ...prev, lastName: value }));
+    if (errors.lastName) setErrors(prev => ({ ...prev, lastName: '' }));
+    setSelectedCustomerId(null);
+    triggerSearch(`${form.firstName} ${value}`.trim() || value);
+  };
+
+  const handlePhoneInput = (value) => {
+    const clean = value.replace(/\D/g, '');
+    setForm(prev => ({ ...prev, phone: clean }));
+    if (errors.phone) setErrors(prev => ({ ...prev, phone: '' }));
+    setSelectedCustomerId(null);
+    triggerSearch(clean);
+  };
+
+  const fillFromCustomer = (customer) => {
+    setForm(prev => ({
+      ...prev,
+      firstName:         customer.first_name,
+      lastName:          customer.last_name,
+      countryCode:       customer.phone_code || '+595',
+      phone:             customer.phone,
+      email:             customer.email        || '',
+      city:              customer.city         || '',
+      region:            customer.region       || '',
+      address:           customer.address      || '',
+      addressComplement: customer.address_complement || '',
+      docType:           customer.doc_type     || '',
+      docNumber:         customer.doc_number   || '',
+    }));
+    setSelectedCustomerId(customer.customer_id);
+    setSuggestions([]);
+    setShowSuggestions(false);
+    // Resetear mapa al cambiar cliente
+    setShowMap(false);
+    setCoords(null);
+    mapInstanceRef.current = null;
+    markerRef.current = null;
+  };
+
+  // ── Mapa ──────────────────────────────────────────────────────────────────
   const initMap = useCallback((lat, lng) => {
     if (!mapRef.current || !window.google?.maps) return;
-
     const center = { lat, lng };
-
     if (!mapInstanceRef.current) {
       mapInstanceRef.current = new window.google.maps.Map(mapRef.current, {
-        center,
-        zoom: 16,
-        mapTypeControl: false,
-        streetViewControl: false,
-        fullscreenControl: false,
+        center, zoom: 16,
+        mapTypeControl: false, streetViewControl: false, fullscreenControl: false,
       });
     } else {
       mapInstanceRef.current.setCenter(center);
     }
-
     if (markerRef.current) {
       markerRef.current.setPosition(center);
     } else {
       markerRef.current = new window.google.maps.Marker({
-        position: center,
-        map: mapInstanceRef.current,
-        draggable: true,
-        title: 'Arrastrá para ajustar la ubicación',
+        position: center, map: mapInstanceRef.current,
+        draggable: true, title: 'Arrastrá para ajustar la ubicación',
       });
-
-      // Actualizar coordenadas cuando se mueve el pin
       markerRef.current.addListener('dragend', (e) => {
-        const newLat = e.latLng.lat();
-        const newLng = e.latLng.lng();
-        setCoords({ lat: newLat, lng: newLng });
+        setCoords({ lat: e.latLng.lat(), lng: e.latLng.lng() });
       });
     }
-
     setCoords({ lat, lng });
   }, []);
 
-  // ── Geocodificar dirección y mostrar mapa ─────────────────────────────────
   const handleVerMap = async () => {
-    const address = [form.address, form.city, form.region, 'Paraguay']
-      .filter(Boolean).join(', ');
-
     if (!form.address.trim() || !form.city.trim()) {
       setGeoError('Ingresá al menos la dirección y la ciudad para ver el mapa');
       return;
     }
-
     setGeoError('');
     setGeocoding(true);
-
     try {
       await loadMapsScript();
-
+      const address = [form.address, form.city, form.region, 'Paraguay'].filter(Boolean).join(', ');
       const geocoder = new window.google.maps.Geocoder();
       geocoder.geocode({ address }, (results, status) => {
         if (status === 'OK' && results[0]) {
           const loc = results[0].geometry.location;
           setShowMap(true);
-          // Esperar al siguiente render para que mapRef esté disponible
           setTimeout(() => {
             initMap(loc.lat(), loc.lng());
-            // Scroll hasta el mapa en desktop
-            if (mapWrapRef.current) {
-              mapWrapRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            }
+            if (mapWrapRef.current) mapWrapRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            if (errors.map) setErrors(prev => ({ ...prev, map: '' }));
           }, 150);
         } else {
           setGeoError('No se encontró la dirección. Intentá con más detalle.');
@@ -178,11 +243,22 @@ const OrderForm = () => {
     }
   };
 
-  // ── Cálculos ─────────────────────────────────────────────────────────────
+  // ── Documento ─────────────────────────────────────────────────────────────
+  const handleDocType = (value) => {
+    setForm(prev => ({ ...prev, docType: value, docNumber: '' }));
+  };
+
+  const handleDocNumber = (value) => {
+    let formatted = value;
+    if (form.docType === 'ruc')    formatted = formatRUC(value);
+    if (form.docType === 'cedula') formatted = formatCedula(value);
+    setForm(prev => ({ ...prev, docNumber: formatted }));
+  };
+
+  // ── Cálculos ──────────────────────────────────────────────────────────────
   const getSalePrice      = (id) => parseFloat(salePrices[id]) || 0;
-  const itemRecaudo       = (item) => getSalePrice(item.id) * item.quantity;
   const totalSupplierCost = items.reduce((s, i) => s + i.price * i.quantity, 0);
-  const totalRecaudo      = items.reduce((s, i) => s + itemRecaudo(i), 0);
+  const totalRecaudo      = items.reduce((s, i) => s + getSalePrice(i.id) * i.quantity, 0);
   const commission        = totalRecaudo * PLATFORM_COMMISSION;
   const logisticCost      = 0;
   const earnings          = totalRecaudo - totalSupplierCost - logisticCost - commission;
@@ -193,12 +269,11 @@ const OrderForm = () => {
   const handleChange = (field, value) => {
     setForm(prev => ({ ...prev, [field]: value }));
     if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }));
-    // Si cambia la dirección, resetear mapa
     if (['address', 'city', 'region'].includes(field)) {
       setShowMap(false);
       setCoords(null);
       mapInstanceRef.current = null;
-      markerRef.current      = null;
+      markerRef.current = null;
     }
   };
 
@@ -217,15 +292,8 @@ const OrderForm = () => {
     setShowProductList(false);
   };
 
-  const updateQty = (id, qty) => {
-    if (qty < 1) return;
-    setItems(prev => prev.map(i => i.id === id ? { ...i, quantity: qty } : i));
-  };
-
-  const removeItem = (id) => {
-    setItems(prev => prev.filter(i => i.id !== id));
-    setSalePrices(prev => { const n = { ...prev }; delete n[id]; return n; });
-  };
+  const updateQty  = (id, qty) => { if (qty < 1) return; setItems(prev => prev.map(i => i.id === id ? { ...i, quantity: qty } : i)); };
+  const removeItem = (id) => { setItems(prev => prev.filter(i => i.id !== id)); setSalePrices(prev => { const n = { ...prev }; delete n[id]; return n; }); };
 
   const validate = () => {
     const e = {};
@@ -237,6 +305,7 @@ const OrderForm = () => {
     if (!form.address.trim())   e.address     = 'Requerido';
     if (!form.email.trim())     e.email       = 'Requerido';
     if (!form.logisticsId)      e.logisticsId = 'Seleccioná una transportadora';
+    if (!coords)                e.map         = 'Confirmá la ubicación en el mapa antes de enviar la orden';
     items.forEach(item => {
       if (!getSalePrice(item.id) || getSalePrice(item.id) <= 0)
         e[`price_${item.id}`] = 'Requerido';
@@ -244,20 +313,49 @@ const OrderForm = () => {
     return e;
   };
 
+  // ── Guardar cliente en agenda ─────────────────────────────────────────────
+  const saveCustomerToAgenda = async () => {
+    if (!form.firstName.trim() || !form.lastName.trim() || !form.phone.trim()) return;
+    const data = {
+      seller_id:          user.user_id,
+      first_name:         form.firstName,
+      last_name:          form.lastName,
+      phone:              form.phone,
+      phone_code:         form.countryCode,
+      email:              form.email        || null,
+      city:               form.city         || null,
+      region:             form.region       || null,
+      address:            form.address      || null,
+      address_complement: form.addressComplement || null,
+      doc_type:           form.docType      || null,
+      doc_number:         form.docNumber    || null,
+    };
+    try {
+      if (selectedCustomerId) await updateCustomer(selectedCustomerId, data);
+      else                    await createCustomer(data);
+    } catch {} // No bloquear la orden si falla
+  };
+
   const handleSubmit = async () => {
     setSubmitError('');
     const newErrors = validate();
-    if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return; }
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      if (newErrors.map) {
+        setTimeout(() => mapWrapRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+      }
+      return;
+    }
     if (items.length === 0) { setSubmitError('Agregá al menos un producto'); return; }
 
     const payload = {
-      buyer_id:      user.user_id,
+      seller_id:     user.user_id,
       supplier_id:   supplierId,
       logistic_id:   form.logisticsId,
       final_price:   totalRecaudo,
       logistic_cost: logisticCost,
       platform_fee:  commission,
-      buyer_profit:  earnings,
+      seller_profit: earnings,
       status:        'pending',
       collection_type:              form.collectionType,
       recipient_name:               `${form.firstName} ${form.lastName}`.trim(),
@@ -267,8 +365,8 @@ const OrderForm = () => {
       recipient_region:             form.region,
       recipient_address:            form.address,
       recipient_address_complement: form.addressComplement || null,
-      recipient_lat:                coords?.lat ?? null,
-      recipient_lng:                coords?.lng ?? null,
+      recipient_lat:                coords.lat,
+      recipient_lng:                coords.lng,
       items: items.map(item => ({
         product_id:    item.id,
         quantity:      item.quantity,
@@ -278,14 +376,13 @@ const OrderForm = () => {
 
     setSubmitting(true);
     try {
-      await createOrder(payload);
+      await Promise.all([createOrder(payload), saveCustomerToAgenda()]);
       navigate('/catalogo', { replace: true });
     } catch (err) {
-      if (err.message?.includes('Saldo insuficiente')) {
-        setSubmitError(err.message || 'No tenés saldo suficiente para cubrir el costo del proveedor.');
-      } else {
-        setSubmitError(err.message || 'Ocurrió un error al crear la orden');
-      }
+      setSubmitError(err.message?.includes('Saldo insuficiente')
+        ? err.message
+        : err.message || 'Ocurrió un error al crear la orden'
+      );
     } finally {
       setSubmitting(false);
     }
@@ -296,7 +393,8 @@ const OrderForm = () => {
       <div className="of-page" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
         <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center' }}>
           <p style={{ color: '#6b7280' }}>No hay producto seleccionado.</p>
-          <button style={{ padding: '8px 20px', background: '#056EB7', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }} onClick={() => navigate('/catalogo')}>
+          <button style={{ padding: '8px 20px', background: '#056EB7', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}
+            onClick={() => navigate('/catalogo')}>
             Volver al catálogo
           </button>
         </div>
@@ -319,30 +417,96 @@ const OrderForm = () => {
               </div>
             </div>
 
-            <div className="of-row2">
-              <div className="of-field">
-                <label className="of-label">Nombre <span className="of-req">*</span></label>
-                <input className={`of-input ${errors.firstName ? 'err' : ''}`} placeholder="Carlos" value={form.firstName} onChange={e => handleChange('firstName', e.target.value)} />
-                {errors.firstName && <span className="of-err">{errors.firstName}</span>}
+            {/* ── Nombre + apellido con autocompletado ── */}
+            <div ref={autocompleteRef} style={{ position: 'relative' }}>
+              <div className="of-row2">
+                <div className="of-field">
+                  <label className="of-label">Nombre <span className="of-req">*</span></label>
+                  <input
+                    className={`of-input ${errors.firstName ? 'err' : ''}`}
+                    placeholder="Carlos"
+                    value={form.firstName}
+                    onChange={e => handleFirstName(e.target.value)}
+                    autoComplete="off"
+                  />
+                  {errors.firstName && <span className="of-err">{errors.firstName}</span>}
+                </div>
+                <div className="of-field">
+                  <label className="of-label">Apellido <span className="of-req">*</span></label>
+                  <input
+                    className={`of-input ${errors.lastName ? 'err' : ''}`}
+                    placeholder="Ramírez"
+                    value={form.lastName}
+                    onChange={e => handleLastName(e.target.value)}
+                    autoComplete="off"
+                  />
+                  {errors.lastName && <span className="of-err">{errors.lastName}</span>}
+                </div>
               </div>
-              <div className="of-field">
-                <label className="of-label">Apellido <span className="of-req">*</span></label>
-                <input className={`of-input ${errors.lastName ? 'err' : ''}`} placeholder="Ramírez" value={form.lastName} onChange={e => handleChange('lastName', e.target.value)} />
-                {errors.lastName && <span className="of-err">{errors.lastName}</span>}
-              </div>
+
+              {/* Dropdown de sugerencias */}
+              {showSuggestions && suggestions.length > 0 && (
+                <div className="of-suggestions">
+                  {suggestions.map(c => (
+                    <div key={c.customer_id} className="of-suggestion-item" onMouseDown={() => fillFromCustomer(c)}>
+                      <div className="of-sug-avatar">{c.first_name[0]}{c.last_name[0]}</div>
+                      <div className="of-sug-info">
+                        <span className="of-sug-name">{c.first_name} {c.last_name}</span>
+                        <span className="of-sug-sub">{c.phone_code}{c.phone} · {c.city || '—'}</span>
+                      </div>
+                      {c.doc_number && (
+                        <span className="of-sug-doc">{c.doc_type === 'ruc' ? 'RUC' : 'CI'} {c.doc_number}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
+            {/* ── Teléfono ── */}
             <div className="of-field">
               <label className="of-label">Teléfono <span className="of-req">*</span></label>
               <div className={`of-phone ${errors.phone ? 'err' : ''}`}>
                 <select className="of-phone-code" value={form.countryCode} onChange={e => handleChange('countryCode', e.target.value)}>
                   {COUNTRY_CODES.map(c => <option key={c.code} value={c.code}>{c.code}</option>)}
                 </select>
-                <input className="of-phone-num" placeholder="0981 000 000" value={form.phone} onChange={e => handleChange('phone', e.target.value.replace(/\D/g, ''))} maxLength={10} />
+                <input
+                  className="of-phone-num"
+                  placeholder="0981 000 000"
+                  value={form.phone}
+                  onChange={e => handlePhoneInput(e.target.value)}
+                  maxLength={10}
+                  autoComplete="off"
+                />
               </div>
               {errors.phone && <span className="of-err">{errors.phone}</span>}
             </div>
 
+            {/* ── Documento ── */}
+            <div className="of-row2">
+              <div className="of-field">
+                <label className="of-label">Tipo de documento</label>
+                <select className="of-input" value={form.docType} onChange={e => handleDocType(e.target.value)} style={{ background: 'white' }}>
+                  <option value="">Sin documento</option>
+                  <option value="cedula">Cédula</option>
+                  <option value="ruc">RUC</option>
+                </select>
+              </div>
+              <div className="of-field">
+                <label className="of-label">
+                  {form.docType === 'ruc' ? 'RUC (con guión)' : form.docType === 'cedula' ? 'Número de cédula' : 'Número'}
+                </label>
+                <input
+                  className="of-input"
+                  placeholder={form.docType === 'ruc' ? 'XXXXXXXX-X' : form.docType === 'cedula' ? '12345678' : '—'}
+                  value={form.docNumber}
+                  onChange={e => handleDocNumber(e.target.value)}
+                  disabled={!form.docType}
+                />
+              </div>
+            </div>
+
+            {/* ── Ciudad / Región ── */}
             <div className="of-row2">
               <div className="of-field">
                 <label className="of-label">Ciudad <span className="of-req">*</span></label>
@@ -356,6 +520,7 @@ const OrderForm = () => {
               </div>
             </div>
 
+            {/* ── Dirección ── */}
             <div className="of-row2">
               <div className="of-field">
                 <label className="of-label">Dirección <span className="of-req">*</span></label>
@@ -368,42 +533,38 @@ const OrderForm = () => {
               </div>
             </div>
 
-            {/* ── Botón Ver en mapa ── */}
+            {/* ── Mapa obligatorio ── */}
             <div className="of-field">
-              <button
-                className="of-map-btn"
-                onClick={handleVerMap}
-                disabled={geocoding}
-                type="button"
-              >
+              <button className={`of-map-btn ${coords ? 'confirmed' : ''}`} onClick={handleVerMap} disabled={geocoding} type="button">
                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
-                {geocoding ? 'Buscando...' : showMap ? 'Actualizar mapa' : 'Ver en mapa'}
+                {geocoding ? 'Buscando...' : coords ? '✓ Ubicación confirmada — actualizar' : 'Ver y confirmar en mapa *'}
               </button>
-              {geoError && <span className="of-err">{geoError}</span>}
-              {coords && (
-                <span style={{ fontSize: '11px', color: '#6b7280' }}>
-                  {' '} Arrastra el pin para ajustar
+              {errors.map && <span className="of-err">{errors.map}</span>}
+              {geoError  && <span className="of-err">{geoError}</span>}
+              {coords && !errors.map && (
+                <span style={{ fontSize: '11px', color: '#16a34a', marginTop: '2px', display: 'block' }}>
+                  Arrastrá el pin para ajustar la posición exacta
                 </span>
               )}
             </div>
 
-            {/* ── Mini mapa ── */}
             {showMap && (
               <div ref={mapWrapRef} className="of-map-wrap">
                 <div ref={mapRef} className="of-map-container" />
               </div>
             )}
 
+            {/* ── Email ── */}
             <div className="of-field">
               <label className="of-label">Correo Electrónico <span className="of-req">*</span></label>
               <input className={`of-input ${errors.email ? 'err' : ''}`} type="email" placeholder="cliente@email.com" value={form.email} onChange={e => handleChange('email', e.target.value)} />
               {errors.email && <span className="of-err">{errors.email}</span>}
             </div>
 
-            {/* Productos de la orden */}
+            {/* ── Productos ── */}
             <div className="of-field">
               <label className="of-label">Productos</label>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>

@@ -68,6 +68,13 @@ export const loginLocal = (email, password) =>
 export const registerLocal = (email, name, password, userRole) =>
   api("/auth/register", { method: "POST", body: JSON.stringify({ email, name, password, user_role: userRole }) });
 
+// ── Customers ────────────────────────────────────────────────────────────────
+export const getCustomers       = (skip = 0, limit = 100) => api(`/customers?skip=${skip}&limit=${limit}`);
+export const searchCustomers    = (q, limit = 8) => api(`/customers/search?q=${encodeURIComponent(q)}&limit=${limit}`);
+export const createCustomer     = (data) => api('/customers', { method: 'POST', body: JSON.stringify(data) });
+export const updateCustomer     = (id, data) => api(`/customers/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+export const deleteCustomer     = (id) => api(`/customers/${id}`, { method: 'DELETE' });
+
 export const adminRegisterUser = (data) =>
   api('/auth/register/admin', { method: 'POST', body: JSON.stringify(data) });
 
