@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  getUsers, updateUser,
+  getUsers, updateUser, adminUpdateStatus, adminDeleteUser,
   getWithdrawalsByStatus, updateWithdrawal,
   getDeposits, getDepositsByStatus, approveDeposit, rejectDeposit,
   getOrdersByStatus, confirmOrderAdmin, cancelOrderAdmin,
@@ -42,20 +42,31 @@ const StatusBadge = ({ status }) => {
   return <span className={`admin-badge ${s.cls}`}>{s.label}</span>;
 };
 
-const ConfirmModal = ({ title, message, onConfirm, onCancel, confirmLabel = 'Confirmar', danger = false }) => (
-  <div className="admin-modal-overlay" onClick={(e) => e.target === e.currentTarget && onCancel()}>
-    <div className="admin-modal">
-      <p className="admin-modal-title">{title}</p>
-      <p className="admin-modal-msg">{message}</p>
-      <div className="admin-modal-actions">
-        <button className="admin-btn admin-btn-ghost" onClick={onCancel}>Cancelar</button>
-        <button className={`admin-btn ${danger ? 'admin-btn-danger' : 'admin-btn-primary'}`} onClick={onConfirm}>
-          {confirmLabel}
-        </button>
+const ConfirmModal = ({ title, message, onConfirm, onCancel, confirmLabel = 'Confirmar', danger = false }) => {
+  const [processing, setProcessing] = React.useState(false);
+  const handleConfirm = async () => {
+    setProcessing(true);
+    try { await onConfirm(); } finally { setProcessing(false); }
+  };
+  return (
+    <div className="admin-modal-overlay" onClick={(e) => e.target === e.currentTarget && !processing && onCancel()}>
+      <div className="admin-modal">
+        <p className="admin-modal-title">{title}</p>
+        <p className="admin-modal-msg">{message}</p>
+        <div className="admin-modal-actions">
+          <button className="admin-btn admin-btn-ghost" onClick={onCancel} disabled={processing}>Cancelar</button>
+          <button
+            className={`admin-btn ${danger ? 'admin-btn-danger' : 'admin-btn-primary'}`}
+            onClick={handleConfirm}
+            disabled={processing}
+          >
+            {processing ? 'Procesando...' : confirmLabel}
+          </button>
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 // ─── Tab: Proveedores ─────────────────────────────────
 const ProvidersTab = () => {
@@ -78,7 +89,12 @@ const ProvidersTab = () => {
       danger:       action !== 'active',
       onConfirm:    async () => {
         setModal(null);
-        await updateUser(p.user_id, { user_status: action });
+        if (action === 'active') {
+          await adminUpdateStatus(p.user_id, 'active');
+        } else {
+          // Rechazar = eliminar el usuario para que pueda registrarse de nuevo con el mismo email
+          await adminDeleteUser(p.user_id);
+        }
         setProviders(prev => prev.filter(x => x.user_id !== p.user_id));
       },
     });

@@ -87,8 +87,12 @@ export const getUsers = (params = {}) => {
   return api(`/users${query ? `?${query}` : ''}`);
 };
 export const getProviders = () => api("/users/providers");
-export const updateUser   = (userId, data) =>
+export const updateUser        = (userId, data) =>
   api(`/users/${userId}`, { method: "PATCH", body: JSON.stringify(data) });
+export const adminUpdateStatus = (userId, status) =>
+  api(`/users/admin/${userId}/status?status=${status}`, { method: "PATCH" });
+export const adminDeleteUser   = (userId) =>
+  api(`/users/${userId}`, { method: "DELETE" });
 
 // ─── Products ─────────────────────────────────────────
 export const getProducts   = (skip = 0, limit = 100) => api(`/products?skip=${skip}&limit=${limit}`);
