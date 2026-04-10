@@ -317,7 +317,7 @@ const OrderForm = () => {
   const saveCustomerToAgenda = async () => {
     if (!form.firstName.trim() || !form.lastName.trim() || !form.phone.trim()) return;
     const data = {
-      seller_id:          user.user_id,
+      buyer_id:           user.user_id,
       first_name:         form.firstName,
       last_name:          form.lastName,
       phone:              form.phone,
@@ -349,13 +349,13 @@ const OrderForm = () => {
     if (items.length === 0) { setSubmitError('Agregá al menos un producto'); return; }
 
     const payload = {
-      seller_id:     user.user_id,
+      buyer_id:      user.user_id,
       supplier_id:   supplierId,
       logistic_id:   form.logisticsId,
       final_price:   totalRecaudo,
       logistic_cost: logisticCost,
       platform_fee:  commission,
-      seller_profit: earnings,
+      buyer_profit:  earnings,
       status:        'pending',
       collection_type:              form.collectionType,
       recipient_name:               `${form.firstName} ${form.lastName}`.trim(),
