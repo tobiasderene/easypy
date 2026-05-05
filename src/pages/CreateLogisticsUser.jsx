@@ -24,6 +24,9 @@ const CreateLogisticsUser = () => {
     apiType:         'manual',
     apiUrl:          '',
     apiKey:          '',
+    apiUser:         '',
+    apiPassword:     '',
+    tenantId:        '',
   });
 
   useEffect(() => {
@@ -74,11 +77,14 @@ const CreateLogisticsUser = () => {
       let logisticId = form.logisticId;
       if (form.logisticOption === 'new') {
         const newLogistic = await createLogistics({
-          name:     form.newLogisticName,
-          status:   'active',
-          api_type: form.apiType,
-          api_url:  form.apiType === 'external_api' ? form.apiUrl : null,
-          api_key:  form.apiType === 'external_api' ? form.apiKey : null,
+          name:         form.newLogisticName,
+          status:       'active',
+          api_type:     form.apiType,
+          api_url:      form.apiType === 'external_api' ? form.apiUrl      : null,
+          api_key:      form.apiType === 'external_api' ? form.apiKey      : null,
+          api_user:     form.apiType === 'external_api' ? form.apiUser     : null,
+          api_password: form.apiType === 'external_api' ? form.apiPassword : null,
+          tenant_id:    form.apiType === 'external_api' ? form.tenantId    : null,
         });
         logisticId = newLogistic.logistic_id;
       }
@@ -254,11 +260,29 @@ const CreateLogisticsUser = () => {
                         value={form.apiUrl}
                         onChange={e => handleChange('apiUrl', e.target.value)} />
                     </Field>
-                    <Field label="API Key / Token *">
+                    <Field label="API Key / Token estático (opcional)">
                       <input className="of-input" type="password"
-                        placeholder="Token de autenticación"
+                        placeholder="Solo si no usa usuario/password"
                         value={form.apiKey}
                         onChange={e => handleChange('apiKey', e.target.value)} />
+                    </Field>
+                    <Field label="Usuario API (Futura/PaP)">
+                      <input className="of-input"
+                        placeholder="usuario@empresa.com.py"
+                        value={form.apiUser}
+                        onChange={e => handleChange('apiUser', e.target.value)} />
+                    </Field>
+                    <Field label="Password API">
+                      <input className="of-input" type="password"
+                        placeholder="Contraseña de la API"
+                        value={form.apiPassword}
+                        onChange={e => handleChange('apiPassword', e.target.value)} />
+                    </Field>
+                    <Field label="Tenant ID (Abp.TenantId)">
+                      <input className="of-input"
+                        placeholder="Ej: 2"
+                        value={form.tenantId}
+                        onChange={e => handleChange('tenantId', e.target.value)} />
                     </Field>
                     <div style={{
                       background: '#fffbeb', border: '1.5px solid #fde68a',
