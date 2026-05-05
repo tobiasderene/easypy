@@ -50,7 +50,7 @@ const CreateLogisticsUser = () => {
       return 'Seleccioná una empresa logística';
     if (form.logisticOption === 'new' && !form.newLogisticName.trim())
       return 'Ingresá el nombre de la nueva empresa';
-    if (form.logisticOption === 'new' && form.apiType === 'external_api') {
+    if (form.logisticOption === 'new' && (form.apiType === 'external_api' || form.apiType === 'fixy')) {
       if (!form.apiUrl.trim()) return 'La URL de la API es requerida';
       if (!form.apiKey.trim()) return 'El token de la API es requerido';
     }
@@ -80,11 +80,11 @@ const CreateLogisticsUser = () => {
           name:         form.newLogisticName,
           status:       'active',
           api_type:     form.apiType,
-          api_url:      form.apiType === 'external_api' ? form.apiUrl      : null,
-          api_key:      form.apiType === 'external_api' ? form.apiKey      : null,
-          api_user:     form.apiType === 'external_api' ? form.apiUser     : null,
-          api_password: form.apiType === 'external_api' ? form.apiPassword : null,
-          tenant_id:    form.apiType === 'external_api' ? form.tenantId    : null,
+          api_url:      form.apiType !== 'manual' ? form.apiUrl      : null,
+          api_key:      form.apiType !== 'manual' ? form.apiKey      : null,
+          api_user:     form.apiType !== 'manual' ? form.apiUser     : null,
+          api_password: form.apiType !== 'manual' ? form.apiPassword : null,
+          tenant_id:    form.apiType !== 'manual' ? form.tenantId    : null,
         });
         logisticId = newLogistic.logistic_id;
       }
@@ -136,7 +136,7 @@ const CreateLogisticsUser = () => {
                 : logistics.find(l => l.logistic_id === parseInt(form.logisticId))?.name || '—'}
             </p>
             <p style={{ fontSize: '13px', color: '#374151', margin: 0 }}>
-              <strong>Integración:</strong> {form.logisticOption === 'new' && form.apiType === 'external_api' ? 'API externa automática' : 'Panel manual'}
+              <strong>Integración:</strong> {form.logisticOption === 'new' && form.apiType !== 'manual' ? `API ${form.apiType === 'fixy' ? 'Fixy' : 'Futura/PaP'} — automática` : 'Panel manual'}
             </p>
           </div>
           <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
@@ -249,11 +249,12 @@ const CreateLogisticsUser = () => {
                     onChange={e => handleChange('apiType', e.target.value)}
                     style={{ background: 'white' }}>
                     <option value="manual">Manual — panel logístico</option>
-                    <option value="external_api">API externa — automático</option>
+                    <option value="external_api">Futura / Punto a Punto</option>
+                    <option value="fixy">Fixy Logística</option>
                   </select>
                 </Field>
 
-                {form.apiType === 'external_api' && (
+                {(form.apiType === 'external_api' || form.apiType === 'fixy') && (
                   <>
                     <Field label="URL base de la API *">
                       <input className="of-input" placeholder="https://api.logistica.com"
@@ -266,7 +267,7 @@ const CreateLogisticsUser = () => {
                         value={form.apiKey}
                         onChange={e => handleChange('apiKey', e.target.value)} />
                     </Field>
-                    <Field label="Usuario API (Futura/PaP)">
+                    <Field label={form.apiType === 'fixy' ? "Código de sucursal *" : "Usuario API (Futura/PaP)"}>
                       <input className="of-input"
                         placeholder="usuario@empresa.com.py"
                         value={form.apiUser}
@@ -278,9 +279,9 @@ const CreateLogisticsUser = () => {
                         value={form.apiPassword}
                         onChange={e => handleChange('apiPassword', e.target.value)} />
                     </Field>
-                    <Field label="Tenant ID (Abp.TenantId)">
+                    <Field label={form.apiType === 'fixy' ? "Código de servicio *" : "Tenant ID (Abp.TenantId)"}>
                       <input className="of-input"
-                        placeholder="Ej: 2"
+                        placeholder={form.apiType === 'fixy' ? "Ej: 252" : "Ej: 2"}
                         value={form.tenantId}
                         onChange={e => handleChange('tenantId', e.target.value)} />
                     </Field>
@@ -289,7 +290,7 @@ const CreateLogisticsUser = () => {
                       borderRadius: '8px', padding: '10px 12px',
                       fontSize: '12px', color: '#92400e',
                     }}>
-                      ⚡ Modo automático — los paquetes se crearán en la API externa cuando el proveedor marque "Listo para retirar"
+                      {form.apiType === 'fixy' ? '⚡ Fixy — se generará la guía automáticamente al marcar "Listo para retirar"' : '⚡ Futura/PaP — el paquete se creará automáticamente al marcar "Listo para retirar"'}
                     </div>
                   </>
                 )}
