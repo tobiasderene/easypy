@@ -319,8 +319,13 @@ const ProviderOrders = () => {
                           <span className="meta-value">{order.recipient_city || '—'}</span>
                         </div>
                         <div className="meta-item">
-                          <span className="meta-label">Total:</span>
-                          <span className="meta-value amount">{formatCurrency(item.supplier_cost)}</span>
+                          <span className="meta-label">A cobrar:</span>
+                          <span className="meta-value amount">
+                            {formatCurrency(
+                              (order.items || []).reduce((sum, item) =>
+                                sum + parseFloat(item.supplier_cost) * item.quantity, 0)
+                            )}
+                          </span>
                         </div>
                       </div>
                     </div>
