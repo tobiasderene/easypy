@@ -82,26 +82,39 @@ const OrderDetailsModal = ({ order, onClose, onUpdateStatus, statusConfig, forma
           {order.items && order.items.length > 0 && (
             <div className="details-section">
               <h3 className="section-title">Productos</h3>
-              {order.items.map(item => (
-                <div key={item.item_id} className="product-details">
-                  <div className="product-info-details">
-                    <div className="product-specs">
-                      <div className="spec-item">
-                        <span className="spec-label">Producto ID:</span>
-                        <span className="spec-value">{item.product_id}</span>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {order.items.map(item => (
+                  <div key={item.item_id} className="product-details">
+                    <div className="product-info-details" style={{ width: '100%' }}>
+                      {/* Nombre y SKU */}
+                      <div style={{ marginBottom: '12px' }}>
+                        <p style={{ fontSize: '15px', fontWeight: '700', color: '#111827', margin: '0 0 4px 0' }}>
+                          {item.product_name || `Producto #${item.product_id}`}
+                        </p>
+                        {item.product_sku && (
+                          <span style={{ fontSize: '12px', fontWeight: '600', color: '#6b7280', background: '#f3f4f6', padding: '2px 8px', borderRadius: '6px' }}>
+                            SKU: {item.product_sku}
+                          </span>
+                        )}
                       </div>
-                      <div className="spec-item">
-                        <span className="spec-label">Cantidad:</span>
-                        <span className="spec-value">{item.quantity} unidades</span>
-                      </div>
-                      <div className="spec-item">
-                        <span className="spec-label">Costo proveedor:</span>
-                        <span className="spec-value">{formatCurrency(item.supplier_cost)}</span>
+                      <div className="product-specs">
+                        <div className="spec-item">
+                          <span className="spec-label">Cantidad</span>
+                          <span className="spec-value">{item.quantity} {item.quantity === 1 ? 'unidad' : 'unidades'}</span>
+                        </div>
+                        <div className="spec-item">
+                          <span className="spec-label">Costo proveedor</span>
+                          <span className="spec-value">{formatCurrency(item.supplier_cost)}</span>
+                        </div>
+                        <div className="spec-item total">
+                          <span className="spec-label">Subtotal</span>
+                          <span className="spec-value">{formatCurrency(parseFloat(item.supplier_cost) * item.quantity)}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
 
