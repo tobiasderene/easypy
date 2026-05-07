@@ -82,35 +82,25 @@ const OrderDetailsModal = ({ order, onClose, onUpdateStatus, statusConfig, forma
           {order.items && order.items.length > 0 && (
             <div className="details-section">
               <h3 className="section-title">Productos</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div className="customer-details">
                 {order.items.map(item => (
-                  <div key={item.item_id} className="product-details">
-                    <div className="product-info-details" style={{ width: '100%' }}>
-                      {/* Nombre y SKU */}
-                      <div style={{ marginBottom: '12px' }}>
-                        <p style={{ fontSize: '15px', fontWeight: '700', color: '#111827', margin: '0 0 4px 0' }}>
-                          {item.product_name || `Producto #${item.product_id}`}
-                        </p>
+                  <div key={item.item_id} className="detail-row">
+                    <Package size={18} />
+                    <div>
+                      <span className="detail-label">
+                        {item.product_name || `Producto #${item.product_id}`}
                         {item.product_sku && (
-                          <span style={{ fontSize: '12px', fontWeight: '600', color: '#6b7280', background: '#f3f4f6', padding: '2px 8px', borderRadius: '6px' }}>
+                          <span style={{ marginLeft: '8px', fontSize: '11px', fontWeight: '600', color: '#6b7280', background: '#f3f4f6', padding: '1px 6px', borderRadius: '5px' }}>
                             SKU: {item.product_sku}
                           </span>
                         )}
-                      </div>
-                      <div className="product-specs">
-                        <div className="spec-item">
-                          <span className="spec-label">Cantidad</span>
-                          <span className="spec-value">{item.quantity} {item.quantity === 1 ? 'unidad' : 'unidades'}</span>
-                        </div>
-                        <div className="spec-item">
-                          <span className="spec-label">Costo proveedor</span>
-                          <span className="spec-value">{formatCurrency(item.supplier_cost)}</span>
-                        </div>
-                        <div className="spec-item total">
-                          <span className="spec-label">Subtotal</span>
-                          <span className="spec-value">{formatCurrency(parseFloat(item.supplier_cost) * item.quantity)}</span>
-                        </div>
-                      </div>
+                      </span>
+                      <span className="detail-value">
+                        {item.quantity} {item.quantity === 1 ? 'unidad' : 'unidades'} · {formatCurrency(item.supplier_cost)} c/u
+                      </span>
+                      <span style={{ fontSize: '13px', fontWeight: '700', color: '#056EB7' }}>
+                        Subtotal: {formatCurrency(parseFloat(item.supplier_cost) * item.quantity)}
+                      </span>
                     </div>
                   </div>
                 ))}
@@ -175,16 +165,6 @@ const OrderDetailsModal = ({ order, onClose, onUpdateStatus, statusConfig, forma
                 <span className="detail-label">Fecha:</span>
                 <span className="detail-value">{formatDate(order.created_at)}</span>
               </div>
-              <div className="detail-item">
-                <span className="detail-label">Total:</span>
-                <span className="detail-value">{formatCurrency(order.final_price)}</span>
-              </div>
-              <div className="detail-item">
-                <span className="detail-label">Tipo de cobro:</span>
-                <span className="detail-value">
-                  {order.collection_type === 'con_recaudo' ? 'Con recaudo' : 'Sin recaudo'}
-                </span>
-              </div>
               {order.tracking_number && (
                 <div className="detail-item">
                   <span className="detail-label">Número de guía:</span>
@@ -201,10 +181,7 @@ const OrderDetailsModal = ({ order, onClose, onUpdateStatus, statusConfig, forma
 
         </div>
 
-        {/* Footer */}
-        <div className="order-modal-footer">
-          <button className="btn-close" onClick={onClose}>Cerrar</button>
-        </div>
+
 
       </div>
     </div>
