@@ -59,6 +59,7 @@ const ProviderOrders = () => {
   const [selectedOrder, setSelectedOrder]   = useState(null);
   const [showModal, setShowModal]           = useState(false);
   const [processingId, setProcessingId]     = useState(null);
+  const [loadingModal, setLoadingModal]     = useState(false);
 
   // ── Selección múltiple ───────────────────────────
   const [selectedIds, setSelectedIds]       = useState(new Set());
