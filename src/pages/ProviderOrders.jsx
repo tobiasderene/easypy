@@ -96,8 +96,13 @@ const ProviderOrders = () => {
     try {
       await markOrderReadyForPickup(orderId);
       setOrders(prev => prev.map(o => o.order_id === orderId ? { ...o, status: 'ready_for_pickup' } : o));
-    } catch {
-      alert('Ocurrió un error. Intentá de nuevo.');
+    } catch (err) {
+      const msg = err?.message || 'Ocurrió un error. Intentá de nuevo.';
+      alert(msg);
+      // Si falló la API externa, el backend revirtió a processing — refrescar estado
+      if (msg.includes('API logística')) {
+        setOrders(prev => prev.map(o => o.order_id === orderId ? { ...o, status: 'processing' } : o));
+      }
     } finally {
       setProcessingId(null);
     }
