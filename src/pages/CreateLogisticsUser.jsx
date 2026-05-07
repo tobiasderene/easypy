@@ -50,9 +50,18 @@ const CreateLogisticsUser = () => {
       return 'Seleccioná una empresa logística';
     if (form.logisticOption === 'new' && !form.newLogisticName.trim())
       return 'Ingresá el nombre de la nueva empresa';
-    if (form.logisticOption === 'new' && (form.apiType === 'external_api' || form.apiType === 'fixy')) {
+    if (form.logisticOption === 'new' && form.apiType !== 'manual') {
       if (!form.apiUrl.trim()) return 'La URL de la API es requerida';
-      if (!form.apiKey.trim()) return 'El token de la API es requerido';
+      if (form.apiType === 'fixy') {
+        if (!form.apiKey.trim())  return 'El API Token es requerido';
+        if (!form.apiUser.trim()) return 'El código de sucursal es requerido';
+        if (!form.tenantId.trim()) return 'El código de servicio es requerido';
+      }
+      if (form.apiType === 'external_api') {
+        if (!form.apiUser.trim())     return 'El usuario de la API es requerido';
+        if (!form.apiPassword.trim()) return 'La contraseña de la API es requerida';
+        if (!form.tenantId.trim())    return 'El Tenant ID es requerido';
+      }
     }
     return null;
   };
@@ -261,24 +270,28 @@ const CreateLogisticsUser = () => {
                         value={form.apiUrl}
                         onChange={e => handleChange('apiUrl', e.target.value)} />
                     </Field>
-                    <Field label="API Key / Token estático (opcional)">
-                      <input className="of-input" type="password"
-                        placeholder="Solo si no usa usuario/password"
-                        value={form.apiKey}
-                        onChange={e => handleChange('apiKey', e.target.value)} />
-                    </Field>
+                    {form.apiType === 'fixy' && (
+                      <Field label="API Token *">
+                        <input className="of-input" type="password"
+                          placeholder="Token de autenticación Fixy"
+                          value={form.apiKey}
+                          onChange={e => handleChange('apiKey', e.target.value)} />
+                      </Field>
+                    )}
                     <Field label={form.apiType === 'fixy' ? "Código de sucursal *" : "Usuario API (Futura/PaP)"}>
                       <input className="of-input"
                         placeholder="usuario@empresa.com.py"
                         value={form.apiUser}
                         onChange={e => handleChange('apiUser', e.target.value)} />
                     </Field>
-                    <Field label="Password API">
-                      <input className="of-input" type="password"
-                        placeholder="Contraseña de la API"
-                        value={form.apiPassword}
-                        onChange={e => handleChange('apiPassword', e.target.value)} />
-                    </Field>
+                    {form.apiType === 'external_api' && (
+                      <Field label="Password API *">
+                        <input className="of-input" type="password"
+                          placeholder="Contraseña de la API"
+                          value={form.apiPassword}
+                          onChange={e => handleChange('apiPassword', e.target.value)} />
+                      </Field>
+                    )}
                     <Field label={form.apiType === 'fixy' ? "Código de servicio *" : "Tenant ID (Abp.TenantId)"}>
                       <input className="of-input"
                         placeholder={form.apiType === 'fixy' ? "Ej: 252" : "Ej: 2"}
