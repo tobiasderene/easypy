@@ -88,7 +88,7 @@ const OrderDetailsModal = ({ order, onClose, onUpdateStatus, statusConfig, forma
                     <Package size={18} />
                     <div>
                       <span className="detail-label">
-                        {item.product_name || `Producto #${item.product_id}`}
+                        {item.product_name}
                         {item.product_sku && (
                           <span style={{ marginLeft: '8px', fontSize: '11px', fontWeight: '600', color: '#6b7280', background: '#f3f4f6', padding: '1px 6px', borderRadius: '5px' }}>
                             SKU: {item.product_sku}
