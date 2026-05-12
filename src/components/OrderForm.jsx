@@ -100,6 +100,22 @@ const OrderForm = () => {
       .finally(() => setLoadingLogistics(false));
   }, []);
 
+  // ── Auto-cotizar cuando cambia logística o ciudad ────────────────────────
+  useEffect(() => {
+    const selectedLogistic = logistics.find(l => l.logistic_id === form.logisticsId);
+    if (!selectedLogistic || selectedLogistic.api_type !== 'fixy') {
+      setQuote(null);
+      return;
+    }
+    const totalBultos = items.reduce((s, i) => s + i.quantity, 0) || 1;
+    setQuoting(true);
+    setQuote(null);
+    getLogisticsQuote(form.logisticsId, totalBultos, 1.0, fixyCp)
+      .then(result => setQuote(result))
+      .catch(e => setQuote({ error: e.message || 'No se pudo obtener cotización' }))
+      .finally(() => setQuoting(false));
+  }, [form.logisticsId, fixyCp]);
+
   useEffect(() => {
     if (!supplierId) return;
     setLoadingProducts(true);
@@ -297,7 +313,7 @@ const OrderForm = () => {
   const totalSupplierCost = items.reduce((s, i) => s + i.price * i.quantity, 0);
   const totalRecaudo      = items.reduce((s, i) => s + getSalePrice(i.id) * i.quantity, 0);
   const rawShipping       = (quote && !quote.error && quote.total) ? quote.total : 0;
-  const commission        = rawShipping * 0.30;                          // 30% sobre envío
+  const commission        = rawShipping * 0.25;                          // 25% sobre envío
   const logisticCost      = rawShipping + commission;                    // lo que ve el vendedor (envío + comisión sumados)
   const earnings          = totalRecaudo - totalSupplierCost - logisticCost;
 
@@ -763,51 +779,15 @@ const OrderForm = () => {
               )}
             </div>
 
-            {/* Cotizador — solo para logísticas con API */}
-            {form.logisticsId && (() => {
-              const selectedLogistic = logistics.find(l => l.logistic_id === form.logisticsId);
-              if (!selectedLogistic || selectedLogistic.api_type !== 'fixy') return null;
-              return (
-                <div className="of-field">
-                  <button
-                    type="button"
-                    className="of-map-btn"
-                    disabled={quoting}
-                    onClick={async () => {
-                      setQuoting(true);
-                      setQuote(null);
-                      try {
-                        const totalBultos = items.reduce((s, i) => s + i.quantity, 0) || 1;
-                        const result = await getLogisticsQuote(form.logisticsId, totalBultos, 1.0, fixyCp);
-                        setQuote(result);
-                      } catch (e) {
-                        setQuote({ error: e.message || 'No se pudo obtener cotización' });
-                      } finally {
-                        setQuoting(false);
-                      }
-                    }}
-                  >
-                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    {quoting ? 'Cotizando...' : 'Cotizar envío'}
-                  </button>
-
-                  {quote && !quote.error && (
-                    <div style={{ marginTop: '8px', background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: '8px', padding: '10px 14px' }}>
-                      <p style={{ fontSize: '13px', fontWeight: '700', color: '#16a34a', margin: 0 }}>
-                        Costo de envío: {new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', minimumFractionDigits: 0 }).format(quote.total)}
-                      </p>
-                    </div>
-                  )}
-                  {quote?.error && (
-                    <div style={{ marginTop: '8px', background: '#fef2f2', border: '1.5px solid #fecaca', borderRadius: '8px', padding: '10px 14px' }}>
-                      <p style={{ fontSize: '13px', color: '#dc2626', margin: 0 }}>{quote.error}</p>
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
+            {/* Cotizando — indicador automático */}
+            {quoting && (
+              <p style={{ fontSize: '12px', color: '#6b7280', margin: '4px 0 0 0' }}>Cotizando envío...</p>
+            )}
+            {quote?.error && (
+              <div style={{ marginTop: '4px', background: '#fef2f2', border: '1.5px solid #fecaca', borderRadius: '8px', padding: '8px 12px' }}>
+                <p style={{ fontSize: '12px', color: '#dc2626', margin: 0 }}>{quote.error}</p>
+              </div>
+            )}
           </div>
 
           <div className="of-divider" />
