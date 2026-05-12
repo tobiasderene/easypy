@@ -64,6 +64,7 @@ const OrderForm = () => {
   const [fixySuggestions, setFixySuggestions]   = useState([]);
   const [fixyCp, setFixyCp]                     = useState(null);
   const [showFixySug, setShowFixySug]           = useState(false);
+  const [otraCiudad, setOtraCiudad]             = useState(false);
   const fixyInputRef                            = useRef(null);
   const [submitError, setSubmitError]           = useState('');
 
@@ -295,9 +296,10 @@ const OrderForm = () => {
   const getSalePrice      = (id) => parseFloat(salePrices[id]) || 0;
   const totalSupplierCost = items.reduce((s, i) => s + i.price * i.quantity, 0);
   const totalRecaudo      = items.reduce((s, i) => s + getSalePrice(i.id) * i.quantity, 0);
-  const commission        = totalRecaudo * PLATFORM_COMMISSION;
-  const logisticCost      = 0;
-  const earnings          = totalRecaudo - totalSupplierCost - logisticCost - commission;
+  const rawShipping       = (quote && !quote.error && quote.total) ? quote.total : 0;
+  const commission        = rawShipping * 0.30;                          // 30% sobre envío
+  const logisticCost      = rawShipping + commission;                    // lo que ve el vendedor (envío + comisión sumados)
+  const earnings          = totalRecaudo - totalSupplierCost - logisticCost;
 
   const formatCurrency = (v) =>
     new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', minimumFractionDigits: 0 }).format(v);
@@ -389,7 +391,7 @@ const OrderForm = () => {
       supplier_id:   supplierId,
       logistic_id:   form.logisticsId,
       final_price:   totalRecaudo,
-      logistic_cost: logisticCost,
+      logistic_cost: rawShipping,
       platform_fee:  commission,
       buyer_profit:  earnings,
       status:        'pending',
@@ -546,33 +548,52 @@ const OrderForm = () => {
             <div className="of-row2">
               <div className="of-field">
                 <label className="of-label">Ciudad <span className="of-req">*</span></label>
-                {isFixyLogistics() ? (
-                  <>
-                    <select
-                      className={`of-input ${errors.city ? 'err' : ''}`}
-                      style={{ background: 'white' }}
-                      value={form.city}
-                      onChange={e => {
-                        const loc = FIXY_LOCALIDADES.find(l => l.localidad === e.target.value);
-                        if (loc) selectFixyLocalidad(loc);
-                        else { handleChange('city', ''); setFixyCp(null); }
-                      }}
-                    >
-                      <option value="">Seleccioná una ciudad...</option>
-                      {FIXY_LOCALIDADES.map(loc => (
-                        <option key={loc.cp} value={loc.localidad}>
-                          {loc.localidad} — {loc.provincia}
-                        </option>
-                      ))}
-                    </select>
-                    {fixyCp && (
-                      <span style={{ fontSize: '11px', color: '#16a34a', marginTop: '2px', display: 'block' }}>
-                        ✓ CP Fixy: {fixyCp}
-                      </span>
-                    )}
-                  </>
-                ) : (
-                  <input className={`of-input ${errors.city ? 'err' : ''}`} placeholder="Asunción" value={form.city} onChange={e => handleChange('city', e.target.value)} />
+                <select
+                  className={`of-input ${errors.city ? 'err' : ''}`}
+                  style={{ background: 'white' }}
+                  value={otraCiudad ? '__otro__' : form.city}
+                  onChange={e => {
+                    const val = e.target.value;
+                    if (val === '__otro__') {
+                      setOtraCiudad(true);
+                      handleChange('city', '');
+                      setFixyCp(null);
+                      return;
+                    }
+                    setOtraCiudad(false);
+                    const loc = FIXY_LOCALIDADES.find(l => l.localidad === val);
+                    if (loc && isFixyLogistics()) {
+                      selectFixyLocalidad(loc);
+                    } else {
+                      handleChange('city', val);
+                      setFixyCp(null);
+                    }
+                  }}
+                >
+                  <option value="">Seleccioná una ciudad...</option>
+                  {FIXY_LOCALIDADES.map(loc => (
+                    <option key={loc.cp} value={loc.localidad}>
+                      {loc.localidad} — {loc.provincia}
+                    </option>
+                  ))}
+                  <option value="__otro__">Otra ciudad</option>
+                </select>
+
+                {otraCiudad && (
+                  <input
+                    className={`of-input ${errors.city ? 'err' : ''}`}
+                    placeholder="Escribí la ciudad"
+                    value={form.city}
+                    onChange={e => handleChange('city', e.target.value)}
+                    style={{ marginTop: '6px' }}
+                    autoFocus
+                  />
+                )}
+
+                {fixyCp && !otraCiudad && (
+                  <span style={{ fontSize: '11px', color: '#16a34a', marginTop: '4px', display: 'block' }}>
+                    ✓ CP Fixy: {fixyCp}
+                  </span>
                 )}
                 {errors.city && <span className="of-err">{errors.city}</span>}
               </div>
@@ -731,7 +752,7 @@ const OrderForm = () => {
               ) : (
                 <div className="of-logistics">
                   {logistics.map(l => (
-                    <button key={l.logistic_id} className={`of-logistics-opt ${form.logisticsId === l.logistic_id ? 'active' : ''}`} onClick={() => { handleChange('logisticsId', l.logistic_id); setQuote(null); }}>
+                    <button key={l.logistic_id} className={`of-logistics-opt ${form.logisticsId === l.logistic_id ? 'active' : ''}`} onClick={() => { handleChange('logisticsId', l.logistic_id); setQuote(null); setOtraCiudad(false); setFixyCp(null); }}>
                       <div className="of-logistics-info"><span className="of-logistics-name">{l.name}</span></div>
                       <div className={`of-check ${form.logisticsId === l.logistic_id ? 'active' : ''}`}>
                         {form.logisticsId === l.logistic_id && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5"><path d="M20 6L9 17l-5-5" /></svg>}
@@ -819,17 +840,19 @@ const OrderForm = () => {
 
             <div className="of-breakdown">
               <div className="of-brow">
-                <span className="of-blabel">Costo proveedor</span>
-                <span className="of-bval red">- {formatCurrency(totalSupplierCost)}</span>
-              </div>
-              <div className="of-brow">
                 <span className="of-blabel">Total a recaudar</span>
                 <span className="of-bval green">{totalRecaudo > 0 ? formatCurrency(totalRecaudo) : '—'}</span>
               </div>
               <div className="of-brow">
-                <span className="of-blabel">Comisión plataforma (5%)</span>
-                <span className="of-bval red">{commission > 0 ? `- ${formatCurrency(commission)}` : '—'}</span>
+                <span className="of-blabel">Costo proveedor</span>
+                <span className="of-bval red">- {formatCurrency(totalSupplierCost)}</span>
               </div>
+              {logisticCost > 0 && (
+                <div className="of-brow">
+                  <span className="of-blabel">Costo de envío</span>
+                  <span className="of-bval red">- {formatCurrency(logisticCost)}</span>
+                </div>
+              )}
               <div className="of-bdivider" />
               <div className="of-brow of-brow-earnings">
                 <span className="of-blabel-earn">Tus Ganancias</span>
