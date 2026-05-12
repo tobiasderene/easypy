@@ -174,8 +174,6 @@ const OrderForm = () => {
     handleChange('city', loc.localidad);
     handleChange('region', loc.provincia);
     setFixyCp(loc.cp);
-    setFixySuggestions([]);
-    setShowFixySug(false);
     setQuote(null);
   };
 
@@ -573,13 +571,18 @@ const OrderForm = () => {
                     if (val === '__otro__') {
                       setOtraCiudad(true);
                       handleChange('city', '');
+                      handleChange('region', '');
                       setFixyCp(null);
                       return;
                     }
                     setOtraCiudad(false);
                     const loc = FIXY_LOCALIDADES.find(l => l.localidad === val);
-                    if (loc && isFixyLogistics()) {
-                      selectFixyLocalidad(loc);
+                    if (loc) {
+                      // Siempre llenar ciudad, provincia y CP — independiente de logística
+                      handleChange('city', loc.localidad);
+                      handleChange('region', loc.provincia);
+                      setFixyCp(loc.cp);
+                      setQuote(null);
                     } else {
                       handleChange('city', val);
                       setFixyCp(null);
