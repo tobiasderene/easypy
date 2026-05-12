@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useUser } from '../App';
 import { getLogistics, createOrder, getProducts, getProductImages, searchCustomers, createCustomer, updateCustomer, getLogisticsQuote } from '../services/api';
+import { buscarLocalidad, getCpByLocalidad } from '../data/fixy_localidades';
 import '../styles/orderform.css';
 
 const COUNTRY_CODES = [
@@ -60,6 +61,10 @@ const OrderForm = () => {
   const [submitting, setSubmitting]             = useState(false);
   const [quote, setQuote]                       = useState(null);
   const [quoting, setQuoting]                   = useState(false);
+  const [fixySuggestions, setFixySuggestions]   = useState([]);
+  const [fixyCp, setFixyCp]                     = useState(null);
+  const [showFixySug, setShowFixySug]           = useState(false);
+  const fixyInputRef                            = useRef(null);
   const [submitError, setSubmitError]           = useState('');
 
   // ── Mapa ──────────────────────────────────────────────────────────────────
@@ -127,6 +132,35 @@ const OrderForm = () => {
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
+
+  // ── Helper Fixy ───────────────────────────────────────────────────────────
+  const isFixyLogistics = () => {
+    if (!form.logisticsId) return false;
+    const l = logistics.find(x => x.logistic_id === form.logisticsId);
+    return l?.api_type === 'fixy';
+  };
+
+  const handleCityInput = (value) => {
+    handleChange('city', value);
+    if (isFixyLogistics() && value.length >= 2) {
+      const results = buscarLocalidad(value);
+      setFixySuggestions(results);
+      setShowFixySug(results.length > 0);
+    } else {
+      setFixySuggestions([]);
+      setShowFixySug(false);
+    }
+    setFixyCp(null);
+  };
+
+  const selectFixyLocalidad = (loc) => {
+    handleChange('city', loc.localidad);
+    handleChange('region', loc.provincia);
+    setFixyCp(loc.cp);
+    setFixySuggestions([]);
+    setShowFixySug(false);
+    setQuote(null);
+  };
 
   // ── Búsqueda autocompletado ───────────────────────────────────────────────
   const triggerSearch = (query) => {
@@ -510,10 +544,36 @@ const OrderForm = () => {
 
             {/* ── Ciudad / Región ── */}
             <div className="of-row2">
-              <div className="of-field">
+              <div className="of-field" style={{ position: 'relative' }}>
                 <label className="of-label">Ciudad <span className="of-req">*</span></label>
-                <input className={`of-input ${errors.city ? 'err' : ''}`} placeholder="Asunción" value={form.city} onChange={e => handleChange('city', e.target.value)} />
+                <input
+                  ref={fixyInputRef}
+                  className={`of-input ${errors.city ? 'err' : ''}`}
+                  placeholder={isFixyLogistics() ? 'Buscar ciudad cubierta por Fixy...' : 'Asunción'}
+                  value={form.city}
+                  onChange={e => handleCityInput(e.target.value)}
+                  onBlur={() => setTimeout(() => setShowFixySug(false), 150)}
+                  autoComplete="off"
+                />
                 {errors.city && <span className="of-err">{errors.city}</span>}
+                {fixyCp && (
+                  <span style={{ fontSize: '11px', color: '#16a34a', marginTop: '2px', display: 'block' }}>
+                    ✓ CP Fixy: {fixyCp}
+                  </span>
+                )}
+                {showFixySug && fixySuggestions.length > 0 && (
+                  <div className="of-suggestions">
+                    {fixySuggestions.map(loc => (
+                      <div key={loc.cp} className="of-suggestion-item" onMouseDown={() => selectFixyLocalidad(loc)}>
+                        <div className="of-sug-info">
+                          <span className="of-sug-name">{loc.localidad}</span>
+                          <span className="of-sug-sub">{loc.provincia}</span>
+                        </div>
+                        <span className="of-sug-doc">CP {loc.cp}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="of-field">
                 <label className="of-label">Dpto / Región <span className="of-req">*</span></label>
@@ -696,7 +756,7 @@ const OrderForm = () => {
                       setQuote(null);
                       try {
                         const totalBultos = items.reduce((s, i) => s + i.quantity, 0) || 1;
-                        const result = await getLogisticsQuote(form.logisticsId, totalBultos, 1.0);
+                        const result = await getLogisticsQuote(form.logisticsId, totalBultos, 1.0, fixyCp);
                         setQuote(result);
                       } catch (e) {
                         setQuote({ error: e.message || 'No se pudo obtener cotización' });
