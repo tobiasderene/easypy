@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useUser } from '../App';
 import { getLogistics, createOrder, getProducts, getProductImages, searchCustomers, createCustomer, updateCustomer, getLogisticsQuote } from '../services/api';
-import { buscarLocalidad, getCpByLocalidad } from '../data/fixy_localidades';
+import FIXY_LOCALIDADES, { buscarLocalidad } from '../data/fixy_localidades';
 import '../styles/orderform.css';
 
 const COUNTRY_CODES = [
@@ -544,36 +544,37 @@ const OrderForm = () => {
 
             {/* ── Ciudad / Región ── */}
             <div className="of-row2">
-              <div className="of-field" style={{ position: 'relative' }}>
+              <div className="of-field">
                 <label className="of-label">Ciudad <span className="of-req">*</span></label>
-                <input
-                  ref={fixyInputRef}
-                  className={`of-input ${errors.city ? 'err' : ''}`}
-                  placeholder={isFixyLogistics() ? 'Buscar ciudad cubierta por Fixy...' : 'Asunción'}
-                  value={form.city}
-                  onChange={e => handleCityInput(e.target.value)}
-                  onBlur={() => setTimeout(() => setShowFixySug(false), 150)}
-                  autoComplete="off"
-                />
+                {isFixyLogistics() ? (
+                  <>
+                    <select
+                      className={`of-input ${errors.city ? 'err' : ''}`}
+                      style={{ background: 'white' }}
+                      value={form.city}
+                      onChange={e => {
+                        const loc = FIXY_LOCALIDADES.find(l => l.localidad === e.target.value);
+                        if (loc) selectFixyLocalidad(loc);
+                        else { handleChange('city', ''); setFixyCp(null); }
+                      }}
+                    >
+                      <option value="">Seleccioná una ciudad...</option>
+                      {FIXY_LOCALIDADES.map(loc => (
+                        <option key={loc.cp} value={loc.localidad}>
+                          {loc.localidad} — {loc.provincia}
+                        </option>
+                      ))}
+                    </select>
+                    {fixyCp && (
+                      <span style={{ fontSize: '11px', color: '#16a34a', marginTop: '2px', display: 'block' }}>
+                        ✓ CP Fixy: {fixyCp}
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <input className={`of-input ${errors.city ? 'err' : ''}`} placeholder="Asunción" value={form.city} onChange={e => handleChange('city', e.target.value)} />
+                )}
                 {errors.city && <span className="of-err">{errors.city}</span>}
-                {fixyCp && (
-                  <span style={{ fontSize: '11px', color: '#16a34a', marginTop: '2px', display: 'block' }}>
-                    ✓ CP Fixy: {fixyCp}
-                  </span>
-                )}
-                {showFixySug && fixySuggestions.length > 0 && (
-                  <div className="of-suggestions">
-                    {fixySuggestions.map(loc => (
-                      <div key={loc.cp} className="of-suggestion-item" onMouseDown={() => selectFixyLocalidad(loc)}>
-                        <div className="of-sug-info">
-                          <span className="of-sug-name">{loc.localidad}</span>
-                          <span className="of-sug-sub">{loc.provincia}</span>
-                        </div>
-                        <span className="of-sug-doc">CP {loc.cp}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
               <div className="of-field">
                 <label className="of-label">Dpto / Región <span className="of-req">*</span></label>
