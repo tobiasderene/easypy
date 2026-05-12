@@ -775,9 +775,7 @@ const OrderForm = () => {
                   {quote && !quote.error && (
                     <div style={{ marginTop: '8px', background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: '8px', padding: '10px 14px' }}>
                       <p style={{ fontSize: '13px', fontWeight: '700', color: '#16a34a', margin: 0 }}>
-                        Costo de envío: {typeof quote === 'object' && quote.precio
-                          ? new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', minimumFractionDigits: 0 }).format(quote.precio)
-                          : JSON.stringify(quote)}
+                        Costo de envío: {new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', minimumFractionDigits: 0 }).format(quote.total)}
                       </p>
                     </div>
                   )}
