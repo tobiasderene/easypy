@@ -263,7 +263,6 @@ const Signup = () => {
                       <option key={loc.cp} value={loc.localidad}>{loc.localidad}</option>
                     ))}
                   </select>
-                  {formData.region && <span style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px', display: 'block' }}>{formData.region}</span>}
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '10px' }}>
