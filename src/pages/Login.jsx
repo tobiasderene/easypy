@@ -97,10 +97,7 @@ export default function LoginMinimal() {
 
             {error && <div className="error-box">{error}</div>}
 
-            <div className="login-options">
-              <label><input type="checkbox" /> Recordarme</label>
-              <a href="#" onClick={(e) => e.preventDefault()}>¿Olvidaste tu contraseña?</a>
-            </div>
+
 
             <button className="primary-button" onClick={handleSubmit} disabled={loading}>
               {loading ? 'Ingresando...' : 'Iniciar Sesión'}
