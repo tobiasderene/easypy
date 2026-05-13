@@ -609,11 +609,7 @@ const OrderForm = () => {
                   />
                 )}
 
-                {fixyCp && !otraCiudad && (
-                  <span style={{ fontSize: '11px', color: '#16a34a', marginTop: '4px', display: 'block' }}>
-                    ✓ CP Fixy: {fixyCp}
-                  </span>
-                )}
+
                 {errors.city && <span className="of-err">{errors.city}</span>}
               </div>
               <div className="of-field">
@@ -643,7 +639,7 @@ const OrderForm = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
-                {geocoding ? 'Buscando...' : coords ? '✓ Ubicación confirmada — actualizar' : 'Ver y confirmar en mapa *'}
+                {geocoding ? 'Buscando...' : coords ? '✓ Ubicación confirmada' : 'Ver y confirmar en mapa *'}
               </button>
               {errors.map && <span className="of-err">{errors.map}</span>}
               {geoError  && <span className="of-err">{geoError}</span>}
