@@ -105,7 +105,7 @@ const OrderForm = () => {
     const selectedLogistic = logistics.find(l => l.logistic_id === form.logisticsId);
     if (!selectedLogistic || selectedLogistic.api_type !== 'fixy') {
       setQuote(null);
-      return;
+      return; // No tocar fixyCp — pertenece a la ciudad, no a la logística
     }
     const totalBultos = items.reduce((s, i) => s + i.quantity, 0) || 1;
     setQuoting(true);
@@ -167,7 +167,7 @@ const OrderForm = () => {
       setFixySuggestions([]);
       setShowFixySug(false);
     }
-    setFixyCp(null);
+    // No resetear fixyCp aquí — solo se resetea al cambiar la ciudad en el select
   };
 
   const selectFixyLocalidad = (loc) => {
@@ -771,7 +771,7 @@ const OrderForm = () => {
               ) : (
                 <div className="of-logistics">
                   {logistics.map(l => (
-                    <button key={l.logistic_id} className={`of-logistics-opt ${form.logisticsId === l.logistic_id ? 'active' : ''}`} onClick={() => { handleChange('logisticsId', l.logistic_id); setQuote(null); setOtraCiudad(false); setFixyCp(null); }}>
+                    <button key={l.logistic_id} className={`of-logistics-opt ${form.logisticsId === l.logistic_id ? 'active' : ''}`} onClick={() => { handleChange('logisticsId', l.logistic_id); setQuote(null); setOtraCiudad(false); }}>
                       <div className="of-logistics-info"><span className="of-logistics-name">{l.name}</span></div>
                       <div className={`of-check ${form.logisticsId === l.logistic_id ? 'active' : ''}`}>
                         {form.logisticsId === l.logistic_id && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5"><path d="M20 6L9 17l-5-5" /></svg>}
