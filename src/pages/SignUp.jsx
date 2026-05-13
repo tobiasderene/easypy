@@ -2,28 +2,32 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { registerLocal, registerGoogle, getMe, updateUser, uploadProfileImage } from '../services/api';
 import { useUser } from '../App';
+import FIXY_LOCALIDADES from '../data/fixy_localidades';
 import '../styles/signup.css';
 
 const Signup = () => {
-  const [userType, setUserType]                   = useState('seller');
-  const [showPassword, setShowPassword]           = useState(false);
+  const [userType, setUserType]                       = useState('seller');
+  const [showPassword, setShowPassword]               = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [error, setError]                         = useState('');
-  const [isLoading, setIsLoading]                 = useState(false);
-  const [isGoogleSignup, setIsGoogleSignup]       = useState(false);
-  const [googleId, setGoogleId]                   = useState('');
-  const [avatarFile, setAvatarFile]               = useState(null);
-  const [avatarPreview, setAvatarPreview]         = useState(null);
-  const fileInputRef                              = useRef(null);
+  const [error, setError]                             = useState('');
+  const [isLoading, setIsLoading]                     = useState(false);
+  const [isGoogleSignup, setIsGoogleSignup]           = useState(false);
+  const [googleId, setGoogleId]                       = useState('');
+  const [avatarFile, setAvatarFile]                   = useState(null);
+  const [avatarPreview, setAvatarPreview]             = useState(null);
+  const fileInputRef                                  = useRef(null);
 
-  const navigate      = useNavigate();
+  const navigate       = useNavigate();
   const [searchParams] = useSearchParams();
-  const { setUser }   = useUser();
+  const { setUser }    = useUser();
 
   const [formData, setFormData] = useState({
     fullName: '', email: '', phone: '',
     password: '', confirmPassword: '', terms: false,
-    country: '', city: '', address: '',
+    razon_social: '', address: '', address_height: '',
+    city: '', region: '', cp: '',
+    contact_name: '', doc_type: '', doc_number: '',
+    piso: '', dpto: '',
   });
 
   useEffect(() => {
@@ -31,7 +35,6 @@ const Signup = () => {
     const email    = searchParams.get('email');
     const provider = searchParams.get('provider');
     const gid      = searchParams.get('google_id');
-
     if (provider === 'google' && email) {
       setIsGoogleSignup(true);
       setGoogleId(gid || '');
@@ -43,6 +46,25 @@ const Signup = () => {
     const { name, value, type, checked } = e.target;
     setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
     if (error) setError('');
+  };
+
+  const handleCitySelect = (e) => {
+    const val = e.target.value;
+    const loc = FIXY_LOCALIDADES.find(l => l.localidad === val);
+    if (loc) setFormData(prev => ({ ...prev, city: loc.localidad, region: loc.provincia, cp: String(loc.cp) }));
+    else     setFormData(prev => ({ ...prev, city: '', region: '', cp: '' }));
+    if (error) setError('');
+  };
+
+  const handleDocNumber = (value) => {
+    let formatted = value;
+    if (formData.doc_type === 'ruc') {
+      const digits = value.replace(/\D/g, '');
+      formatted = digits.length <= 1 ? digits : digits.slice(0, -1) + '-' + digits.slice(-1);
+    } else if (formData.doc_type === 'cedula') {
+      formatted = value.replace(/\D/g, '').slice(0, 8);
+    }
+    setFormData(prev => ({ ...prev, doc_number: formatted }));
   };
 
   const handleAvatarChange = (e) => {
@@ -60,56 +82,49 @@ const Signup = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!formData.fullName.trim()) return setError('Por favor ingresa tu nombre completo');
-    if (!validateEmail(formData.email)) return setError('Por favor ingresa un correo electrónico válido');
-    if (!formData.phone.trim()) return setError('Por favor ingresa tu número de teléfono');
-
+    if (!formData.fullName.trim())      return setError('Por favor ingresá tu nombre completo');
+    if (!validateEmail(formData.email)) return setError('Por favor ingresá un correo válido');
+    if (!formData.phone.trim())         return setError('Por favor ingresá tu número de teléfono');
     if (!isGoogleSignup) {
-      if (!validatePassword(formData.password)) return setError('La contraseña debe tener al menos 8 caracteres');
+      if (!validatePassword(formData.password))           return setError('La contraseña debe tener al menos 8 caracteres');
       if (formData.password !== formData.confirmPassword) return setError('Las contraseñas no coinciden');
     }
-
     if (userType === 'provider') {
-      if (!formData.country.trim()) return setError('Por favor ingresa tu país');
-      if (!formData.city.trim())    return setError('Por favor ingresa tu ciudad');
+      if (!formData.razon_social.trim())   return setError('Ingresá la razón social');
+      if (!formData.city.trim())           return setError('Seleccioná la ciudad');
+      if (!formData.address.trim())        return setError('Ingresá la calle');
+      if (!formData.address_height.trim()) return setError('Ingresá la altura de la calle');
+      if (!formData.contact_name.trim())   return setError('Ingresá el nombre del contacto');
     }
-
-    if (!formData.terms) return setError('Debes aceptar los términos y condiciones');
+    if (!formData.terms) return setError('Debés aceptar los términos y condiciones');
 
     setIsLoading(true);
     try {
-      // 1. Crear cuenta
       if (isGoogleSignup) {
         await registerGoogle(formData.email, formData.fullName, userType, googleId);
       } else {
-        await registerLocal(formData.email, formData.fullName, formData.password, userType);
-      }
-
-      // 2. Obtener usuario creado
-      const user = await getMe();
-
-      // 3. Actualizar ubicación si es proveedor
-      if (userType === 'provider' && (formData.country || formData.city || formData.address)) {
-        await updateUser(user.user_id, {
-          country: formData.country || undefined,
-          city:    formData.city    || undefined,
-          address: formData.address || undefined,
+        await registerLocal(formData.email, formData.fullName, formData.password, userType, {
+          razon_social:   formData.razon_social   || undefined,
+          address:        formData.address        || undefined,
+          address_height: formData.address_height || undefined,
+          city:           formData.city           || undefined,
+          region:         formData.region         || undefined,
+          cp:             formData.cp ? parseInt(formData.cp) : undefined,
+          phone:          formData.phone          || undefined,
+          contact_name:   formData.contact_name   || undefined,
+          doc_type:       formData.doc_type       || undefined,
+          doc_number:     formData.doc_number     || undefined,
+          piso:           formData.piso           || undefined,
+          dpto:           formData.dpto           || undefined,
         });
       }
-
-      // 4. Subir foto de perfil si se seleccionó
-      if (avatarFile) {
-        await uploadProfileImage(avatarFile);
-      }
-
-      // 5. Redirigir
+      const user = await getMe();
+      if (avatarFile) await uploadProfileImage(avatarFile);
       setUser(user);
-      if (user.user_status === 'pending') return; // PendingApproval lo maneja App.jsx
+      if (user.user_status === 'pending') return;
       navigate(user.user_role === 'provider' ? '/provider-orders' : '/catalogo');
-
     } catch (err) {
-      setError(err.message || 'Error al crear la cuenta. Por favor intenta de nuevo.');
+      setError(err.message || 'Error al crear la cuenta. Por favor intentá de nuevo.');
     } finally {
       setIsLoading(false);
     }
@@ -135,12 +150,6 @@ const Signup = () => {
 
           {isGoogleSignup && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '10px 14px', marginBottom: '16px', fontSize: '13px', color: '#15803d' }}>
-              <svg width="16" height="16" viewBox="0 0 48 48">
-                <path fill="#4CAF50" d="M24 44c5.2 0 9.9-1.8 13.5-4.7l-6.2-5.2C29.4 35.6 26.8 36 24 36c-5.2 0-9.6-2.9-11.3-7.1l-6.6 4.8C9.6 39.6 16.3 44 24 44z"/>
-                <path fill="#1976D2" d="M43.6 20H24v8h11.3c-.9 2.4-2.5 4.4-4.6 5.8l6.2 5.2C40.7 35.7 44 30.3 44 24c0-1.3-.1-2.7-.4-4z"/>
-                <path fill="#FFC107" d="M43.6 20H24v8h11.3C33.6 33.1 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.5 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20c11 0 19.7-8 19.7-20 0-1.3-.1-2.7-.1-4z"/>
-                <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 16 19 13 24 13c3 0 5.8 1.1 7.9 3l5.7-5.7C34.1 6.5 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/>
-              </svg>
               Cuenta de Google vinculada — solo falta elegir tu tipo de cuenta
             </div>
           )}
@@ -154,45 +163,22 @@ const Signup = () => {
               <label>Tipo de cuenta</label>
               <div className="user-type-selector">
                 <button type="button" className={`user-type-option ${userType === 'seller' ? 'active' : ''}`} onClick={() => setUserType('seller')}>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
-                  </svg>
-                  <div>
-                    <div className="option-title">Vendedor</div>
-                    <div className="option-desc">Vende productos</div>
-                  </div>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                  <div><div className="option-title">Vendedor</div><div className="option-desc">Vende productos</div></div>
                 </button>
                 <button type="button" className={`user-type-option ${userType === 'provider' ? 'active' : ''}`} onClick={() => setUserType('provider')}>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="1" y="3" width="15" height="13"></rect>
-                    <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
-                    <circle cx="5.5" cy="18.5" r="2.5"></circle>
-                    <circle cx="18.5" cy="18.5" r="2.5"></circle>
-                  </svg>
-                  <div>
-                    <div className="option-title">Proveedor</div>
-                    <div className="option-desc">Suministra inventario</div>
-                  </div>
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+                  <div><div className="option-title">Proveedor</div><div className="option-desc">Suministra inventario</div></div>
                 </button>
               </div>
             </div>
 
-            {/* Foto de perfil */}
+            {/* Foto */}
             <div className="form-group">
               <label>Foto de perfil <span style={{ color: '#9ca3af', fontWeight: 400 }}>(opcional)</span></label>
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <div
-                  onClick={() => fileInputRef.current?.click()}
-                  style={{ width: '64px', height: '64px', borderRadius: '50%', overflow: 'hidden', background: 'linear-gradient(135deg, #aacdfe, #056EB7)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, border: '2px solid #e5e7eb', position: 'relative' }}
-                >
-                  {avatarPreview ? (
-                    <img src={avatarPreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  ) : (
-                    <span style={{ fontSize: '20px', fontWeight: '800', color: 'white' }}>
-                      {getInitials(formData.fullName) || '?'}
-                    </span>
-                  )}
+                <div onClick={() => fileInputRef.current?.click()} style={{ width: '64px', height: '64px', borderRadius: '50%', overflow: 'hidden', background: 'linear-gradient(135deg, #aacdfe, #056EB7)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, border: '2px solid #e5e7eb' }}>
+                  {avatarPreview ? <img src={avatarPreview} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: '20px', fontWeight: '800', color: 'white' }}>{getInitials(formData.fullName) || '?'}</span>}
                 </div>
                 <div>
                   <button type="button" onClick={() => fileInputRef.current?.click()} style={{ padding: '7px 16px', background: '#056EB7', color: 'white', border: 'none', borderRadius: '8px', fontSize: '13px', fontWeight: '600', cursor: 'pointer' }}>
@@ -207,23 +193,15 @@ const Signup = () => {
             {/* Datos básicos */}
             <div className="form-group">
               <label htmlFor="fullName">Nombre completo</label>
-              <div className="input-wrapper">
-                <input type="text" id="fullName" name="fullName" placeholder="Juan Pérez" value={formData.fullName} onChange={handleInputChange} required />
-              </div>
+              <div className="input-wrapper"><input type="text" id="fullName" name="fullName" placeholder="Juan Pérez" value={formData.fullName} onChange={handleInputChange} required /></div>
             </div>
-
             <div className="form-group">
               <label htmlFor="email">Correo electrónico</label>
-              <div className="input-wrapper">
-                <input type="email" id="email" name="email" placeholder="correo@ejemplo.com" value={formData.email} onChange={handleInputChange} required disabled={isGoogleSignup} style={isGoogleSignup ? { background: '#f9fafb', color: '#6b7280', cursor: 'not-allowed' } : {}} />
-              </div>
+              <div className="input-wrapper"><input type="email" id="email" name="email" placeholder="correo@ejemplo.com" value={formData.email} onChange={handleInputChange} required disabled={isGoogleSignup} style={isGoogleSignup ? { background: '#f9fafb', color: '#6b7280', cursor: 'not-allowed' } : {}} /></div>
             </div>
-
             <div className="form-group">
               <label htmlFor="phone">Teléfono</label>
-              <div className="input-wrapper">
-                <input type="tel" id="phone" name="phone" placeholder="+595 123 456 789" value={formData.phone} onChange={handleInputChange} required />
-              </div>
+              <div className="input-wrapper"><input type="tel" id="phone" name="phone" placeholder="+595 981 000 000" value={formData.phone} onChange={handleInputChange} required /></div>
             </div>
 
             {!isGoogleSignup && (
@@ -233,63 +211,95 @@ const Signup = () => {
                   <div className="input-wrapper">
                     <input type={showPassword ? 'text' : 'password'} id="password" name="password" placeholder="••••••••" value={formData.password} onChange={handleInputChange} required />
                     <button type="button" className="icon-button" onClick={() => setShowPassword(!showPassword)}>
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        {showPassword ? (<><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></>) : (<><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></>)}
-                      </svg>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{showPassword ? (<><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></>) : (<><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></>)}</svg>
                     </button>
                   </div>
                 </div>
-
                 <div className="form-group">
                   <label htmlFor="confirmPassword">Confirmar contraseña</label>
                   <div className="input-wrapper">
                     <input type={showConfirmPassword ? 'text' : 'password'} id="confirmPassword" name="confirmPassword" placeholder="••••••••" value={formData.confirmPassword} onChange={handleInputChange} required />
                     <button type="button" className="icon-button" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        {showConfirmPassword ? (<><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></>) : (<><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></>)}
-                      </svg>
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">{showConfirmPassword ? (<><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></>) : (<><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></>)}</svg>
                     </button>
                   </div>
                 </div>
               </>
             )}
 
-            {/* Ubicación — solo para proveedores */}
+            {/* ── Datos del proveedor ── */}
             {userType === 'provider' && (
-              <div style={{ border: '1.5px solid #e5e7eb', borderRadius: '10px', padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px', background: '#f9fafb' }}>
-                <p style={{ fontSize: '13px', fontWeight: '700', color: '#1f2937', margin: 0 }}>
-                  Ubicación del proveedor
-                </p>
+              <div style={{ border: '1.5px solid #e5e7eb', borderRadius: '12px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '14px', background: '#f9fafb' }}>
+
+                <p style={{ fontSize: '13px', fontWeight: '800', color: '#1f2937', margin: 0 }}>Datos de la empresa</p>
 
                 <div className="form-group" style={{ margin: 0 }}>
-                  <label htmlFor="country">País <span style={{ color: '#ef4444' }}>*</span></label>
-                  <div className="input-wrapper">
-                    <input type="text" id="country" name="country" placeholder="Ej: Paraguay" value={formData.country} onChange={handleInputChange} />
+                  <label>Razón social <span style={{ color: '#ef4444' }}>*</span></label>
+                  <div className="input-wrapper"><input type="text" name="razon_social" placeholder="Ej: Mi Empresa S.A." value={formData.razon_social} onChange={handleInputChange} /></div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label>Tipo de documento</label>
+                    <select name="doc_type" value={formData.doc_type} onChange={e => { handleInputChange(e); setFormData(prev => ({ ...prev, doc_number: '' })); }} style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', background: 'white' }}>
+                      <option value="">Sin documento</option>
+                      <option value="cedula">Cédula</option>
+                      <option value="ruc">RUC</option>
+                    </select>
+                  </div>
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label>{formData.doc_type === 'ruc' ? 'RUC' : formData.doc_type === 'cedula' ? 'Nro. cédula' : 'Número'}</label>
+                    <div className="input-wrapper"><input type="text" placeholder={formData.doc_type === 'ruc' ? 'XXXXXXXX-X' : formData.doc_type === 'cedula' ? '12345678' : '—'} value={formData.doc_number} onChange={e => handleDocNumber(e.target.value)} disabled={!formData.doc_type} /></div>
+                  </div>
+                </div>
+
+                <p style={{ fontSize: '13px', fontWeight: '800', color: '#1f2937', margin: '4px 0 0 0' }}>Ubicación</p>
+
+                <div className="form-group" style={{ margin: 0 }}>
+                  <label>Ciudad <span style={{ color: '#ef4444' }}>*</span></label>
+                  <select value={formData.city} onChange={handleCitySelect} style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', background: 'white' }}>
+                    <option value="">Seleccioná una ciudad...</option>
+                    {FIXY_LOCALIDADES.map(loc => (
+                      <option key={loc.cp} value={loc.localidad}>{loc.localidad}</option>
+                    ))}
+                  </select>
+                  {formData.region && <span style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px', display: 'block' }}>{formData.region}</span>}
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '10px' }}>
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label>Calle <span style={{ color: '#ef4444' }}>*</span></label>
+                    <div className="input-wrapper"><input type="text" name="address" placeholder="Av. España" value={formData.address} onChange={handleInputChange} /></div>
+                  </div>
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label>Altura <span style={{ color: '#ef4444' }}>*</span></label>
+                    <div className="input-wrapper"><input type="number" name="address_height" placeholder="1234" value={formData.address_height} onChange={handleInputChange} /></div>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label>Piso <span style={{ color: '#9ca3af', fontWeight: 400 }}>(opcional)</span></label>
+                    <div className="input-wrapper"><input type="text" name="piso" placeholder="Ej: 4" value={formData.piso} onChange={handleInputChange} /></div>
+                  </div>
+                  <div className="form-group" style={{ margin: 0 }}>
+                    <label>Dpto <span style={{ color: '#9ca3af', fontWeight: 400 }}>(opcional)</span></label>
+                    <div className="input-wrapper"><input type="text" name="dpto" placeholder="Ej: B" value={formData.dpto} onChange={handleInputChange} /></div>
                   </div>
                 </div>
 
                 <div className="form-group" style={{ margin: 0 }}>
-                  <label htmlFor="city">Ciudad <span style={{ color: '#ef4444' }}>*</span></label>
-                  <div className="input-wrapper">
-                    <input type="text" id="city" name="city" placeholder="Ej: Asunción" value={formData.city} onChange={handleInputChange} />
-                  </div>
+                  <label>Persona de contacto <span style={{ color: '#ef4444' }}>*</span></label>
+                  <div className="input-wrapper"><input type="text" name="contact_name" placeholder="Ej: María González" value={formData.contact_name} onChange={handleInputChange} /></div>
                 </div>
 
-                <div className="form-group" style={{ margin: 0 }}>
-                  <label htmlFor="address">Dirección <span style={{ color: '#9ca3af', fontWeight: 400 }}>(opcional)</span></label>
-                  <div className="input-wrapper">
-                    <input type="text" id="address" name="address" placeholder="Ej: Av. España 1234" value={formData.address} onChange={handleInputChange} />
-                  </div>
-                </div>
               </div>
             )}
 
             <div className="form-group">
               <label className="checkbox-wrapper">
                 <input type="checkbox" id="terms" name="terms" checked={formData.terms} onChange={handleInputChange} required />
-                <span className="checkbox-label">
-                  Acepto los <a href="#" className="link">términos y condiciones</a>
-                </span>
+                <span className="checkbox-label">Acepto los <a href="#" className="link">términos y condiciones</a></span>
               </label>
             </div>
 
@@ -299,9 +309,8 @@ const Signup = () => {
           </form>
 
           <div className="signup-footer">
-            <span>¿Ya tienes cuenta? <a href="/login" className="link">Inicia sesión</a></span>
+            <span>¿Ya tenés cuenta? <a href="/login" className="link">Iniciá sesión</a></span>
           </div>
-
         </div>
       </div>
     </div>
