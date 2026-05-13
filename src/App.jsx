@@ -27,6 +27,7 @@ import LogisticsPanel from './pages/LogisticsPanel';
 import ProviderProfile from './pages/ProviderProfile';
 import EditProductForm from './pages/EditProductForm';
 import { getMe, exchangeSession, getWalletByUser } from './services/api';
+import LoadingScreen from './components/LoadingScreen';
 import './App.css';
 
 // ─── Context de usuario ───────────────────────────────
@@ -73,7 +74,7 @@ const Layout = ({ children }) => {
 // ─── Ruta protegida (cualquier usuario autenticado) ───
 const ProtectedRoute = ({ children, withLayout = true }) => {
   const { user, loading } = useUser();
-  if (loading) return <div className="loading-screen">Cargando...</div>;
+  if (loading) return <LoadingScreen />;
   if (!user) return <Navigate to="/login" replace />;
   if (user.user_status === 'pending') return <PendingApproval />;
   return withLayout ? <Layout>{children}</Layout> : children;
@@ -82,7 +83,7 @@ const ProtectedRoute = ({ children, withLayout = true }) => {
 // ─── Ruta solo seller/buyer — bloquea logistics y provider ───
 const SellerRoute = ({ children }) => {
   const { user, loading } = useUser();
-  if (loading) return <div className="loading-screen">Cargando...</div>;
+  if (loading) return <LoadingScreen />;
   if (!user) return <Navigate to="/login" replace />;
   if (user.user_status === 'pending') return <PendingApproval />;
   if (user.user_role === 'logistics') return <Navigate to="/logistics" replace />;
@@ -94,7 +95,7 @@ const SellerRoute = ({ children }) => {
 // ─── Ruta solo provider ───────────────────────────────
 const ProviderRoute = ({ children }) => {
   const { user, loading } = useUser();
-  if (loading) return <div className="loading-screen">Cargando...</div>;
+  if (loading) return <LoadingScreen />;
   if (!user) return <Navigate to="/login" replace />;
   if (user.user_status === 'pending') return <PendingApproval />;
   if (user.user_role === 'logistics') return <Navigate to="/logistics" replace />;
@@ -105,7 +106,7 @@ const ProviderRoute = ({ children }) => {
 // ─── Ruta solo admin ──────────────────────────────────
 const AdminRoute = ({ children }) => {
   const { user, loading } = useUser();
-  if (loading) return <div className="loading-screen">Cargando...</div>;
+  if (loading) return <LoadingScreen />;
   if (!user) return <Navigate to="/login" replace />;
   if (user.user_status === 'pending') return <PendingApproval />;
   if (user.user_role !== 'admin') return <Navigate to="/" replace />;
@@ -115,7 +116,7 @@ const AdminRoute = ({ children }) => {
 // ─── Ruta solo logistics ──────────────────────────────
 const LogisticsRoute = ({ children }) => {
   const { user, loading } = useUser();
-  if (loading) return <div className="loading-screen">Cargando...</div>;
+  if (loading) return <LoadingScreen />;
   if (!user) return <Navigate to="/login" replace />;
   if (user.user_status === 'pending') return <PendingApproval />;
   if (user.user_role !== 'logistics') return <Navigate to="/" replace />;
@@ -125,7 +126,7 @@ const LogisticsRoute = ({ children }) => {
 // ─── Ruta pública ─────────────────────────────────────
 const PublicRoute = ({ children }) => {
   const { user, loading } = useUser();
-  if (loading) return <div className="loading-screen">Cargando...</div>;
+  if (loading) return <LoadingScreen />;
   if (user) {
     if (user.user_status === 'pending')  return <PendingApproval />;
     if (user.user_role === 'provider')   return <Navigate to="/provider-orders" replace />;
@@ -168,7 +169,7 @@ const Dashboard = () => {
     }
   }, []);
 
-  return <div className="loading-screen">Cargando...</div>;
+  return <LoadingScreen />;
 };
 
 // ─── App ──────────────────────────────────────────────
