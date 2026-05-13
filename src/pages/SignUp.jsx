@@ -241,7 +241,7 @@ const Signup = () => {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                   <div className="form-group" style={{ margin: 0 }}>
                     <label>Tipo de documento</label>
-                    <select name="doc_type" value={formData.doc_type} onChange={e => { handleInputChange(e); setFormData(prev => ({ ...prev, doc_number: '' })); }} style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', background: 'white' }}>
+                    <select name="doc_type" value={formData.doc_type} onChange={e => { handleInputChange(e); setFormData(prev => ({ ...prev, doc_number: '' })); }} >
                       <option value="">Sin documento</option>
                       <option value="cedula">Cédula</option>
                       <option value="ruc">RUC</option>
@@ -257,7 +257,7 @@ const Signup = () => {
 
                 <div className="form-group" style={{ margin: 0 }}>
                   <label>Ciudad <span style={{ color: '#ef4444' }}>*</span></label>
-                  <select value={formData.city} onChange={handleCitySelect} style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #e5e7eb', borderRadius: '8px', fontSize: '14px', background: 'white' }}>
+                  <select value={formData.city} onChange={handleCitySelect} >
                     <option value="">Seleccioná una ciudad...</option>
                     {FIXY_LOCALIDADES.map(loc => (
                       <option key={loc.cp} value={loc.localidad}>{loc.localidad}</option>
