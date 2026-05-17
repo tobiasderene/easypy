@@ -65,8 +65,8 @@ export const logout = async () => {
 export const loginLocal = (email, password) =>
   api("/auth/login", { method: "POST", body: JSON.stringify({ email, password }) });
 
-export const registerLocal = (email, name, password, userRole) =>
-  api("/auth/register", { method: "POST", body: JSON.stringify({ email, name, password, user_role: userRole }) });
+export const registerLocal = (email, name, password, userRole, extraFields = {}) =>
+  api("/auth/register", { method: "POST", body: JSON.stringify({ email, name, password, user_role: userRole, ...extraFields }) });
 
 // ── Customers ────────────────────────────────────────────────────────────────
 export const getCustomers       = (skip = 0, limit = 100) => api(`/customers?skip=${skip}&limit=${limit}`);
