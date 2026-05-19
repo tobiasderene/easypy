@@ -61,7 +61,9 @@ const OrderForm = () => {
   const [loadingLogistics, setLoadingLogistics] = useState(true);
   const [submitting, setSubmitting]             = useState(false);
   const [quote, setQuote]                       = useState(null);
-  const [zones, setZones]                       = useState([]);
+  const [zones, setZones]                         = useState([]);
+  const [allZones, setAllZones]                   = useState({});  // { logistic_id: [zones] }
+  const [logisticPrices, setLogisticPrices]       = useState({});  // { logistic_id: price | null }
   const [quoting, setQuoting]                   = useState(false);
   const [fixySuggestions, setFixySuggestions]   = useState([]);
   const [fixyCp, setFixyCp]                     = useState(null);
@@ -99,7 +101,19 @@ const OrderForm = () => {
 
   useEffect(() => {
     getLogistics()
-      .then(data => setLogistics(data || []))
+      .then(async data => {
+        setLogistics(data || []);
+        // Pre-cargar zonas de todas las logísticas manuales
+        const manualOnes = (data || []).filter(l => l.api_type === 'manual');
+        const zoneMap = {};
+        await Promise.all(manualOnes.map(async l => {
+          try {
+            const z = await getLogisticsZones(l.logistic_id);
+            if (z && z.length > 0) zoneMap[l.logistic_id] = z;
+          } catch {}
+        }));
+        setAllZones(zoneMap);
+      })
       .catch(() => setLogistics([]))
       .finally(() => setLoadingLogistics(false));
   }, []);
@@ -114,6 +128,39 @@ const OrderForm = () => {
       .then(u => setSupplierCity(u?.city || ''))
       .catch(() => {});
   }, [supplierId]);
+
+  // ── Calcular precios de todas las logísticas cuando cambia la ciudad ────────
+  useEffect(() => {
+    if (!form.city) { setLogisticPrices({}); return; }
+    const normalize = s => (s || '').toLowerCase().trim();
+    const prices = {};
+
+    logistics.forEach(l => {
+      if (l.api_type === 'manual') {
+        const lZones = allZones[l.logistic_id] || [];
+        if (lZones.length === 0) { prices[l.logistic_id] = null; return; }
+
+        const recipientZone = lZones.find(z => normalize(z.city) === normalize(form.city));
+        const supplierZone  = lZones.find(z => normalize(z.city) === normalize(supplierCity));
+
+        // Proveedor debe estar en cobertura
+        if (supplierCity && !supplierZone) { prices[l.logistic_id] = 'unavailable'; return; }
+        // Destinatario debe estar en cobertura
+        if (!recipientZone) { prices[l.logistic_id] = 'unavailable'; return; }
+
+        // Precio = max de ambos
+        const rPrice = parseFloat(recipientZone.price);
+        const sPrice = supplierZone ? parseFloat(supplierZone.price) : 0;
+        prices[l.logistic_id] = Math.max(rPrice, sPrice);
+      } else if (l.api_type === 'fixy') {
+        // Fixy cotiza por API — mostrar precio si ya está disponible
+        prices[l.logistic_id] = (quote && !quote.error && form.logisticsId === l.logistic_id)
+          ? quote.total : null;
+      }
+    });
+
+    setLogisticPrices(prices);
+  }, [form.city, supplierCity, allZones, logistics, quote]);
 
   // ── Cargar zonas cuando cambia logística ─────────────────────────────────
   useEffect(() => {
@@ -805,14 +852,38 @@ const OrderForm = () => {
                 <p style={{ fontSize: '13px', color: '#9ca3af' }}>Cargando transportadoras...</p>
               ) : (
                 <div className="of-logistics">
-                  {logistics.map(l => (
-                    <button key={l.logistic_id} className={`of-logistics-opt ${form.logisticsId === l.logistic_id ? 'active' : ''}`} onClick={() => { handleChange('logisticsId', l.logistic_id); setQuote(null); setOtraCiudad(false); }}>
-                      <div className="of-logistics-info"><span className="of-logistics-name">{l.name}</span></div>
-                      <div className={`of-check ${form.logisticsId === l.logistic_id ? 'active' : ''}`}>
-                        {form.logisticsId === l.logistic_id && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5"><path d="M20 6L9 17l-5-5" /></svg>}
-                      </div>
-                    </button>
-                  ))}
+                  {logistics.map(l => {
+                    const price      = logisticPrices[l.logistic_id];
+                    const unavailable = price === 'unavailable';
+                    const hasPrice    = typeof price === 'number';
+                    const disabled    = unavailable;
+
+                    return (
+                      <button key={l.logistic_id}
+                        className={`of-logistics-opt ${form.logisticsId === l.logistic_id ? 'active' : ''}`}
+                        disabled={disabled}
+                        onClick={() => { if (disabled) return; handleChange('logisticsId', l.logistic_id); setQuote(null); setOtraCiudad(false); }}
+                        style={disabled ? { opacity: 0.45, cursor: 'not-allowed', filter: 'grayscale(1)' } : {}}
+                      >
+                        <div className="of-logistics-info">
+                          <span className="of-logistics-name">{l.name}</span>
+                          {form.city && (
+                            <span style={{ fontSize: '11px', fontWeight: '500', display: 'block', marginTop: '1px',
+                              color: unavailable ? '#ef4444' : hasPrice ? '#6b7280' : '#9ca3af' }}>
+                              {unavailable
+                                ? 'No disponible'
+                                : hasPrice
+                                  ? formatCurrency(hasPrice ? price * 1.25 : 0)
+                                  : l.api_type === 'fixy' && quoting ? 'Cotizando...' : '—'}
+                            </span>
+                          )}
+                        </div>
+                        <div className={`of-check ${form.logisticsId === l.logistic_id ? 'active' : ''}`}>
+                          {form.logisticsId === l.logistic_id && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5"><path d="M20 6L9 17l-5-5" /></svg>}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>
