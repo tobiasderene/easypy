@@ -34,7 +34,8 @@ const ProviderSidebar = ({ isOpen, onClose }) => {
       <aside className={`sidebar ${isOpen ? 'active' : ''}`}>
         <div className="sidebar-header">
           <div className="sidebar-logo">
-            <img src="/full-logo.png" alt="EasyDrop" className="sidebar-logo-img" />
+            <span className="sidebar-logo-easy">EASY</span>
+            <span className="sidebar-logo-store">STORE</span>
           </div>
           <button className="sidebar-close" onClick={onClose} aria-label="Cerrar menú">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -67,6 +68,18 @@ const ProviderSidebar = ({ isOpen, onClose }) => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                 </svg>
                 <span>Mi Catálogo</span>
+              </button>
+            </li>
+
+            <li className="sidebar-item">
+              <button
+                className={`sidebar-link ${activePage === 'wallet' ? 'active' : ''}`}
+                onClick={() => handleLinkClick('/wallet')}
+              >
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                </svg>
+                <span>Billetera</span>
               </button>
             </li>
 

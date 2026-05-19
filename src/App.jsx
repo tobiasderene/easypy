@@ -199,7 +199,7 @@ function App() {
           <Route path="/proveedor"     element={<SellerRoute><Proveedor /></SellerRoute>} />
           <Route path="/proveedores"   element={<SellerRoute><Providers /></SellerRoute>} />
           <Route path="/transacciones" element={<SellerRoute><Transactions /></SellerRoute>} />
-          <Route path="/wallet"        element={<SellerRoute><Wallet /></SellerRoute>} />
+          <Route path="/wallet"        element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
           <Route path="/product/:id"   element={<SellerRoute><ProductPage /></SellerRoute>} />
           <Route path="/analytics"     element={<SellerRoute><Analytics /></SellerRoute>} />
 
