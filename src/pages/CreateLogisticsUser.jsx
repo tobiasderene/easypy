@@ -13,6 +13,13 @@ const CreateLogisticsUser = () => {
   const [error, setError]             = useState('');
   const [createdUser, setCreatedUser] = useState(null);
 
+  const [zones, setZones] = useState([{ city: '', price: '' }]);
+
+  const addZone    = () => setZones(prev => [...prev, { city: '', price: '' }]);
+  const removeZone = (i) => setZones(prev => prev.filter((_, idx) => idx !== i));
+  const updateZone = (i, field, value) =>
+    setZones(prev => prev.map((z, idx) => idx === i ? { ...z, [field]: value } : z));
+
   const [form, setForm] = useState({
     nickname:        '',
     email:           '',
@@ -100,6 +107,16 @@ const CreateLogisticsUser = () => {
 
       // 3. Vincular usuario a la empresa
       await assignUserToLogistics(parseInt(logisticId), user.user_id);
+
+      // 4. Guardar zonas si es manual y hay zonas válidas
+      const validZones = zones.filter(z => z.city.trim() && parseFloat(z.price) > 0);
+      if (validZones.length > 0) {
+        await fetch(`${import.meta.env.VITE_API_URL || ''}/logistics/${logisticId}/zones`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+          body: JSON.stringify(validZones.map(z => ({ city: z.city.trim(), price: parseFloat(z.price) }))),
+        });
+      }
 
       setCreatedUser({ ...user, logisticId });
       setStep(2);
@@ -262,6 +279,37 @@ const CreateLogisticsUser = () => {
                     <option value="fixy">Fixy Logística</option>
                   </select>
                 </Field>
+
+                {form.apiType === 'manual' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <label style={{ fontSize: '11px', fontWeight: '700', color: '#374151', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                        Zonas y tarifas
+                      </label>
+                      <button type="button" onClick={addZone}
+                        style={{ fontSize: '12px', color: '#056EB7', background: 'none', border: 'none', cursor: 'pointer', fontWeight: '700' }}>
+                        + Agregar ciudad
+                      </button>
+                    </div>
+                    {zones.map((zone, i) => (
+                      <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '8px', alignItems: 'center' }}>
+                        <input className="of-input" placeholder="Ciudad" value={zone.city}
+                          onChange={e => updateZone(i, 'city', e.target.value)} />
+                        <div style={{ display: 'flex', alignItems: 'center', border: '1.5px solid #e5e7eb', borderRadius: '8px', overflow: 'hidden' }}>
+                          <span style={{ padding: '7px 8px', background: '#f9fafb', fontSize: '12px', color: '#6b7280', borderRight: '1.5px solid #e5e7eb' }}>Gs.</span>
+                          <input type="number" className="of-price-input" placeholder="0" value={zone.price}
+                            onChange={e => updateZone(i, 'price', e.target.value)} style={{ flex: 1, padding: '7px 8px', border: 'none', fontSize: '13px' }} />
+                        </div>
+                        {zones.length > 1 && (
+                          <button type="button" onClick={() => removeZone(i)}
+                            style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '18px', padding: '0 4px' }}>
+                            ×
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 {(form.apiType === 'external_api' || form.apiType === 'fixy') && (
                   <>
