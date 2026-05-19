@@ -187,7 +187,7 @@ export const updateBankMovement           = (id, data) => api(`/bank-movements/$
 export const getLogistics       = ()           => api("/logistics");
 export const getLogistic        = (logisticId) => api(`/logistics/${logisticId}`);
 export const getMyLogistics     = ()           => api("/logistics/me");
-export const getLogisticsQuote  = (logisticId, bultos = 1, peso = 1.0, cp = null) => api(`/logistics/${logisticId}/quote?bultos=${bultos}&peso=${peso}${cp ? `&cp=${cp}` : ''}`, { method: 'POST' });
+export const getLogisticsQuote = (logisticId, bultos = 1, peso = 1.0, cp = null, supplierId = null) => api(`/logistics/${logisticId}/quote?bultos=${bultos}&peso=${peso}${cp ? `&cp=${cp}` : ''}${supplierId ? `&supplier_id=${supplierId}` : ''}`, { method: 'POST' });
 export const createLogistics    = (data)       => api("/logistics", { method: "POST", body: JSON.stringify(data) });
 export const updateLogistics    = (id, data)   => api(`/logistics/${id}`, { method: "PATCH", body: JSON.stringify(data) });
 export const assignUserToLogistics = (logisticId, userId) =>

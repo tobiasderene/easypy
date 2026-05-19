@@ -110,7 +110,7 @@ const OrderForm = () => {
     const totalBultos = items.reduce((s, i) => s + i.quantity, 0) || 1;
     setQuoting(true);
     setQuote(null);
-    getLogisticsQuote(form.logisticsId, totalBultos, 1.0, fixyCp)
+    getLogisticsQuote(form.logisticsId, totalBultos, 1.0, fixyCp, supplierId)
       .then(result => setQuote(result))
       .catch(e => setQuote({ error: e.message || 'No se pudo obtener cotización' }))
       .finally(() => setQuoting(false));
