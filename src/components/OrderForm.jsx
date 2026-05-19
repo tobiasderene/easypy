@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useUser } from '../App';
 import { getLogistics, createOrder, getProducts, getProductImages, searchCustomers, createCustomer, updateCustomer, getLogisticsQuote } from '../services/api';
 import FIXY_LOCALIDADES, { buscarLocalidad } from '../data/fixy_localidades';
+import { getLogisticsZones } from '../services/api';
 import '../styles/orderform.css';
 
 const COUNTRY_CODES = [
@@ -60,6 +61,7 @@ const OrderForm = () => {
   const [loadingLogistics, setLoadingLogistics] = useState(true);
   const [submitting, setSubmitting]             = useState(false);
   const [quote, setQuote]                       = useState(null);
+  const [zones, setZones]                       = useState([]);
   const [quoting, setQuoting]                   = useState(false);
   const [fixySuggestions, setFixySuggestions]   = useState([]);
   const [fixyCp, setFixyCp]                     = useState(null);
@@ -93,12 +95,37 @@ const OrderForm = () => {
   });
   const [errors, setErrors] = useState({});
 
+  const [supplierCity, setSupplierCity] = useState('');
+
   useEffect(() => {
     getLogistics()
       .then(data => setLogistics(data || []))
       .catch(() => setLogistics([]))
       .finally(() => setLoadingLogistics(false));
   }, []);
+
+  // Fetchear ciudad del proveedor para cotización bidireccional
+  useEffect(() => {
+    if (!supplierId) return;
+    fetch(`${import.meta.env.VITE_API_URL || ''}/users/${supplierId}`, {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+    })
+      .then(r => r.json())
+      .then(u => setSupplierCity(u?.city || ''))
+      .catch(() => {});
+  }, [supplierId]);
+
+  // ── Cargar zonas cuando cambia logística ─────────────────────────────────
+  useEffect(() => {
+    const selectedLogistic = logistics.find(l => l.logistic_id === form.logisticsId);
+    if (!selectedLogistic || selectedLogistic.api_type !== 'manual') {
+      setZones([]);
+      return;
+    }
+    getLogisticsZones(form.logisticsId)
+      .then(z => setZones(z || []))
+      .catch(() => setZones([]));
+  }, [form.logisticsId]);
 
   // ── Auto-cotizar cuando cambia logística o ciudad ────────────────────────
   useEffect(() => {
@@ -110,9 +137,9 @@ const OrderForm = () => {
     const totalBultos = items.reduce((s, i) => s + i.quantity, 0) || 1;
     setQuoting(true);
     setQuote(null);
-    getLogisticsQuote(form.logisticsId, totalBultos, 1.0, fixyCp, supplierId)
+    getLogisticsQuote(form.logisticsId, totalBultos, 1.0, fixyCp)
       .then(result => setQuote(result))
-      .catch(e => setQuote({ error: e.message || 'No se pudo obtener cotización' }))
+      .catch(() => setQuote(null))  // fallo silencioso — botón queda gris
       .finally(() => setQuoting(false));
   }, [form.logisticsId, fixyCp]);
 
@@ -310,7 +337,19 @@ const OrderForm = () => {
   const getSalePrice      = (id) => parseFloat(salePrices[id]) || 0;
   const totalSupplierCost = items.reduce((s, i) => s + i.price * i.quantity, 0);
   const totalRecaudo      = items.reduce((s, i) => s + getSalePrice(i.id) * i.quantity, 0);
-  const rawShipping       = (quote && !quote.error && quote.total) ? quote.total : 0;
+  // Precio de zona manual — bidireccional, se toma el más lejano (mayor precio)
+  const zonePrice = (() => {
+    if (zones.length === 0) return 0;
+    const normalize = s => (s || '').toLowerCase().trim();
+    const recipientZone = zones.find(z => normalize(z.city) === normalize(form.city));
+    const supplierZone  = zones.find(z => normalize(z.city) === normalize(supplierCity));
+    const rPrice = recipientZone ? parseFloat(recipientZone.price) : 0;
+    const sPrice = supplierZone  ? parseFloat(supplierZone.price)  : 0;
+    return Math.max(rPrice, sPrice);
+  })();
+  const rawShipping = (quote && !quote.error && quote.total)
+    ? quote.total
+    : zonePrice;
   const commission        = rawShipping * 0.25;                          // 25% sobre envío
   const logisticCost      = rawShipping + commission;                    // lo que ve el vendedor (envío + comisión sumados)
   const earnings          = totalRecaudo - totalSupplierCost - logisticCost;
@@ -592,7 +631,7 @@ const OrderForm = () => {
                   <option value="">Seleccioná una ciudad...</option>
                   {FIXY_LOCALIDADES.map(loc => (
                     <option key={loc.cp} value={loc.localidad}>
-                      {loc.localidad}
+                      {loc.localidad} — {loc.provincia}
                     </option>
                   ))}
                   <option value="__otro__">Otra ciudad</option>
@@ -609,7 +648,11 @@ const OrderForm = () => {
                   />
                 )}
 
-
+                {fixyCp && !otraCiudad && (
+                  <span style={{ fontSize: '11px', color: '#16a34a', marginTop: '4px', display: 'block' }}>
+                    ✓ CP Fixy: {fixyCp}
+                  </span>
+                )}
                 {errors.city && <span className="of-err">{errors.city}</span>}
               </div>
               <div className="of-field">
@@ -639,7 +682,7 @@ const OrderForm = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
-                {geocoding ? 'Buscando...' : coords ? '✓ Ubicación confirmada' : 'Ver y confirmar en mapa *'}
+                {geocoding ? 'Buscando...' : coords ? '✓ Ubicación confirmada — actualizar' : 'Ver y confirmar en mapa *'}
               </button>
               {errors.map && <span className="of-err">{errors.map}</span>}
               {geoError  && <span className="of-err">{geoError}</span>}
@@ -781,11 +824,6 @@ const OrderForm = () => {
             {/* Cotizando — indicador automático */}
             {quoting && (
               <p style={{ fontSize: '12px', color: '#6b7280', margin: '4px 0 0 0' }}>Cotizando envío...</p>
-            )}
-            {quote?.error && (
-              <div style={{ marginTop: '4px', background: '#fef2f2', border: '1.5px solid #fecaca', borderRadius: '8px', padding: '8px 12px' }}>
-                <p style={{ fontSize: '12px', color: '#dc2626', margin: 0 }}>{quote.error}</p>
-              </div>
             )}
           </div>
 
