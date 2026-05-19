@@ -648,11 +648,7 @@ const OrderForm = () => {
                   />
                 )}
 
-                {fixyCp && !otraCiudad && (
-                  <span style={{ fontSize: '11px', color: '#16a34a', marginTop: '4px', display: 'block' }}>
-                    ✓ CP Fixy: {fixyCp}
-                  </span>
-                )}
+
                 {errors.city && <span className="of-err">{errors.city}</span>}
               </div>
               <div className="of-field">
@@ -864,12 +860,16 @@ const OrderForm = () => {
                 <span className="of-blabel">Costo proveedor</span>
                 <span className="of-bval red">- {formatCurrency(totalSupplierCost)}</span>
               </div>
-              {logisticCost > 0 && (
-                <div className="of-brow">
-                  <span className="of-blabel">Costo de envío</span>
-                  <span className="of-bval red">- {formatCurrency(logisticCost)}</span>
-                </div>
-              )}
+              <div className="of-brow">
+                <span className="of-blabel">Costo de envío</span>
+                <span className="of-bval red">
+                  {quoting
+                    ? 'Calculando...'
+                    : logisticCost > 0
+                      ? `- ${formatCurrency(logisticCost)}`
+                      : '—'}
+                </span>
+              </div>
               <div className="of-bdivider" />
               <div className="of-brow of-brow-earnings">
                 <span className="of-blabel-earn">Tus Ganancias</span>
