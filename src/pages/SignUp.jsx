@@ -263,6 +263,7 @@ const Signup = () => {
                       <option key={loc.cp} value={loc.localidad}>{loc.localidad}</option>
                     ))}
                   </select>
+
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '10px' }}>
@@ -295,12 +296,12 @@ const Signup = () => {
               </div>
             )}
 
-
+            <div className="form-group">
               <label className="checkbox-wrapper">
                 <input type="checkbox" id="terms" name="terms" checked={formData.terms} onChange={handleInputChange} required />
                 <span className="checkbox-label">Acepto los <a href="#" className="link">términos y condiciones</a></span>
               </label>
-
+            </div>
 
             <button type="submit" className="primary-button" disabled={isLoading}>
               {isLoading ? 'Creando cuenta...' : 'Crear cuenta'}

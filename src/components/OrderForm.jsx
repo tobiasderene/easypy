@@ -61,8 +61,7 @@ const OrderForm = () => {
   const [loadingLogistics, setLoadingLogistics] = useState(true);
   const [submitting, setSubmitting]             = useState(false);
   const [quote, setQuote]                       = useState(null);
-  const [zones, setZones]                         = useState([]);
-  const [allZones, setAllZones]                   = useState({});  // { logistic_id: [zones] }
+  const [zones, setZones]                       = useState([]);
   const [quoting, setQuoting]                   = useState(false);
   const [fixySuggestions, setFixySuggestions]   = useState([]);
   const [fixyCp, setFixyCp]                     = useState(null);
@@ -100,19 +99,7 @@ const OrderForm = () => {
 
   useEffect(() => {
     getLogistics()
-      .then(async data => {
-        setLogistics(data || []);
-        // Pre-cargar zonas de todas las logísticas manuales
-        const manualOnes = (data || []).filter(l => l.api_type === 'manual');
-        const zoneMap = {};
-        await Promise.all(manualOnes.map(async l => {
-          try {
-            const z = await getLogisticsZones(l.logistic_id);
-            if (z && z.length > 0) zoneMap[l.logistic_id] = z;
-          } catch {}
-        }));
-        setAllZones(zoneMap);
-      })
+      .then(data => setLogistics(data || []))
       .catch(() => setLogistics([]))
       .finally(() => setLoadingLogistics(false));
   }, []);
@@ -818,33 +805,14 @@ const OrderForm = () => {
                 <p style={{ fontSize: '13px', color: '#9ca3af' }}>Cargando transportadoras...</p>
               ) : (
                 <div className="of-logistics">
-                  {logistics.map(l => {
-                    const normalize = s => (s || '').toLowerCase().trim();
-                    const lZones = l.api_type === 'manual' ? (allZones[l.logistic_id] || []) : [];
-                    const providerCovered = lZones.length === 0 ||
-                      lZones.some(z => normalize(z.city) === normalize(supplierCity));
-                    const disabled = !providerCovered;
-                    return (
-                      <button key={l.logistic_id}
-                        className={`of-logistics-opt ${form.logisticsId === l.logistic_id ? 'active' : ''}`}
-                        disabled={disabled}
-                        onClick={() => { if (disabled) return; handleChange('logisticsId', l.logistic_id); setQuote(null); setOtraCiudad(false); }}
-                        style={disabled ? { opacity: 0.45, cursor: 'not-allowed', filter: 'grayscale(1)' } : {}}
-                      >
-                        <div className="of-logistics-info">
-                          <span className="of-logistics-name">{l.name}</span>
-                          {disabled && (
-                            <span style={{ fontSize: '10px', color: '#ef4444', fontWeight: '600', display: 'block' }}>
-                              Sin cobertura en {supplierCity || 'ciudad del proveedor'}
-                            </span>
-                          )}
-                        </div>
-                        <div className={`of-check ${form.logisticsId === l.logistic_id ? 'active' : ''}`}>
-                          {form.logisticsId === l.logistic_id && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5"><path d="M20 6L9 17l-5-5" /></svg>}
-                        </div>
-                      </button>
-                    );
-                  })}
+                  {logistics.map(l => (
+                    <button key={l.logistic_id} className={`of-logistics-opt ${form.logisticsId === l.logistic_id ? 'active' : ''}`} onClick={() => { handleChange('logisticsId', l.logistic_id); setQuote(null); setOtraCiudad(false); }}>
+                      <div className="of-logistics-info"><span className="of-logistics-name">{l.name}</span></div>
+                      <div className={`of-check ${form.logisticsId === l.logistic_id ? 'active' : ''}`}>
+                        {form.logisticsId === l.logistic_id && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5"><path d="M20 6L9 17l-5-5" /></svg>}
+                      </div>
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
