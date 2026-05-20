@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getUsers, getProductImages, getProfileImage, getProductsByUser } from '../services/api';
+import { getUser, getProductImages, getProfileImage, getProductsByUser } from '../services/api';
 import '../styles/providerprofile.css';
 
 const ProviderProfile = () => {
@@ -16,19 +16,15 @@ const ProviderProfile = () => {
   useEffect(() => {
     const load = async () => {
       try {
-        // Traer todos los providers y filtrar por id
-        const users    = await getUsers({ role: 'provider' });
-        const found    = (users || []).find(u => u.user_id === parseInt(id));
+        const found = await getUser(parseInt(id));
         if (!found) { setNotFound(true); setLoading(false); return; }
         setProvider(found);
 
-        // Foto de perfil
         try {
           const img = await getProfileImage(found.user_id);
           if (img?.image_url) setAvatar(img.image_url);
         } catch {}
 
-        // Productos activos del proveedor
         const prods = await getProductsByUser(found.user_id);
         const active = (prods || []).filter(p => p.product_status === 'active');
 
@@ -67,8 +63,9 @@ const ProviderProfile = () => {
   const handleBuy = (product) => {
     navigate('/order/new', {
       state: {
-        initialItem: { id: product.product_id, name: product.product_name, price: parseFloat(product.product_base_cost), image: product.imageUrl, quantity: 1 },
-        supplierId:  provider.user_id,
+        initialItem:  { id: product.product_id, name: product.product_name, price: parseFloat(product.product_base_cost), image: product.imageUrl, quantity: 1 },
+        supplierId:   provider.user_id,
+        supplierCity: provider.city || '',
       }
     });
   };
@@ -136,7 +133,6 @@ const ProviderProfile = () => {
 
       <div className="pp-body">
 
-        {/* ── Descripción ── */}
         {provider.user_description && (
           <div className="pp-card">
             <h2 className="pp-card-title">Sobre el proveedor</h2>
@@ -144,7 +140,6 @@ const ProviderProfile = () => {
           </div>
         )}
 
-        {/* ── Categorías ── */}
         {categories.length > 0 && (
           <div className="pp-card">
             <h2 className="pp-card-title">Categorías</h2>
@@ -158,7 +153,6 @@ const ProviderProfile = () => {
           </div>
         )}
 
-        {/* ── Productos ── */}
         <div className="pp-card">
           <h2 className="pp-card-title">
             Catálogo
@@ -177,36 +171,20 @@ const ProviderProfile = () => {
               {products.map(product => {
                 const outOfStock = product.product_status === 'out_of_stock' || product.stock_available === 0;
                 return (
-                  <div
-                    key={product.product_id}
-                    className="pp-product-card"
-                    onClick={() => navigate(`/product/${product.product_id}`)}
-                  >
+                  <div key={product.product_id} className="pp-product-card" onClick={() => navigate(`/product/${product.product_id}`)}>
                     <div className="pp-product-img">
                       {product.imageUrl
                         ? <img src={product.imageUrl} alt={product.product_name} />
-                        : (
-                          <div className="pp-product-img-placeholder">
-                            <svg width="32" height="32" fill="none" stroke="#d1d5db" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                          </div>
-                        )
+                        : <div className="pp-product-img-placeholder"><svg width="32" height="32" fill="none" stroke="#d1d5db" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg></div>
                       }
-                      {outOfStock && (
-                        <div className="pp-out-of-stock">Sin stock</div>
-                      )}
+                      {outOfStock && <div className="pp-out-of-stock">Sin stock</div>}
                     </div>
                     <div className="pp-product-info">
                       <p className="pp-product-name">{product.product_name}</p>
                       <p className="pp-product-category">{product.product_category}</p>
                       <div className="pp-product-footer">
                         <span className="pp-product-price">{formatPrice(product.product_base_cost)}</span>
-                        <button
-                          className="pp-buy-btn"
-                          disabled={outOfStock}
-                          onClick={(e) => { e.stopPropagation(); handleBuy(product); }}
-                        >
+                        <button className="pp-buy-btn" disabled={outOfStock} onClick={(e) => { e.stopPropagation(); handleBuy(product); }}>
                           {outOfStock ? 'Sin stock' : 'Comprar'}
                         </button>
                       </div>
