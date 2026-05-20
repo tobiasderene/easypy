@@ -118,24 +118,9 @@ const OrderForm = () => {
       .finally(() => setLoadingLogistics(false));
   }, []);
 
-  // Fetchear ciudad del proveedor para cotización bidireccional
-  useEffect(() => {
-    if (!supplierId) return;
-
-    import('../services/api').then(({ getUser }) => {
-      getUser(supplierId)
-        .then(u => {
-          console.log('[supplier]', u);
-          setSupplierCity(u?.city || '');
-        })
-        .catch(e => console.log('[supplier error]', e));
-    });
-  }, [supplierId]);
-
   // ── Calcular precios de todas las logísticas cuando cambia la ciudad ────────
   useEffect(() => {
     if (!form.city) { setLogisticPrices({}); return; }
-    console.log('[coverage] form.city:', form.city, '| supplierCity:', supplierCity);
     const normalize = s => (s || '').toLowerCase().trim();
     const prices = {};
 
