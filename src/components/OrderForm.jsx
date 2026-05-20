@@ -121,10 +121,7 @@ const OrderForm = () => {
   // Fetchear ciudad del proveedor para cotización bidireccional
   useEffect(() => {
     if (!supplierId) return;
-    fetch(`${import.meta.env.VITE_API_URL || ''}/users/${supplierId}`, {
-      headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
-    })
-      .then(r => r.json())
+    getUser(supplierId)
       .then(u => setSupplierCity(u?.city || ''))
       .catch(() => {});
   }, [supplierId]);
@@ -132,6 +129,7 @@ const OrderForm = () => {
   // ── Calcular precios de todas las logísticas cuando cambia la ciudad ────────
   useEffect(() => {
     if (!form.city) { setLogisticPrices({}); return; }
+    console.log('[coverage] form.city:', form.city, '| supplierCity:', supplierCity);
     const normalize = s => (s || '').toLowerCase().trim();
     const prices = {};
 
@@ -144,7 +142,9 @@ const OrderForm = () => {
         const supplierZone  = lZones.find(z => normalize(z.city) === normalize(supplierCity));
 
         // Proveedor debe estar en cobertura
-        if (supplierCity && !supplierZone) { prices[l.logistic_id] = 'unavailable'; return; }
+        // Si no tiene ciudad configurada, bloquear
+        if (!supplierCity) { prices[l.logistic_id] = 'unavailable'; return; }
+        if (!supplierZone) { prices[l.logistic_id] = 'unavailable'; return; }
         // Destinatario debe estar en cobertura
         if (!recipientZone) { prices[l.logistic_id] = 'unavailable'; return; }
 

@@ -87,6 +87,7 @@ export const getUsers = (params = {}) => {
   return api(`/users${query ? `?${query}` : ''}`);
 };
 export const getProviders = () => api("/users/providers");
+export const getUser      = (userId) => api(`/users/${userId}`);
 export const updateUser        = (userId, data) =>
   api(`/users/${userId}`, { method: "PATCH", body: JSON.stringify(data) });
 export const adminUpdateStatus = (userId, status) =>
