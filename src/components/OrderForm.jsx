@@ -2,8 +2,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useUser } from '../App';
-import { getLogistics, createOrder, getProducts, getProductImages, searchCustomers, createCustomer, updateCustomer, getLogisticsQuote, getLogisticsZones, getUser } from '../services/api';
+import { getLogistics, createOrder, getProducts, getProductImages, searchCustomers, createCustomer, updateCustomer, getLogisticsQuote } from '../services/api';
 import FIXY_LOCALIDADES, { buscarLocalidad } from '../data/fixy_localidades';
+import { getLogisticsZones } from '../services/api';
 import '../styles/orderform.css';
 
 const COUNTRY_CODES = [
@@ -49,7 +50,7 @@ const OrderForm = () => {
   const location = useLocation();
   const { user } = useUser();
 
-  const { initialItem, supplierId } = location.state || {};
+  const { initialItem, supplierId, supplierCity: supplierCityFromState } = location.state || {};
 
   const [items, setItems]                       = useState(initialItem ? [initialItem] : []);
   const [salePrices, setSalePrices]             = useState(initialItem ? { [initialItem.id]: '' } : {});
@@ -96,7 +97,7 @@ const OrderForm = () => {
   });
   const [errors, setErrors] = useState({});
 
-  const [supplierCity, setSupplierCity] = useState('');
+  const [supplierCity, setSupplierCity] = useState(supplierCityFromState || '');
 
   useEffect(() => {
     getLogistics()
@@ -120,9 +121,15 @@ const OrderForm = () => {
   // Fetchear ciudad del proveedor para cotización bidireccional
   useEffect(() => {
     if (!supplierId) return;
-    getUser(supplierId)
-      .then(u => setSupplierCity(u?.city || ''))
-      .catch(() => {});
+
+    import('../services/api').then(({ getUser }) => {
+      getUser(supplierId)
+        .then(u => {
+          console.log('[supplier]', u);
+          setSupplierCity(u?.city || '');
+        })
+        .catch(e => console.log('[supplier error]', e));
+    });
   }, [supplierId]);
 
   // ── Calcular precios de todas las logísticas cuando cambia la ciudad ────────

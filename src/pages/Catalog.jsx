@@ -16,7 +16,7 @@ const Catalog = () => {
 
         // Map user_id → provider name
         const providerMap = {};
-        (providers || []).forEach(p => { providerMap[p.user_id] = p.user_nickname; });
+        (providers || []).forEach(p => { providerMap[p.user_id] = { name: p.user_nickname, city: p.city || '' }; });
 
         if (data && data.length > 0) {
           const withImages = await Promise.all(
@@ -32,7 +32,8 @@ const Catalog = () => {
                 id:             p.product_id,
                 name:           p.product_name,
                 provider:       p.user_id,
-                providerName:   providerMap[p.user_id] || `Proveedor #${p.user_id}`,
+                providerName:   providerMap[p.user_id]?.name || `Proveedor #${p.user_id}`,
+                providerCity:   providerMap[p.user_id]?.city || '',
                 price:          parseFloat(p.product_base_cost),
                 suggestedPrice: p.suggested_price ? parseFloat(p.suggested_price) : null,
                 stock:          p.stock_available ?? null,
@@ -82,8 +83,9 @@ const Catalog = () => {
     e.stopPropagation();
     navigate('/order/new', {
       state: {
-        initialItem: { id: product.id, name: product.name, price: product.price, image: product.image, quantity: 1 },
-        supplierId:  product.provider,
+        initialItem:  { id: product.id, name: product.name, price: product.price, image: product.image, quantity: 1 },
+        supplierId:   product.provider,
+        supplierCity: product.providerCity,
       }
     });
   };
