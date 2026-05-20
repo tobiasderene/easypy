@@ -2,9 +2,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useUser } from '../App';
-import { getLogistics, createOrder, getProducts, getProductImages, searchCustomers, createCustomer, updateCustomer, getLogisticsQuote } from '../services/api';
+import { getLogistics, createOrder, getProducts, getProductImages, searchCustomers, createCustomer, updateCustomer, getLogisticsQuote, getLogisticsZones, getUser } from '../services/api';
 import FIXY_LOCALIDADES, { buscarLocalidad } from '../data/fixy_localidades';
-import { getLogisticsZones } from '../services/api';
 import '../styles/orderform.css';
 
 const COUNTRY_CODES = [
