@@ -132,6 +132,7 @@ const OrderForm = () => {
   // ── Calcular precios de todas las logísticas cuando cambia la ciudad ────────
   useEffect(() => {
     if (!form.city) { setLogisticPrices({}); return; }
+    console.log('[coverage] form.city:', form.city, '| supplierCity:', supplierCity);
     const normalize = s => (s || '').toLowerCase().trim();
     const prices = {};
 
