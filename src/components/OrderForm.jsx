@@ -71,6 +71,7 @@ const OrderForm = () => {
   const [otraCiudad, setOtraCiudad]             = useState(false);
   const fixyInputRef                            = useRef(null);
   const [submitError, setSubmitError]           = useState('');
+  const [showConfirm, setShowConfirm]           = useState(false);
 
   // ── Mapa ──────────────────────────────────────────────────────────────────
   const [showMap, setShowMap]     = useState(false);
@@ -476,6 +477,11 @@ const OrderForm = () => {
       return;
     }
     if (items.length === 0) { setSubmitError('Agregá al menos un producto'); return; }
+    setShowConfirm(true);
+  };
+
+  const handleConfirmSubmit = async () => {
+    setShowConfirm(false);
 
     const payload = {
       buyer_id:      user.user_id,
@@ -517,6 +523,70 @@ const OrderForm = () => {
     }
   };
 
+  // ── Modal de confirmación ────────────────────────────────────────────────
+  const ConfirmModal = () => {
+    const selectedLogistic = logistics.find(l => l.logistic_id === form.logisticsId);
+    return (
+      <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+        <div style={{ background: 'white', borderRadius: '16px', padding: '28px', maxWidth: '420px', width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+            <div style={{ width: '44px', height: '44px', background: '#eff6ff', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <svg width="22" height="22" fill="none" stroke="#056EB7" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            </div>
+            <div>
+              <h3 style={{ fontSize: '16px', fontWeight: '800', color: '#111827', margin: 0 }}>Confirmar orden</h3>
+              <p style={{ fontSize: '12px', color: '#6b7280', margin: 0 }}>Revisá el resumen antes de enviar</p>
+            </div>
+          </div>
+
+          <div style={{ background: '#f9fafb', borderRadius: '10px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+              <span style={{ color: '#6b7280' }}>Destinatario</span>
+              <span style={{ fontWeight: '600', color: '#111827' }}>{form.firstName} {form.lastName}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+              <span style={{ color: '#6b7280' }}>Ciudad</span>
+              <span style={{ fontWeight: '600', color: '#111827' }}>{form.city}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+              <span style={{ color: '#6b7280' }}>Logística</span>
+              <span style={{ fontWeight: '600', color: '#111827' }}>{selectedLogistic?.name || '—'}</span>
+            </div>
+            <div style={{ height: '1px', background: '#e5e7eb', margin: '2px 0' }} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+              <span style={{ color: '#6b7280' }}>Total a recaudar</span>
+              <span style={{ fontWeight: '700', color: '#16a34a' }}>{formatCurrency(totalRecaudo)}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
+              <span style={{ color: '#6b7280' }}>Costo de envío</span>
+              <span style={{ fontWeight: '600', color: '#ef4444' }}>- {formatCurrency(logisticCost)}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', paddingTop: '4px' }}>
+              <span style={{ fontWeight: '700', color: '#111827' }}>Ganancia estimada</span>
+              <span style={{ fontWeight: '800', color: earnings >= 0 ? '#16a34a' : '#ef4444' }}>{formatCurrency(earnings)}</span>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <button
+              onClick={() => setShowConfirm(false)}
+              style={{ flex: 1, padding: '10px', border: '1.5px solid #e5e7eb', borderRadius: '9px', background: 'white', color: '#6b7280', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}
+            >
+              Revisar
+            </button>
+            <button
+              onClick={handleConfirmSubmit}
+              disabled={submitting}
+              style={{ flex: 2, padding: '10px', border: 'none', borderRadius: '9px', background: 'linear-gradient(135deg, #056EB7, #044f85)', color: 'white', fontWeight: '800', fontSize: '13px', cursor: 'pointer', opacity: submitting ? 0.7 : 1 }}
+            >
+              {submitting ? 'Enviando...' : 'Confirmar y enviar orden'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   if (!supplierId) {
     return (
       <div className="of-page" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
@@ -533,6 +603,7 @@ const OrderForm = () => {
 
   return (
     <div className="of-page">
+      {showConfirm && <ConfirmModal />}
       <div className="of-card">
         <div className="of-columns">
 
@@ -669,7 +740,7 @@ const OrderForm = () => {
                   <option value="">Seleccioná una ciudad...</option>
                   {FIXY_LOCALIDADES.map(loc => (
                     <option key={loc.cp} value={loc.localidad}>
-                      {loc.localidad}
+                      {loc.localidad} — {loc.provincia}
                     </option>
                   ))}
                   <option value="__otro__">Otra ciudad</option>
