@@ -62,8 +62,10 @@ const ProviderOrders = () => {
   const [loadingModal, setLoadingModal]     = useState(false);
 
   // ── Selección múltiple ───────────────────────────
-  const [selectedIds, setSelectedIds]       = useState(new Set());
-  const [bulkProcessing, setBulkProcessing] = useState(false);
+  const [selectedIds, setSelectedIds]         = useState(new Set());
+  const [bulkProcessing, setBulkProcessing]   = useState(false);
+  const [etiquetaIds, setEtiquetaIds]         = useState(new Set());
+  const [printingEtiquetas, setPrintingEtiquetas] = useState(false);
 
   useEffect(() => {
     if (user?.user_id) fetchOrders();
@@ -156,6 +158,47 @@ const ProviderOrders = () => {
     if (failed > 0) alert(`${succeeded.length} órdenes confirmadas. ${failed} fallaron.`);
   };
 
+  // ── Selección etiquetas ──────────────────────────
+  const printableOrders = filteredOrders => filteredOrders.filter(o => o.tracking_number);
+
+  const toggleEtiqueta = (orderId) => {
+    setEtiquetaIds(prev => {
+      const next = new Set(prev);
+      next.has(orderId) ? next.delete(orderId) : next.add(orderId);
+      return next;
+    });
+  };
+
+  const toggleSelectAllEtiquetas = (printable) => {
+    if (etiquetaIds.size === printable.length && printable.length > 0) {
+      setEtiquetaIds(new Set());
+    } else {
+      setEtiquetaIds(new Set(printable.map(o => o.order_id)));
+    }
+  };
+
+  const handleBulkEtiquetas = async () => {
+    if (etiquetaIds.size === 0) return;
+    setPrintingEtiquetas(true);
+    try {
+      const token = localStorage.getItem('token');
+      const base  = import.meta.env.VITE_API_URL || 'https://easypy-backend-430520813248.us-central1.run.app';
+      const res   = await fetch(`${base}/orders/etiquetas`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body:    JSON.stringify({ order_ids: [...etiquetaIds] }),
+      });
+      if (!res.ok) throw new Error('Error al obtener etiquetas');
+      const blob = await res.blob();
+      const url  = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+    } catch (err) {
+      alert(err.message || 'Error al imprimir etiquetas');
+    } finally {
+      setPrintingEtiquetas(false);
+    }
+  };
+
   const filteredOrders = orders.filter(order => {
     const matchesSearch =
       String(order.order_id).includes(searchTerm) ||
@@ -163,6 +206,10 @@ const ProviderOrders = () => {
     const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  const printable        = filteredOrders.filter(o => o.tracking_number);
+  const allEtiquetas     = printable.length > 0 && etiquetaIds.size === printable.length;
+  const someEtiquetas    = etiquetaIds.size > 0;
 
   const confirmable     = filteredOrders.filter(o => o.status === 'confirmed');
   const allSelected     = confirmable.length > 0 && selectedIds.size === confirmable.length;
@@ -272,6 +319,34 @@ const ProviderOrders = () => {
           </div>
         )}
 
+        {/* Barra de etiquetas — aparece si hay órdenes con tracking */}
+        {printable.length > 0 && (
+          <div className="bulk-bar" style={{ background: '#f0fdf4', borderColor: '#86efac' }}>
+            <div className="bulk-bar-left">
+              <button className="bulk-select-all" onClick={() => toggleSelectAllEtiquetas(printable)}>
+                {allEtiquetas ? <CheckSquare size={18} color="#16a34a" /> : <Square size={18} color="#16a34a" />}
+                <span style={{ color: '#16a34a' }}>{allEtiquetas ? 'Deseleccionar etiquetas' : `Seleccionar ${printable.length} etiqueta${printable.length !== 1 ? 's' : ''}`}</span>
+              </button>
+              {someEtiquetas && (
+                <span className="bulk-count" style={{ color: '#16a34a' }}>{etiquetaIds.size} seleccionada{etiquetaIds.size !== 1 ? 's' : ''}</span>
+              )}
+            </div>
+            {someEtiquetas && (
+              <button
+                className="bulk-confirm-btn"
+                style={{ background: '#16a34a' }}
+                onClick={handleBulkEtiquetas}
+                disabled={printingEtiquetas}
+              >
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ marginRight: '6px' }}>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                </svg>
+                {printingEtiquetas ? 'Generando...' : `Imprimir ${etiquetaIds.size} etiqueta${etiquetaIds.size !== 1 ? 's' : ''}`}
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Orders List */}
         <div className="orders-list">
           {filteredOrders.length === 0 ? (
@@ -297,12 +372,22 @@ const ProviderOrders = () => {
                 >
                   <div className="order-main">
 
-                    {/* Checkbox — solo para órdenes confirmadas */}
+                    {/* Checkbox — confirmadas */}
                     {isConfirmable && (
                       <div className="order-checkbox" onClick={(e) => { e.stopPropagation(); toggleSelect(order.order_id); }}>
                         {isSelected
                           ? <CheckSquare size={20} color="#056EB7" />
                           : <Square size={20} color="#d1d5db" />
+                        }
+                      </div>
+                    )}
+
+                    {/* Checkbox — etiquetas */}
+                    {order.tracking_number && (
+                      <div className="order-checkbox" onClick={(e) => { e.stopPropagation(); toggleEtiqueta(order.order_id); }}>
+                        {etiquetaIds.has(order.order_id)
+                          ? <CheckSquare size={20} color="#16a34a" />
+                          : <Square size={20} color="#86efac" />
                         }
                       </div>
                     )}
