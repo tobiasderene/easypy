@@ -224,9 +224,15 @@ const ProviderOrders = () => {
         body:    JSON.stringify({ order_ids: [...etiquetaIds] }),
       });
       if (!res.ok) throw new Error('Error al obtener etiquetas');
-      const blob = await res.blob();
-      const url  = URL.createObjectURL(blob);
-      window.open(url, '_blank');
+      const blob     = await res.blob();
+      const url      = URL.createObjectURL(blob);
+      const a        = document.createElement('a');
+      a.href         = url;
+      a.download     = 'etiquetas.pdf';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
     } catch (err) {
       alert(err.message || 'Error al imprimir etiquetas');
     } finally {
@@ -546,10 +552,9 @@ const ProviderOrders = () => {
                               if (!res.ok) throw new Error('Error al obtener etiqueta');
                               const blob  = await res.blob();
                               const url   = URL.createObjectURL(blob);
-                              const a     = document.createElement('a');
-                              a.href      = url;
-                              a.target    = '_blank';
-                              a.rel       = 'noopener noreferrer';
+                              const a        = document.createElement('a');
+                              a.href         = url;
+                              a.download     = `etiqueta-${order.order_id}.pdf`;
                               document.body.appendChild(a);
                               a.click();
                               document.body.removeChild(a);
