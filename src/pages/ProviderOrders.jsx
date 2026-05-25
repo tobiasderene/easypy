@@ -537,11 +537,23 @@ const ProviderOrders = () => {
                         <button
                           className="btn-view-details"
                           style={{ background: '#f0fdf4', border: '1.5px solid #86efac', color: '#16a34a' }}
-                          onClick={(e) => {
+                          onClick={async (e) => {
                             e.stopPropagation();
-                            const token = localStorage.getItem('auth_token');
-                            const base = import.meta.env.VITE_API_URL || 'https://easypy-backend-430520813248.us-central1.run.app';
-                            window.open(`${base}/orders/${order.order_id}/etiqueta?token=${token}`, '_blank');
+                            try {
+                              const token = localStorage.getItem('auth_token');
+                              const base  = import.meta.env.VITE_API_URL || 'https://easypy-backend-430520813248.us-central1.run.app';
+                              const res   = await fetch(`${base}/orders/${order.order_id}/etiqueta?token=${token}`);
+                              if (!res.ok) throw new Error('Error al obtener etiqueta');
+                              const blob  = await res.blob();
+                              const url   = URL.createObjectURL(blob);
+                              const a     = document.createElement('a');
+                              a.href      = url;
+                              a.target    = '_blank';
+                              a.click();
+                              setTimeout(() => URL.revokeObjectURL(url), 5000);
+                            } catch (err) {
+                              alert('No se pudo obtener la etiqueta');
+                            }
                           }}
                         >
                           <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
