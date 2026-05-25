@@ -554,7 +554,8 @@ const ProviderOrders = () => {
                               const url   = URL.createObjectURL(blob);
                               const a        = document.createElement('a');
                               a.href         = url;
-                              a.download     = `etiqueta-${order.order_id}.pdf`;
+                              const ext      = res.headers.get('content-type')?.includes('pdf') ? 'pdf' : res.headers.get('content-type')?.includes('png') ? 'png' : 'jpg';
+                              a.download     = `etiqueta-${order.order_id}.${ext}`;
                               document.body.appendChild(a);
                               a.click();
                               document.body.removeChild(a);
