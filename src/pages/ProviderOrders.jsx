@@ -66,6 +66,8 @@ const ProviderOrders = () => {
   const [bulkProcessing, setBulkProcessing]   = useState(false);
   const [etiquetaIds, setEtiquetaIds]         = useState(new Set());
   const [printingEtiquetas, setPrintingEtiquetas] = useState(false);
+  const [readyIds, setReadyIds]               = useState(new Set());
+  const [bulkReady, setBulkReady]             = useState(false);
 
   useEffect(() => {
     if (user?.user_id) fetchOrders();
@@ -158,6 +160,39 @@ const ProviderOrders = () => {
     if (failed > 0) alert(`${succeeded.length} órdenes confirmadas. ${failed} fallaron.`);
   };
 
+  // ── Selección salida masiva (processing → ready_for_pickup) ──────────────
+  const toggleReady = (orderId) => {
+    setReadyIds(prev => {
+      const next = new Set(prev);
+      next.has(orderId) ? next.delete(orderId) : next.add(orderId);
+      return next;
+    });
+  };
+
+  const toggleSelectAllReady = (readyable) => {
+    if (readyIds.size === readyable.length && readyable.length > 0) {
+      setReadyIds(new Set());
+    } else {
+      setReadyIds(new Set(readyable.map(o => o.order_id)));
+    }
+  };
+
+  const handleBulkReady = async () => {
+    if (readyIds.size === 0) return;
+    setBulkReady(true);
+    const results = await Promise.allSettled(
+      [...readyIds].map(id => markOrderReadyForPickup(id))
+    );
+    const succeeded = [...readyIds].filter((_, i) => results[i].status === 'fulfilled');
+    const failed    = results.filter(r => r.status === 'rejected').length;
+    setOrders(prev =>
+      prev.map(o => succeeded.includes(o.order_id) ? { ...o, status: 'ready_for_pickup' } : o)
+    );
+    setReadyIds(new Set());
+    setBulkReady(false);
+    if (failed > 0) alert(`${succeeded.length} órdenes marcadas. ${failed} fallaron.`);
+  };
+
   // ── Selección etiquetas ──────────────────────────
   const printableOrders = filteredOrders => filteredOrders.filter(o => o.tracking_number);
 
@@ -181,7 +216,7 @@ const ProviderOrders = () => {
     if (etiquetaIds.size === 0) return;
     setPrintingEtiquetas(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       const base  = import.meta.env.VITE_API_URL || 'https://easypy-backend-430520813248.us-central1.run.app';
       const res   = await fetch(`${base}/orders/etiquetas`, {
         method:  'POST',
@@ -210,6 +245,9 @@ const ProviderOrders = () => {
   const printable        = filteredOrders.filter(o => o.tracking_number);
   const allEtiquetas     = printable.length > 0 && etiquetaIds.size === printable.length;
   const someEtiquetas    = etiquetaIds.size > 0;
+  const readyable        = filteredOrders.filter(o => o.status === 'processing');
+  const allReady         = readyable.length > 0 && readyIds.size === readyable.length;
+  const someReady        = readyIds.size > 0;
 
   const confirmable     = filteredOrders.filter(o => o.status === 'confirmed');
   const allSelected     = confirmable.length > 0 && selectedIds.size === confirmable.length;
@@ -319,6 +357,32 @@ const ProviderOrders = () => {
           </div>
         )}
 
+        {/* Barra de salida masiva — aparece si hay órdenes en processing */}
+        {readyable.length > 0 && (
+          <div className="bulk-bar" style={{ background: '#f5f3ff', borderColor: '#c4b5fd' }}>
+            <div className="bulk-bar-left">
+              <button className="bulk-select-all" onClick={() => toggleSelectAllReady(readyable)}>
+                {allReady ? <CheckSquare size={18} color="#8b5cf6" /> : <Square size={18} color="#8b5cf6" />}
+                <span style={{ color: '#8b5cf6' }}>{allReady ? 'Deseleccionar salidas' : `Seleccionar ${readyable.length} en proceso`}</span>
+              </button>
+              {someReady && (
+                <span className="bulk-count" style={{ color: '#8b5cf6' }}>{readyIds.size} seleccionada{readyIds.size !== 1 ? 's' : ''}</span>
+              )}
+            </div>
+            {someReady && (
+              <button
+                className="bulk-confirm-btn"
+                style={{ background: '#8b5cf6' }}
+                onClick={handleBulkReady}
+                disabled={bulkReady}
+              >
+                <Truck size={14} style={{ marginRight: '6px' }} />
+                {bulkReady ? 'Procesando...' : `Marcar ${readyIds.size} como listas`}
+              </button>
+            )}
+          </div>
+        )}
+
         {/* Barra de etiquetas — aparece si hay órdenes con tracking */}
         {printable.length > 0 && (
           <div className="bulk-bar" style={{ background: '#f0fdf4', borderColor: '#86efac' }}>
@@ -388,6 +452,16 @@ const ProviderOrders = () => {
                         {etiquetaIds.has(order.order_id)
                           ? <CheckSquare size={20} color="#16a34a" />
                           : <Square size={20} color="#86efac" />
+                        }
+                      </div>
+                    )}
+
+                    {/* Checkbox — salida masiva */}
+                    {order.status === 'processing' && (
+                      <div className="order-checkbox" onClick={(e) => { e.stopPropagation(); toggleReady(order.order_id); }}>
+                        {readyIds.has(order.order_id)
+                          ? <CheckSquare size={20} color="#8b5cf6" />
+                          : <Square size={20} color="#c4b5fd" />
                         }
                       </div>
                     )}
@@ -465,7 +539,7 @@ const ProviderOrders = () => {
                           style={{ background: '#f0fdf4', border: '1.5px solid #86efac', color: '#16a34a' }}
                           onClick={(e) => {
                             e.stopPropagation();
-                            const token = localStorage.getItem('token');
+                            const token = localStorage.getItem('auth_token');
                             const base = import.meta.env.VITE_API_URL || 'https://easypy-backend-430520813248.us-central1.run.app';
                             window.open(`${base}/orders/${order.order_id}/etiqueta?token=${token}`, '_blank');
                           }}
