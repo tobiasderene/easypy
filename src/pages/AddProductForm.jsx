@@ -10,7 +10,7 @@ const AddProductForm = () => {
   const { user } = useUser();
 
   const [formData, setFormData] = useState({
-    name: '', sku: '', description: '', category: '',
+    name: '', description: '', category: '',
     price: '', discount: '0', suggested_price: '', stock: '', images: []
   });
   const [errors, setErrors]             = useState({});
@@ -55,7 +55,6 @@ const AddProductForm = () => {
     const newErrors = {};
     if (!formData.name.trim()) newErrors.name = 'El nombre del producto es requerido';
     else if (formData.name.trim().length < 5) newErrors.name = 'El nombre debe tener al menos 5 caracteres';
-    if (!formData.sku.trim()) newErrors.sku = 'El SKU es requerido';
     if (!formData.description.trim()) newErrors.description = 'La descripción es requerida';
     else if (formData.description.trim().length < 20) newErrors.description = 'La descripción debe tener al menos 20 caracteres';
     if (!formData.category) newErrors.category = 'Selecciona una categoría';
@@ -74,7 +73,6 @@ const AddProductForm = () => {
     try {
       const product = await createProduct({
         product_name:        formData.name,
-        product_sku:         formData.sku,
         product_description: formData.description,
         product_category:    formData.category,
         product_base_cost:   parseFloat(formData.price),
@@ -163,15 +161,7 @@ const AddProductForm = () => {
                 {errors.name && <span className="error-text">{errors.name}</span>}
               </div>
 
-              <div className="form-group">
-                <label htmlFor="sku">SKU (Código del Producto) *</label>
-                <div className="input-with-icon">
-                  <Tag size={18} />
-                  <input type="text" id="sku" name="sku" value={formData.sku} onChange={handleInputChange}
-                    placeholder="SW-001" className={errors.sku ? 'error' : ''} />
-                </div>
-                {errors.sku && <span className="error-text">{errors.sku}</span>}
-              </div>
+
 
               <div className="form-group">
                 <label htmlFor="category">Categoría *</label>
