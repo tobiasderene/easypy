@@ -115,11 +115,17 @@ const CreateLogisticsUser = () => {
       // 4. Guardar zonas si es manual y hay zonas válidas
       const validZones = zones.filter(z => z.city.trim() && parseFloat(z.price) > 0);
       if (validZones.length > 0) {
-        await fetch(`${import.meta.env.VITE_API_URL || ''}/logistics/${logisticId}/zones`, {
+        const base = import.meta.env.VITE_API_URL || 'https://easypy-backend-430520813248.us-central1.run.app';
+        const token = localStorage.getItem('auth_token');
+        const zonesRes = await fetch(`${base}/logistics/${logisticId}/zones`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify(validZones.map(z => ({ city: z.city.trim(), price: parseFloat(z.price) }))),
         });
+        if (!zonesRes.ok) {
+          const err = await zonesRes.text();
+          console.error('[zones] Error al guardar zonas:', err);
+        }
       }
 
       setCreatedUser({ ...user, logisticId });
