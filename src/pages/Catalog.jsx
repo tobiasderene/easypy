@@ -19,8 +19,9 @@ const Catalog = () => {
         (providers || []).forEach(p => { providerMap[p.user_id] = { name: p.user_nickname, city: p.city || '' }; });
 
         if (data && data.length > 0) {
+          const activeData = data.filter(p => p.product_status === 'active');
           const withImages = await Promise.all(
-            data.map(async (p) => {
+            activeData.map(async (p) => {
               let imageUrl = null;
               try {
                 const images  = await getProductImages(p.product_id);
