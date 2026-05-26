@@ -3,7 +3,6 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useUser } from '../App';
 import { getLogistics, createOrder, getProducts, getProductImages, searchCustomers, createCustomer, updateCustomer, getLogisticsQuote } from '../services/api';
-import FIXY_LOCALIDADES, { buscarLocalidad } from '../data/fixy_localidades';
 import { getLogisticsZones } from '../services/api';
 import '../styles/orderform.css';
 
@@ -63,6 +62,7 @@ const OrderForm = () => {
   const [quote, setQuote]                       = useState(null);
   const [zones, setZones]                         = useState([]);
   const [allZones, setAllZones]                   = useState({});  // { logistic_id: [zones] }
+  const [cities, setCities]                       = useState([]);
   const [logisticPrices, setLogisticPrices]       = useState({});  // { logistic_id: price | null }
   const [quoting, setQuoting]                   = useState(false);
   const [fixySuggestions, setFixySuggestions]   = useState([]);
@@ -99,6 +99,10 @@ const OrderForm = () => {
   const [errors, setErrors] = useState({});
 
   const [supplierCity, setSupplierCity] = useState(supplierCityFromState || '');
+
+  useEffect(() => {
+    getCities().then(data => setCities(data || [])).catch(() => {});
+  }, []);
 
   useEffect(() => {
     getLogistics()
@@ -724,11 +728,10 @@ const OrderForm = () => {
                       return;
                     }
                     setOtraCiudad(false);
-                    const loc = FIXY_LOCALIDADES.find(l => l.localidad === val);
+                    const loc = cities.find(l => l.name === val);
                     if (loc) {
-                      // Siempre llenar ciudad, provincia y CP — independiente de logística
-                      handleChange('city', loc.localidad);
-                      handleChange('region', loc.provincia);
+                      handleChange('city', loc.name);
+                      handleChange('region', loc.department);
                       setFixyCp(loc.cp);
                       setQuote(null);
                     } else {
