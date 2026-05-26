@@ -265,8 +265,8 @@ const Signup = () => {
                   <label>Ciudad <span style={{ color: '#ef4444' }}>*</span></label>
                   <select value={formData.city} onChange={handleCitySelect} >
                     <option value="">Seleccioná una ciudad...</option>
-                    {FIXY_LOCALIDADES.map(loc => (
-                      <option key={loc.cp} value={loc.localidad}>{loc.localidad}</option>
+                    {cities.map(loc => (
+                      <option key={loc.city_id} value={loc.name}>{loc.name}</option>
                     ))}
                   </select>
 
