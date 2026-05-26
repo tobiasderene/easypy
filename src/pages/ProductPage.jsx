@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getProduct, getProductImages } from '../services/api';
+import { getProduct, getProductImages, getUser } from '../services/api';
 import '../styles/assets.css';
 import '../styles/product.css';
 
@@ -14,6 +14,7 @@ const ProductPage = () => {
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity]           = useState(1);
   const [isFavorite, setIsFavorite]       = useState(false);
+  const [supplierCity, setSupplierCity]   = useState('');
 
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' }); }, []);
 
@@ -24,6 +25,13 @@ const ProductPage = () => {
         setProduct(prod);
         const sorted = [...(imgs || [])].sort((a, b) => b.is_primary - a.is_primary);
         setImages(sorted);
+        // Fetchear ciudad del proveedor
+        if (prod?.user_id) {
+          try {
+            const supplier = await getUser(prod.user_id);
+            setSupplierCity(supplier?.city || '');
+          } catch {}
+        }
       } catch {
       } finally {
         setLoading(false);
@@ -36,8 +44,9 @@ const ProductPage = () => {
     if (!product) return;
     navigate('/order/new', {
       state: {
-        initialItem: { id: product.product_id, name: product.product_name, price: parseFloat(product.product_base_cost), image: images[0]?.image_url || null, quantity },
-        supplierId:  product.user_id,
+        initialItem:  { id: product.product_id, name: product.product_name, price: parseFloat(product.product_base_cost), image: images[0]?.image_url || null, quantity },
+        supplierId:   product.user_id,
+        supplierCity: supplierCity,
       }
     });
   };
@@ -119,44 +128,20 @@ const ProductPage = () => {
 
             <h1 className="product-title">{product.product_name}</h1>
 
-            {/* Precios */}
             <div className="price-section">
               <div className="price-row">
                 <span className="current-price">{formatPrice(product.product_base_cost)}</span>
                 {originalPrice && <span className="original-price">{formatPrice(originalPrice)}</span>}
               </div>
-              {discount > 0 && (
-                <div className="save-text">Ahorrás {discount}% con este precio</div>
-              )}
-
-              {/* Precio sugerido */}
+              {discount > 0 && <div className="save-text">Ahorrás {discount}% con este precio</div>}
               {suggestedPrice && (
-                <div style={{
-                  marginTop: '12px',
-                  paddingTop: '12px',
-                  borderTop: '1.5px dashed #bfdbfe',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  flexWrap: 'wrap',
-                  gap: '8px',
-                }}>
+                <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1.5px dashed #bfdbfe', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
                   <div>
-                    <p style={{ fontSize: '11px', fontWeight: '700', color: '#056EB7', textTransform: 'uppercase', letterSpacing: '0.4px', margin: '0 0 2px 0' }}>
-                      Precio sugerido de venta
-                    </p>
-                    <p style={{ fontSize: '22px', fontWeight: '800', color: '#16a34a', margin: 0 }}>
-                      {formatPrice(suggestedPrice)}
-                    </p>
+                    <p style={{ fontSize: '11px', fontWeight: '700', color: '#056EB7', textTransform: 'uppercase', letterSpacing: '0.4px', margin: '0 0 2px 0' }}>Precio sugerido de venta</p>
+                    <p style={{ fontSize: '22px', fontWeight: '800', color: '#16a34a', margin: 0 }}>{formatPrice(suggestedPrice)}</p>
                   </div>
                   {suggestedMargin > 0 && (
-                    <div style={{
-                      background: '#f0fdf4',
-                      border: '1.5px solid #86efac',
-                      borderRadius: '8px',
-                      padding: '6px 12px',
-                      textAlign: 'center',
-                    }}>
+                    <div style={{ background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: '8px', padding: '6px 12px', textAlign: 'center' }}>
                       <p style={{ fontSize: '10px', color: '#16a34a', fontWeight: '600', margin: '0 0 1px 0' }}>Margen estimado</p>
                       <p style={{ fontSize: '16px', fontWeight: '800', color: '#16a34a', margin: 0 }}>{suggestedMargin}%</p>
                     </div>
@@ -190,7 +175,6 @@ const ProductPage = () => {
           </div>
         </div>
 
-        {/* Descripción */}
         <div style={{ marginTop: '40px', marginBottom: '60px' }}>
           <h2 style={{ fontSize: '18px', fontWeight: '700', marginBottom: '16px', color: '#111827' }}>Descripción</h2>
           <p className="description" style={{ lineHeight: '1.8' }}>
