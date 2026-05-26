@@ -1,13 +1,14 @@
 // CreateLogisticsUser.jsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { adminRegisterUser, getLogistics, createLogistics, assignUserToLogistics } from '../services/api';
+import { adminRegisterUser, getLogistics, createLogistics, assignUserToLogistics, getCities } from '../services/api';
 import '../styles/adminpage.css';
 
 const CreateLogisticsUser = () => {
   const navigate = useNavigate();
 
   const [logistics, setLogistics]     = useState([]);
+  const [cities, setCities]           = useState([]);
   const [step, setStep]               = useState(1);
   const [submitting, setSubmitting]   = useState(false);
   const [error, setError]             = useState('');
@@ -40,6 +41,9 @@ const CreateLogisticsUser = () => {
     getLogistics()
       .then(d => setLogistics(d || []))
       .catch(() => setLogistics([]));
+    getCities()
+      .then(d => setCities(d || []))
+      .catch(() => setCities([]));
   }, []);
 
   const handleChange = (field, value) => {
@@ -293,8 +297,14 @@ const CreateLogisticsUser = () => {
                     </div>
                     {zones.map((zone, i) => (
                       <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '8px', alignItems: 'center' }}>
-                        <input className="of-input" placeholder="Ciudad" value={zone.city}
-                          onChange={e => updateZone(i, 'city', e.target.value)} />
+                        <select className="of-input" value={zone.city}
+                          onChange={e => updateZone(i, 'city', e.target.value)}
+                          style={{ background: 'white' }}>
+                          <option value="">— Ciudad —</option>
+                          {cities.map(c => (
+                            <option key={c.city_id} value={c.name}>{c.name} ({c.department})</option>
+                          ))}
+                        </select>
                         <div style={{ display: 'flex', alignItems: 'center', border: '1.5px solid #e5e7eb', borderRadius: '8px', overflow: 'hidden' }}>
                           <span style={{ padding: '7px 8px', background: '#f9fafb', fontSize: '12px', color: '#6b7280', borderRight: '1.5px solid #e5e7eb' }}>Gs.</span>
                           <input type="number" className="of-price-input" placeholder="0" value={zone.price}
