@@ -2,8 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useUser } from '../App';
-import { getLogistics, createOrder, getProducts, getProductImages, searchCustomers, createCustomer, updateCustomer, getLogisticsQuote } from '../services/api';
-import { getLogisticsZones } from '../services/api';
+import { getLogistics, createOrder, getProducts, getProductImages, searchCustomers, createCustomer, updateCustomer, getLogisticsQuote, getLogisticsZones, getCities } from '../services/api';
 import '../styles/orderform.css';
 
 const COUNTRY_CODES = [
