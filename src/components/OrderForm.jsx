@@ -741,9 +741,9 @@ const OrderForm = () => {
                   }}
                 >
                   <option value="">Seleccioná una ciudad...</option>
-                  {FIXY_LOCALIDADES.map(loc => (
-                    <option key={loc.cp} value={loc.localidad}>
-                      {loc.localidad} — {loc.provincia}
+                  {cities.map(loc => (
+                    <option key={loc.city_id} value={loc.name}>
+                      {loc.name}
                     </option>
                   ))}
                   <option value="__otro__">Otra ciudad</option>
