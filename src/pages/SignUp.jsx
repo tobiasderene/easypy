@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { registerLocal, registerGoogle, getMe, updateUser, uploadProfileImage } from '../services/api';
 import { useUser } from '../App';
-import FIXY_LOCALIDADES from '../data/fixy_localidades';
+import { getCities } from '../services/api';
 import '../styles/signup.css';
 
 const Signup = () => {
@@ -21,6 +21,8 @@ const Signup = () => {
   const [searchParams] = useSearchParams();
   const { setUser }    = useUser();
 
+  const [cities, setCities] = useState([]);
+
   const [formData, setFormData] = useState({
     fullName: '', email: '', phone: '',
     password: '', confirmPassword: '', terms: false,
@@ -29,6 +31,10 @@ const Signup = () => {
     contact_name: '', doc_type: '', doc_number: '',
     piso: '', dpto: '',
   });
+
+  useEffect(() => {
+    getCities().then(data => setCities(data || [])).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const name     = searchParams.get('name');
@@ -50,8 +56,8 @@ const Signup = () => {
 
   const handleCitySelect = (e) => {
     const val = e.target.value;
-    const loc = FIXY_LOCALIDADES.find(l => l.localidad === val);
-    if (loc) setFormData(prev => ({ ...prev, city: loc.localidad, region: loc.provincia, cp: String(loc.cp) }));
+    const loc = cities.find(l => l.name === val);
+    if (loc) setFormData(prev => ({ ...prev, city: loc.name, region: loc.department, cp: String(loc.cp || '') }));
     else     setFormData(prev => ({ ...prev, city: '', region: '', cp: '' }));
     if (error) setError('');
   };
