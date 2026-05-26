@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useUser } from '../App';
-import { getLogistics, createOrder, getProducts, getProductImages, searchCustomers, createCustomer, updateCustomer, getLogisticsQuote, getCities} from '../services/api';
+import { getLogistics, createOrder, getProducts, getProductImages, searchCustomers, createCustomer, updateCustomer, getLogisticsQuote } from '../services/api';
 import { getLogisticsZones } from '../services/api';
 import '../styles/orderform.css';
 
@@ -99,6 +99,7 @@ const OrderForm = () => {
   const [errors, setErrors] = useState({});
 
   const [supplierCity, setSupplierCity] = useState(supplierCityFromState || '');
+  console.log('[OrderForm] supplierCityFromState:', supplierCityFromState, '| supplierId:', supplierId);
 
   useEffect(() => {
     getCities().then(data => setCities(data || [])).catch(() => {});
