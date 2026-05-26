@@ -88,6 +88,10 @@ export const getUsers = (params = {}) => {
 };
 export const getProviders = () => api("/users/providers");
 export const getUser      = (userId) => api(`/users/${userId}`);
+export const getCities    = (params = {}) => {
+  const q = new URLSearchParams(params).toString();
+  return api(`/cities${q ? '?' + q : ''}`);
+};
 export const updateUser        = (userId, data) =>
   api(`/users/${userId}`, { method: "PATCH", body: JSON.stringify(data) });
 export const adminUpdateStatus = (userId, status) =>
