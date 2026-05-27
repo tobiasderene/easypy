@@ -242,13 +242,14 @@ const Catalog = () => {
           <p>Aún no hay productos publicados en esta categoría</p>
         </div>
       ) : (
-        <div className="catalog-grid">
-          {filtered.map(product => <ProductCard key={product.id} product={product} />)}
-        </div>
-        {/* Infinite scroll trigger */}
-        <div ref={loaderRef} style={{ height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {loadingMore && <p style={{ color: '#9ca3af', fontSize: '13px' }}>Cargando más productos...</p>}
-        </div>
+        <>
+          <div className="catalog-grid">
+            {filtered.map(product => <ProductCard key={product.id} product={product} />)}
+          </div>
+          <div ref={loaderRef} style={{ height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {loadingMore && <p style={{ color: '#9ca3af', fontSize: '13px' }}>Cargando más productos...</p>}
+          </div>
+        </>
       )}
     </div>
   );
