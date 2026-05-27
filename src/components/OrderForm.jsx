@@ -149,14 +149,21 @@ const OrderForm = () => {
         const sPrice = supplierZone ? parseFloat(supplierZone.price) : 0;
         prices[l.logistic_id] = Math.max(rPrice, sPrice);
       } else if (l.api_type === 'fixy') {
-        // Fixy cotiza por API — mostrar precio si ya está disponible
-        prices[l.logistic_id] = (quote && !quote.error && form.logisticsId === l.logistic_id)
-          ? quote.total : null;
+        // Fixy — usar cotización disponible o marcar como cotizando
+        if (quoting) {
+          prices[l.logistic_id] = 'quoting';
+        } else if (quote && !quote.error && quote.total) {
+          prices[l.logistic_id] = quote.total;
+        } else if (quote === null && fixyCp) {
+          prices[l.logistic_id] = 'unavailable';
+        } else {
+          prices[l.logistic_id] = null;
+        }
       }
     });
 
     setLogisticPrices(prices);
-  }, [form.city, supplierCity, allZones, logistics, quote]);
+  }, [form.city, supplierCity, allZones, logistics, quote, quoting, fixyCp]);
 
   // ── Cargar zonas cuando cambia logística ─────────────────────────────────
   useEffect(() => {
@@ -170,21 +177,22 @@ const OrderForm = () => {
       .catch(() => setZones([]));
   }, [form.logisticsId]);
 
-  // ── Auto-cotizar cuando cambia logística o ciudad ────────────────────────
+  // ── Auto-cotizar Fixy cuando cambia ciudad o logística ───────────────────
   useEffect(() => {
-    const selectedLogistic = logistics.find(l => l.logistic_id === form.logisticsId);
-    if (!selectedLogistic || selectedLogistic.api_type !== 'fixy') {
-      setQuote(null);
-      return; // No tocar fixyCp — pertenece a la ciudad, no a la logística
-    }
+    if (!fixyCp) { setQuote(null); return; }
+
+    // Buscar logística Fixy disponible
+    const fixyLogistic = logistics.find(l => l.api_type === 'fixy');
+    if (!fixyLogistic) { setQuote(null); return; }
+
     const totalBultos = items.reduce((s, i) => s + i.quantity, 0) || 1;
     setQuoting(true);
     setQuote(null);
-    getLogisticsQuote(form.logisticsId, totalBultos, 1.0, fixyCp)
+    getLogisticsQuote(fixyLogistic.logistic_id, totalBultos, 1.0, fixyCp)
       .then(result => setQuote(result))
-      .catch(() => setQuote(null))  // fallo silencioso — botón queda gris
+      .catch(() => setQuote(null))
       .finally(() => setQuoting(false));
-  }, [form.logisticsId, fixyCp]);
+  }, [fixyCp, logistics]);
 
   useEffect(() => {
     if (!supplierId) return;
@@ -930,6 +938,7 @@ const OrderForm = () => {
                   {logistics.map(l => {
                     const price      = logisticPrices[l.logistic_id];
                     const unavailable = price === 'unavailable';
+                    const isQuoting   = price === 'quoting';
                     const hasPrice    = typeof price === 'number';
                     const disabled    = unavailable;
 
@@ -947,9 +956,11 @@ const OrderForm = () => {
                               color: unavailable ? '#ef4444' : hasPrice ? '#6b7280' : '#9ca3af' }}>
                               {unavailable
                                 ? 'No disponible'
-                                : hasPrice
-                                  ? formatCurrency(hasPrice ? price * 1.25 : 0)
-                                  : l.api_type === 'fixy' && quoting ? 'Cotizando...' : '—'}
+                                : isQuoting
+                                  ? 'Cotizando...'
+                                  : hasPrice
+                                    ? formatCurrency(price * 1.25)
+                                    : '—'}
                             </span>
                           )}
                         </div>
@@ -1025,7 +1036,7 @@ const OrderForm = () => {
               </div>
               {totalRecaudo > 0 && earnings < 0 && (
                 <div style={{ background: '#fef2f2', border: '1.5px solid #fecaca', borderRadius: '8px', padding: '8px 12px', fontSize: '12px', color: '#dc2626', fontWeight: '600' }}>
-                  El precio de venta debe cubrir los costos
+                  ⚠️ Subí el precio de venta para cubrir los costos
                 </div>
               )}
             </div>
