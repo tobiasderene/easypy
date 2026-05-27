@@ -490,6 +490,7 @@ const OrderForm = () => {
       return;
     }
     if (items.length === 0) { setSubmitError('Agregá al menos un producto'); return; }
+    if (earnings < 0) { setErrors(prev => ({ ...prev, general: 'La utilidad no puede ser negativa. Subí el precio de venta.' })); return; }
     setShowConfirm(true);
   };
 
@@ -1022,6 +1023,11 @@ const OrderForm = () => {
                   {totalRecaudo > 0 ? formatCurrency(earnings) : '—'}
                 </span>
               </div>
+              {totalRecaudo > 0 && earnings < 0 && (
+                <div style={{ background: '#fef2f2', border: '1.5px solid #fecaca', borderRadius: '8px', padding: '8px 12px', fontSize: '12px', color: '#dc2626', fontWeight: '600' }}>
+                  ⚠️ Subí el precio de venta para cubrir los costos
+                </div>
+              )}
             </div>
 
             {submitError && (
@@ -1035,7 +1041,8 @@ const OrderForm = () => {
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
                 Cancelar
               </button>
-              <button className="of-btn-submit" onClick={handleSubmit} disabled={submitting}>
+              <button className="of-btn-submit" onClick={handleSubmit} disabled={submitting || (totalRecaudo > 0 && earnings < 0)}
+                title={earnings < 0 ? 'La utilidad no puede ser negativa' : ''}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" /></svg>
                 {submitting ? 'Enviando...' : 'Enviar Orden'}
               </button>
