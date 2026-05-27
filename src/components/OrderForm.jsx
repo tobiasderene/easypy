@@ -437,7 +437,7 @@ const OrderForm = () => {
     if (!form.city.trim())      e.city        = 'Requerido';
     if (!form.region.trim())    e.region      = 'Requerido';
     if (!form.address.trim())   e.address     = 'Requerido';
-    if (!form.email.trim())     e.email       = 'Requerido';
+    // email opcional
     if (!form.logisticsId)      e.logisticsId = 'Seleccioná una transportadora';
     if (!coords)                e.map         = 'Confirmá la ubicación en el mapa antes de enviar la orden';
     items.forEach(item => {
@@ -809,7 +809,7 @@ const OrderForm = () => {
 
             {/* ── Email ── */}
             <div className="of-field">
-              <label className="of-label">Correo Electrónico <span className="of-req">*</span></label>
+              <label className="of-label">Correo Electrónico <span style={{ fontSize: '10px', color: '#9ca3af', fontWeight: 400 }}>(opcional)</span></label>
               <input className={`of-input ${errors.email ? 'err' : ''}`} type="email" placeholder="cliente@email.com" value={form.email} onChange={e => handleChange('email', e.target.value)} />
               {errors.email && <span className="of-err">{errors.email}</span>}
             </div>
