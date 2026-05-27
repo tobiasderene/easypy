@@ -88,6 +88,11 @@ export const getUsers = (params = {}) => {
 };
 export const getProviders = () => api("/users/providers");
 export const getUser      = (userId) => api(`/users/${userId}`);
+export const getBankAccounts   = ()       => api('/bank-accounts');
+export const createBankAccount = (data)    => api('/bank-accounts', { method: 'POST', body: JSON.stringify(data) });
+export const setDefaultAccount = (id)      => api(`/bank-accounts/${id}/default`, { method: 'PATCH' });
+export const deleteBankAccount = (id)      => api(`/bank-accounts/${id}`, { method: 'DELETE' });
+
 export const getCities    = (params = {}) => {
   const q = new URLSearchParams(params).toString();
   return api(`/cities${q ? '?' + q : ''}`);
