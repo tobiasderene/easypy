@@ -300,11 +300,20 @@ const OrderForm = () => {
     setSelectedCustomerId(customer.customer_id);
     setSuggestions([]);
     setShowSuggestions(false);
-    // Resetear mapa al cambiar cliente
     setShowMap(false);
     setCoords(null);
     mapInstanceRef.current = null;
     markerRef.current = null;
+
+    // Actualizar fixyCp con la ciudad del cliente para que cotice Fixy
+    if (customer.city) {
+      const loc = cities.find(c => c.name.toLowerCase() === customer.city.toLowerCase());
+      if (loc?.cp) setFixyCp(loc.cp);
+      else setFixyCp(null);
+    } else {
+      setFixyCp(null);
+    }
+    setQuote(null);
   };
 
   // ── Mapa ──────────────────────────────────────────────────────────────────
