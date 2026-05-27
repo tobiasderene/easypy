@@ -499,6 +499,8 @@ const OrderForm = () => {
     }
     if (items.length === 0) { setSubmitError('Agregá al menos un producto'); return; }
     if (earnings < 0) { setErrors(prev => ({ ...prev, general: 'La utilidad no puede ser negativa. Subí el precio de venta.' })); return; }
+    if (!form.logisticsId) { setErrors(prev => ({ ...prev, logisticsId: 'Seleccioná una transportadora' })); return; }
+    if (logisticCost <= 0) { setErrors(prev => ({ ...prev, logisticsId: 'La logística seleccionada no tiene costo configurado para esta ciudad' })); return; }
     setShowConfirm(true);
   };
 
@@ -752,9 +754,14 @@ const OrderForm = () => {
                       handleChange('region', loc.department);
                       setFixyCp(loc.cp);
                       setQuote(null);
+                      setLogisticPrices({});  // resetear precios al cambiar ciudad
+                      handleChange('logisticsId', null);  // deseleccionar logística
                     } else {
                       handleChange('city', val);
                       setFixyCp(null);
+                      setQuote(null);
+                      setLogisticPrices({});
+                      handleChange('logisticsId', null);
                     }
                   }}
                 >
@@ -1052,8 +1059,9 @@ const OrderForm = () => {
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12" /></svg>
                 Cancelar
               </button>
-              <button className="of-btn-submit" onClick={handleSubmit} disabled={submitting || (totalRecaudo > 0 && earnings < 0)}
-                title={earnings < 0 ? 'La utilidad no puede ser negativa' : ''}>
+              <button className="of-btn-submit" onClick={handleSubmit}
+                disabled={submitting || (totalRecaudo > 0 && earnings < 0) || (form.logisticsId && logisticCost <= 0)}
+                title={earnings < 0 ? 'La utilidad no puede ser negativa' : logisticCost <= 0 && form.logisticsId ? 'Sin costo de envío configurado' : ''}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 2L11 13M22 2L15 22l-4-9-9-4 20-7z" /></svg>
                 {submitting ? 'Enviando...' : 'Enviar Orden'}
               </button>
