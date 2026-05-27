@@ -162,9 +162,7 @@ const Catalog = () => {
             <img src={product.image} alt={product.name} className="product-image" loading="lazy" decoding="async" />
           ) : (
             <div style={{ width: '100%', height: '100%', background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" fill="none" stroke="#d1d5db" viewBox="0 0 24 24" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
+              <div style={{ width: '48px', height: '48px', border: '2px solid #e5e7eb', borderRadius: '8px', background: '#e5e7eb' }} />
             </div>
           )}
           {product.isPrivate && (
@@ -175,9 +173,9 @@ const Catalog = () => {
               position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.35)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
-              <span style={{ background: '#dc2626', color: 'white', fontSize: '11px', fontWeight: '800', padding: '4px 12px', borderRadius: '100px', letterSpacing: '0.4px' }}>
+              <div style={{ background: '#dc2626', color: 'white', fontSize: '11px', fontWeight: '800', padding: '4px 12px', borderRadius: '100px', letterSpacing: '0.4px' }}>
                 SIN STOCK
-              </span>
+              </div>
             </div>
           )}
         </div>
@@ -187,9 +185,7 @@ const Catalog = () => {
 
           {/* Proveedor */}
           <div className="product-provider">
-            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-            </svg>
+            <span style={{ width: '8px', height: '8px', background: '#9ca3af', borderRadius: '2px', display: 'inline-block', flexShrink: 0 }} />
             {product.providerName}
           </div>
 
@@ -213,10 +209,7 @@ const Catalog = () => {
               disabled={outOfStock}
               style={{ opacity: outOfStock ? 0.5 : 1, cursor: outOfStock ? 'not-allowed' : 'pointer' }}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" viewBox="0 0 24 24" width="13" height="13" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 12h14M12 5l7 7-7 7" />
-              </svg>
-              <span>{outOfStock ? 'Sin stock' : 'Comprar'}</span>
+              <span>{outOfStock ? 'Sin stock' : '→ Comprar'}</span>
             </button>
           </div>
         </div>
