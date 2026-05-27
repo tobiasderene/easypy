@@ -163,13 +163,21 @@ const ProductPage = () => {
             </div>
 
             <div className="stock-info">
-              <span className="stock-dot" />
-              <span className="stock-text">{product.product_status === 'active' ? 'Disponible' : 'No disponible'}</span>
+              <span className="stock-dot" style={{ background: product.stock_available === 0 ? '#ef4444' : product.stock_available <= 5 ? '#d97706' : '#16a34a' }} />
+              <span className="stock-text">
+                {product.stock_available === 0
+                  ? 'Sin stock'
+                  : product.stock_available <= 5
+                    ? `Últimas ${product.stock_available} unidades`
+                    : `${product.stock_available} disponibles`}
+              </span>
             </div>
 
             <div className="action-buttons">
-              <button className="buy-now-btn" style={{ flex: 1 }} onClick={handleBuy} disabled={product.product_status !== 'active'}>
-                Comprar
+              <button className="buy-now-btn" style={{ flex: 1 }}
+                onClick={handleBuy}
+                disabled={product.product_status !== 'active' || product.stock_available === 0}>
+                {product.stock_available === 0 ? 'Sin stock' : 'Comprar'}
               </button>
             </div>
           </div>
