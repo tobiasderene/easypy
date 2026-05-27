@@ -105,9 +105,9 @@ export const adminDeleteUser   = (userId) =>
   api(`/users/${userId}`, { method: "DELETE" });
 
 // ─── Products ─────────────────────────────────────────
-export const getProducts   = (skip = 0, limit = 100) => api(`/products?skip=${skip}&limit=${limit}`);
-export const getMyProducts    = (skip = 0, limit = 100) => api(`/products/my-products?skip=${skip}&limit=${limit}`);
-export const getProductsByUser = (userId, skip = 0, limit = 100) => api(`/products/user/${userId}?skip=${skip}&limit=${limit}`);
+export const getProducts   = (skip = 0, limit = 50)  => api(`/products?skip=${skip}&limit=${limit}`);
+export const getMyProducts    = (skip = 0, limit = 50)  => api(`/products/my-products?skip=${skip}&limit=${limit}`);
+export const getProductsByUser = (userId, skip = 0, limit = 50)  => api(`/products/user/${userId}?skip=${skip}&limit=${limit}`);
 export const getProduct    = (productId)             => api(`/products/${productId}`);
 export const createProduct = (data)                  => api("/products", { method: "POST", body: JSON.stringify(data) });
 export const updateProduct = (productId, data)       => api(`/products/${productId}`, { method: "PATCH", body: JSON.stringify(data) });
@@ -135,7 +135,7 @@ export const uploadProfileImage = (file) => {
 };
 
 // ─── Orders ───────────────────────────────────────────
-export const getOrders           = (skip = 0, limit = 100) => api(`/orders?skip=${skip}&limit=${limit}`);
+export const getOrders           = (skip = 0, limit = 50)  => api(`/orders?skip=${skip}&limit=${limit}`);
 export const getOrder            = (orderId)       => api(`/orders/${orderId}`);
 export const getOrdersByBuyer    = (buyerId)       => api(`/orders/buyer/${buyerId}`);
 export const getOrdersBySupplier = (supplierId)    => api(`/orders/supplier/${supplierId}`);
@@ -163,7 +163,7 @@ export const confirmOrderSupplier   = (orderId)    => api(`/orders/${orderId}/co
 export const cancelOrderSupplier    = (orderId)    => api(`/orders/${orderId}/cancel`,            { method: "POST" });
 
 // ─── Logistics orders ─────────────────────────────────
-export const getOrdersByLogistics  = (logisticId, limit = 200) => api(`/orders/logistics/${logisticId}?limit=${limit}`);
+export const getOrdersByLogistics  = (logisticId, limit = 100) => api(`/orders/logistics/${logisticId}?limit=${limit}`);
 export const pickupOrder             = (orderId) => api(`/orders/${orderId}/pickup`,  { method: 'POST' });
 export const deliverOrder            = (orderId) => api(`/orders/${orderId}/deliver`, { method: 'POST' });
 export const markOrderReadyForPickup = (orderId) => api(`/orders/${orderId}/ready`,      { method: 'POST' });
