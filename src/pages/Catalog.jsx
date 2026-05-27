@@ -1,24 +1,38 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getProducts, getProductImages, getProviders } from '../services/api';
 import '../styles/catalog.css';
+
+const PAGE_SIZE = 50;
 
 const Catalog = () => {
   const navigate = useNavigate();
   const [activeFilters, setActiveFilters] = useState(['all']);
   const [products, setProducts]           = useState([]);
   const [loading, setLoading]             = useState(true);
+  const [loadingMore, setLoadingMore]     = useState(false);
+  const [hasMore, setHasMore]             = useState(true);
+  const [skip, setSkip]                   = useState(0);
+  const [providerMap, setProviderMap]     = useState({});
+  const loaderRef                         = useRef(null);
 
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const [data, providers] = await Promise.all([getProducts(), getProviders()]);
+  const fetchProducts = useCallback(async (currentSkip = 0, append = false) => {
+    if (currentSkip === 0) setLoading(true);
+    else setLoadingMore(true);
+    try {
+        const [data, providers] = await Promise.all([
+          getProducts(currentSkip, PAGE_SIZE),
+          currentSkip === 0 ? getProviders() : Promise.resolve(null)
+        ]);
 
-        // Map user_id → provider name
-        const providerMap = {};
-        (providers || []).forEach(p => { providerMap[p.user_id] = { name: p.user_nickname, city: p.city || '' }; });
+        if (providers) {
+          const map = {};
+          (providers || []).forEach(p => { map[p.user_id] = { name: p.user_nickname, city: p.city || '' }; });
+          setProviderMap(map);
+        }
 
         if (data && data.length > 0) {
+          setHasMore(data.length === PAGE_SIZE);
           const activeData = data.filter(p => p.product_status === 'active');
           const withImages = await Promise.all(
             activeData.map(async (p) => {
@@ -40,25 +54,46 @@ const Catalog = () => {
                 stock:          p.stock_available ?? null,
                 status:         p.product_status,
                 image:          imageUrl,
-                badge:          null,
+                badge:          p.is_private ? 'Exclusivo' : null,
+                isPrivate:      p.is_private || false,
                 category:       p.product_category,
               };
             })
           );
-          setProducts(withImages);
+          if (append) setProducts(prev => [...prev, ...withImages]);
+          else setProducts(withImages);
+        } else {
+          setHasMore(false);
         }
       } catch {
       } finally {
         setLoading(false);
+        setLoadingMore(false);
       }
-    };
-    fetchProducts();
   }, []);
 
-  const categories = ['all', ...new Set(products.map(p => p.category))];
+  useEffect(() => { fetchProducts(0, false); }, []);
+
+  // Intersection observer for infinite scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      entries => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore && !loading) {
+          const nextSkip = skip + PAGE_SIZE;
+          setSkip(nextSkip);
+          fetchProducts(nextSkip, true);
+        }
+      },
+      { threshold: 0.1 }
+    );
+    if (loaderRef.current) observer.observe(loaderRef.current);
+    return () => observer.disconnect();
+  }, [hasMore, loadingMore, loading, skip, fetchProducts]);
+
+  const categories = ['all', 'exclusive', ...new Set(products.map(p => p.category))];
   const filters    = categories.map(cat => ({
     id:    cat,
-    label: cat === 'all' ? 'Todos' : cat.charAt(0).toUpperCase() + cat.slice(1),
+    label: cat === 'all' ? 'Todos' : cat === 'exclusive' ? '⭐ Exclusivos' : cat.charAt(0).toUpperCase() + cat.slice(1),
   }));
 
   const toggleFilter = (catId) => {
@@ -75,7 +110,10 @@ const Catalog = () => {
 
   const filtered = activeFilters.includes('all')
     ? products
-    : products.filter(p => activeFilters.includes(p.category));
+    : products.filter(p =>
+        activeFilters.includes(p.category) ||
+        (activeFilters.includes('exclusive') && p.isPrivate)
+      );
 
   const formatPrice = (price) =>
     new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', minimumFractionDigits: 0 }).format(price);
@@ -121,7 +159,7 @@ const Catalog = () => {
       >
         <div className="product-image-container">
           {product.image ? (
-            <img src={product.image} alt={product.name} className="product-image" />
+            <img src={product.image} alt={product.name} className="product-image" loading="lazy" decoding="async" />
           ) : (
             <div style={{ width: '100%', height: '100%', background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <svg width="40" height="40" fill="none" stroke="#d1d5db" viewBox="0 0 24 24">
@@ -129,7 +167,9 @@ const Catalog = () => {
               </svg>
             </div>
           )}
-          {product.badge && <span className="product-badge">{product.badge}</span>}
+          {product.isPrivate && (
+            <span className="product-badge" style={{ background: '#7c3aed' }}>⭐ Exclusivo</span>
+          )}
           {outOfStock && (
             <div style={{
               position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.35)',
@@ -211,6 +251,10 @@ const Catalog = () => {
       ) : (
         <div className="catalog-grid">
           {filtered.map(product => <ProductCard key={product.id} product={product} />)}
+        </div>
+        {/* Infinite scroll trigger */}
+        <div ref={loaderRef} style={{ height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {loadingMore && <p style={{ color: '#9ca3af', fontSize: '13px' }}>Cargando más productos...</p>}
         </div>
       )}
     </div>
