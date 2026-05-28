@@ -32,50 +32,7 @@ const benefits = [
   { title: "Alta en Minutos", desc: "Registrate, elegí productos y empezá a vender el mismo día. Sin burocracia." },
 ];
 
-const products = [
-  {
-    name: "Apple Watch Series 9",
-    price: "Gs. 87.000",
-    suggested: "Gs. 219.000",
-    category: "Electrónica",
-    img: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=300&fit=crop"
-  },
-  {
-    name: "Maleta Cabina 55cm",
-    price: "Gs. 145.000",
-    suggested: "Gs. 350.000",
-    category: "Equipaje",
-    img: "https://images.unsplash.com/photo-1565026057447-bc90a3dceb87?w=400&h=300&fit=crop"
-  },
-  {
-    name: "Set Skincare Vitamina C",
-    price: "Gs. 55.000",
-    suggested: "Gs. 120.000",
-    category: "Belleza",
-    img: "https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=400&h=300&fit=crop"
-  },
-  {
-    name: "Auriculares Sony WH-1000XM5",
-    price: "Gs. 65.000",
-    suggested: "Gs. 160.000",
-    category: "Electrónica",
-    img: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=300&fit=crop"
-  },
-  {
-    name: "Silla Ergonómica",
-    price: "Gs. 380.000",
-    suggested: "Gs. 750.000",
-    category: "Hogar",
-    img: "https://images.unsplash.com/photo-1582582494700-5f8b1b4c0b8b?w=400&h=300&fit=crop"
-  },
-  {
-    name: "Licuadora Portátil",
-    price: "Gs. 38.000",
-    suggested: "Gs. 85.000",
-    category: "Hogar",
-    img: "https://images.unsplash.com/photo-1570222094114-d054a817e56b?w=400&h=300&fit=crop"
-  }
-];
+
 
 const stats = [
   { value: "500+", label: "Productos disponibles" },
@@ -88,7 +45,6 @@ export default function LandingPage() {
   const [scrolled, setScrolled] = useState(false);
   const [heroRef, heroVisible] = useVisible(0.1);
   const [benefitsRef, benefitsVisible] = useVisible(0.1);
-  const [productsRef, productsVisible] = useVisible(0.1);
   const [aboutRef, aboutVisible] = useVisible(0.1);
   const [ctaRef, ctaVisible] = useVisible(0.1);
 
@@ -276,55 +232,6 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── PRODUCTS ── */}
-      <section id="products" ref={productsRef} style={{ background: "#f8fafc", padding: "96px 24px" }}>
-        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-          <div className={`fade-up ${productsVisible ? "visible" : ""}`} style={{ textAlign: "center", marginBottom: 64 }}>
-            <span style={{ display: "inline-block", background: "#dbeafe", color: BRAND, fontSize: 12, fontWeight: 700, padding: "5px 14px", borderRadius: 100, marginBottom: 16, textTransform: "uppercase", letterSpacing: 0.5 }}>
-              Catálogo
-            </span>
-            <h2 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: "clamp(28px, 4vw, 44px)", fontWeight: 800, color: "#0f172a", marginBottom: 16 }}>
-              Productos listos para vender
-            </h2>
-            <p style={{ fontSize: 17, color: "#64748b", maxWidth: 520, margin: "0 auto" }}>
-              Cientos de productos de proveedores locales disponibles para que empieces a vender hoy mismo.
-            </p>
-          </div>
-
-          <div className="products-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20 }}>
-            {products.map((p, i) => (
-              <div key={i} className={`product-card fade-up d${Math.min(i+1,6)} ${productsVisible ? "visible" : ""}`}>
-                <div style={{ height: 180, overflow: "hidden", position: "relative" }}>
-                  <img src={p.img} alt={p.name} style={{ width: "100%", height: "100%", objectFit: "cover", transition: "transform 0.4s ease" }}
-                    onMouseEnter={e => e.target.style.transform = "scale(1.06)"}
-                    onMouseLeave={e => e.target.style.transform = "scale(1)"}
-                  />
-                </div>
-                <div style={{ padding: "18px 20px" }}>
-                  <span style={{ fontSize: 10, fontWeight: 700, color: BRAND, textTransform: "uppercase", letterSpacing: 0.5 }}>{p.category}</span>
-                  <h3 style={{ fontSize: 15, fontWeight: 700, margin: "6px 0 10px", color: "#0f172a" }}>{p.name}</h3>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
-                    <div>
-                      <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 2 }}>Precio base</div>
-                      <div style={{ fontSize: 18, fontWeight: 800, color: BRAND }}>{p.price}</div>
-                    </div>
-                    <div style={{ textAlign: "right" }}>
-                      <div style={{ fontSize: 11, color: "#94a3b8", marginBottom: 2 }}>Sugerido</div>
-                      <div style={{ fontSize: 13, fontWeight: 700, color: "#16a34a" }}>{p.suggested}</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className={`fade-up ${productsVisible ? "visible" : ""}`} style={{ textAlign: "center", marginTop: 48 }}>
-            <button className="btn-primary" style={{ padding: "14px 36px", fontSize: 15 }} onClick={() => window.location.href="/signup"}>
-              Ver catálogo completo
-            </button>
-          </div>
-        </div>
-      </section>
 
       {/* ── ABOUT US ── */}
       <section id="about" ref={aboutRef} style={{ background: "white", padding: "96px 24px" }}>
