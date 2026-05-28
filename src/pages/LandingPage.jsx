@@ -157,9 +157,6 @@ export default function LandingPage() {
                 <button className="btn-primary" style={{ padding: "14px 32px", fontSize: 16 }} onClick={() => window.location.href="/signup"}>
                   Empezar gratis
                 </button>
-                <button className="btn-outline" style={{ padding: "14px 28px", fontSize: 16 }} onClick={() => scrollTo("products")}>
-                  Ver productos
-                </button>
               </div>
               <div className={`fade-up d4 ${heroVisible ? "visible" : ""}`} style={{ display: "flex", gap: 28, marginTop: 40, flexWrap: "wrap" }}>
                 {[["500+","Productos"],["3","Logísticas"],["0 stock","Requerido"]].map(([val, label]) => (
