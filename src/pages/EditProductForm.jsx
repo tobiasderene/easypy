@@ -1,325 +1,189 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { X, Upload, DollarSign, Package, Tag, Grid, FileText } from 'lucide-react';
-import { getProduct, updateProduct, getProductImages, uploadProductImage, deleteImage } from '../services/api';
-import '../styles/addproductform.css';
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from sqlalchemy.orm import Session
+from typing import List
+from datetime import datetime
+import io
 
-const EditProductForm = () => {
-  const navigate          = useNavigate();
-  const { id }            = useParams();
-  const [loading, setLoading]           = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errors, setErrors]             = useState({});
+from app.db.database import get_db
+from app.schemas.image import ImageOut, ImageCreate
+from app.crud import image as crud_image
+from app.services.storage import (
+    upload_product_image,
+    upload_profile_image,
+    delete_product_image,
+    delete_profile_image,
+    get_product_image_url,
+    get_profile_image_url,
+)
+from app.dependencies import get_current_user
 
-  const [formData, setFormData] = useState({
-    name: '', sku: '', description: '', category: '',
-    price: '', discount: '0', suggested_price: '', stock: '',
-  });
+router = APIRouter(prefix="/images", tags=["Images"])
 
-  // Imágenes existentes (ya subidas) y nuevas (a subir)
-  const [existingImages, setExistingImages] = useState([]); // { image_id, image_url, is_primary }
-  const [newImages, setNewImages]           = useState([]); // { file, preview }
-  const [deletedImageIds, setDeletedImageIds] = useState([]);
+MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
 
-  const categories = [
-    { value: '', label: 'Selecciona una categoría' },
-    { value: 'electronics', label: 'Electrónica' },
-    { value: 'home', label: 'Hogar' },
-    { value: 'office', label: 'Oficina' },
-    { value: 'fitness', label: 'Fitness' },
-    { value: 'accessories', label: 'Accesorios' },
-    { value: 'beauty', label: 'Belleza' },
-    { value: 'clothing', label: 'Ropa' },
-    { value: 'toys', label: 'Juguetes' },
-  ];
+MAGIC_SIGNATURES = [
+    (b'\xff\xd8\xff',       'jpeg'),
+    (b'\x89PNG\r\n\x1a\n', 'png'),
+    (b'RIFF',               'webp'),
+]
 
-  useEffect(() => {
-    const fetchProduct = async () => {
-      try {
-        const [product, images] = await Promise.all([
-          getProduct(id),
-          getProductImages(id),
-        ]);
-        setFormData({
-          name:            product.product_name        || '',
-          sku:             product.product_sku         || '',
-          description:     product.product_description || '',
-          category:        product.product_category    || '',
-          price:           String(product.product_base_cost || ''),
-          discount:        String(product.product_discount  || '0'),
-          suggested_price: product.suggested_price ? String(product.suggested_price) : '',
-          stock:           String(product.stock_available ?? ''),
-        });
-        const sorted = [...(images || [])].sort((a, b) => b.is_primary - a.is_primary);
-        setExistingImages(sorted);
-      } catch {
-        setErrors({ submit: 'No se pudo cargar el producto.' });
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProduct();
-  }, [id]);
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-    if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
-  };
+async def validate_image_file(file: UploadFile) -> bytes:
+    contents = await file.read()
+    if len(contents) > MAX_FILE_SIZE:
+        raise HTTPException(status_code=400, detail="El archivo supera el límite de 5 MB")
+    if len(contents) < 12:
+        raise HTTPException(status_code=400, detail="Archivo demasiado pequeño para ser una imagen")
 
-  const handleNewImages = (e) => {
-    const files = Array.from(e.target.files);
-    const totalImages = existingImages.length + newImages.length + files.length;
-    if (totalImages > 5) {
-      setErrors(prev => ({ ...prev, images: 'Máximo 5 imágenes permitidas' }));
-      return;
-    }
-    setErrors(prev => ({ ...prev, images: '' }));
-    const previews = files.map(file => ({ file, preview: URL.createObjectURL(file) }));
-    setNewImages(prev => [...prev, ...previews]);
-  };
+    header   = contents[:12]
+    detected = None
+    for magic, fmt in MAGIC_SIGNATURES:
+        if header[:len(magic)] == magic:
+            if fmt == 'webp' and header[8:12] != b'WEBP':
+                continue
+            detected = fmt
+            break
 
-  const removeExistingImage = (imageId) => {
-    setExistingImages(prev => prev.filter(img => img.image_id !== imageId));
-    setDeletedImageIds(prev => [...prev, imageId]);
-  };
+    if not detected:
+        raise HTTPException(status_code=400, detail="Formato no permitido. Solo se aceptan JPG, PNG o WEBP.")
 
-  const removeNewImage = (index) => {
-    setNewImages(prev => prev.filter((_, i) => i !== index));
-  };
+    try:
+        from PIL import Image
+        Image.open(io.BytesIO(contents)).verify()
+    except Exception:
+        raise HTTPException(status_code=400, detail="El archivo no es una imagen válida o está corrupto")
 
-  const validateForm = () => {
-    const e = {};
-    if (!formData.name.trim() || formData.name.trim().length < 5)
-      e.name = 'El nombre debe tener al menos 5 caracteres';
-    if (!formData.sku.trim())
-      e.sku = 'El SKU es requerido';
-    if (!formData.description.trim() || formData.description.trim().length < 20)
-      e.description = 'La descripción debe tener al menos 20 caracteres';
-    if (!formData.category)
-      e.category = 'Selecciona una categoría';
-    if (!formData.price || parseFloat(formData.price) <= 0)
-      e.price = 'El precio debe ser mayor a 0';
-    if (existingImages.length + newImages.length === 0)
-      e.images = 'Agrega al menos una imagen';
-    return e;
-  };
+    return contents
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const newErrors = validateForm();
-    if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return; }
 
-    setIsSubmitting(true);
-    try {
-      // 1. Actualizar datos del producto
-      await updateProduct(id, {
-        product_name:        formData.name,
-        product_sku:         formData.sku,
-        product_description: formData.description,
-        product_category:    formData.category,
-        product_base_cost:   parseFloat(formData.price),
-        product_discount:    parseFloat(formData.discount) || 0,
-        suggested_price:     formData.suggested_price ? parseFloat(formData.suggested_price) : null,
-        stock_available:     formData.stock !== '' ? parseInt(formData.stock) : undefined,
-      });
+def reset_upload_file(contents: bytes, original: UploadFile) -> UploadFile:
+    original.file = io.BytesIO(contents)
+    return original
 
-      // 2. Eliminar imágenes marcadas para borrar
-      await Promise.all(deletedImageIds.map(imgId => deleteImage(imgId)));
 
-      // 3. Subir nuevas imágenes
-      const isPrimaryTaken = existingImages.some(img => img.is_primary);
-      await Promise.all(
-        newImages.map((img, index) =>
-          uploadProductImage(id, img.file, !isPrimaryTaken && index === 0, existingImages.length + index)
-        )
-      );
+def _is_legacy_url(value: str) -> bool:
+    """Las imágenes subidas antes del cambio tienen URL pública de GCS."""
+    return value.startswith("https://storage.googleapis.com/")
 
-      navigate('/provider-catalog');
-    } catch (err) {
-      setErrors({ submit: err.message || 'Error al guardar los cambios. Intentá de nuevo.' });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
 
-  const handleCancel = () => {
-    if (window.confirm('¿Descartás los cambios?')) navigate('/provider-catalog');
-  };
+def _sign_image(image, getter_fn) -> dict:
+    """Retorna el objeto imagen con image_url reemplazada por URL firmada."""
+    d = image.__dict__.copy()
+    try:
+        d["image_url"] = getter_fn(image.image_url)
+    except Exception:
+        pass  # Si falla la firma, devolver el valor original
+    return d
 
-  if (loading) return (
-    <div className="add-product-page" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
-      <p style={{ color: '#9ca3af' }}>Cargando producto...</p>
-    </div>
-  );
 
-  const totalImages = existingImages.length + newImages.length;
+# ─── Producto ─────────────────────────────────────────────────────────────────
 
-  return (
-    <div className="add-product-page">
-      <div className="add-product-container">
+@router.post("/product/{product_id}", response_model=ImageOut, status_code=201)
+async def upload_product_image_endpoint(
+    product_id: int,
+    file: UploadFile = File(...),
+    is_primary: bool = False,
+    position: int = 0,
+    db: Session = Depends(get_db),
+    user = Depends(get_current_user)
+):
+    contents  = await validate_image_file(file)
+    file      = reset_upload_file(contents, file)
+    blob_name = upload_product_image(file, product_id)
+    print(f"[upload] blob_name={blob_name} product_id={product_id} is_primary={is_primary}")
+    return crud_image.create_image(db, image=ImageCreate(
+        image_url=blob_name,
+        is_primary=is_primary,
+        position=position,
+        product_id=product_id,
+        created_at=datetime.utcnow()
+    ))
 
-        <div className="add-product-header">
-          <div className="header-left">
-            <Package size={32} />
-            <div>
-              <h1>Editar Producto</h1>
-              <p>Modificá la información de tu producto</p>
-            </div>
-          </div>
-          <button className="btn-close-form" onClick={handleCancel} type="button">
-            <X size={20} />
-          </button>
-        </div>
 
-        <form onSubmit={handleSubmit} className="product-form">
+@router.get("/product/{product_id}", response_model=List[ImageOut])
+def get_product_images(product_id: int, db: Session = Depends(get_db)):
+    from fastapi.responses import JSONResponse
+    images = crud_image.get_images_by_product(db, product_id)
+    result = []
+    for img in images:
+        try:
+            signed = get_product_image_url(img.image_url)
+        except Exception:
+            signed = img.image_url
+        img_dict = {c.key: getattr(img, c.key) for c in img.__table__.columns}
+        img_dict["image_url"] = signed
+        result.append(img_dict)
+    # Cache por 1 hora — las imágenes de productos no cambian frecuentemente
+    return JSONResponse(content=result, headers={"Cache-Control": "public, max-age=3600"})
 
-          {/* Imágenes */}
-          <div className="form-section">
-            <h2 className="section-title"><Upload size={20} />Imágenes del Producto</h2>
-            <div className="image-upload-area">
 
-              {/* Imágenes existentes */}
-              {existingImages.map((img, index) => (
-                <div key={img.image_id} className="image-preview">
-                  <img src={img.image_url} alt={`Imagen ${index + 1}`} />
-                  <button type="button" className="btn-remove-image" onClick={() => removeExistingImage(img.image_id)}>
-                    <X size={16} />
-                  </button>
-                  {img.is_primary && <span className="main-badge">Principal</span>}
-                </div>
-              ))}
+@router.patch("/product/{product_id}/primary/{image_id}", response_model=ImageOut)
+def set_primary(
+    product_id: int,
+    image_id: int,
+    db: Session = Depends(get_db),
+    user = Depends(get_current_user)
+):
+    image = crud_image.set_primary_image(db, product_id, image_id)
+    if not image:
+        raise HTTPException(status_code=404, detail="Imagen no encontrada")
+    return image
 
-              {/* Nuevas imágenes */}
-              {newImages.map((img, index) => (
-                <div key={`new-${index}`} className="image-preview">
-                  <img src={img.preview} alt={`Nueva ${index + 1}`} />
-                  <button type="button" className="btn-remove-image" onClick={() => removeNewImage(index)}>
-                    <X size={16} />
-                  </button>
-                  <span className="main-badge" style={{ background: '#16a34a' }}>Nueva</span>
-                </div>
-              ))}
 
-              {/* Botón agregar */}
-              {totalImages < 5 && (
-                <label className="upload-box">
-                  <input type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={handleNewImages} style={{ display: 'none' }} />
-                  <Upload size={32} />
-                  <span>Agregar imágenes</span>
-                  <span className="upload-hint">{5 - totalImages} disponibles (JPG, PNG, WEBP)</span>
-                </label>
-              )}
-            </div>
-            {errors.images && <span className="error-text">{errors.images}</span>}
-          </div>
+# ─── Perfil ───────────────────────────────────────────────────────────────────
 
-          {/* Información básica */}
-          <div className="form-section">
-            <h2 className="section-title"><FileText size={20} />Información Básica</h2>
-            <div className="form-grid">
+@router.post("/profile", response_model=ImageOut, status_code=201)
+async def upload_profile_image_endpoint(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    user = Depends(get_current_user)
+):
+    contents = await validate_image_file(file)
+    file     = reset_upload_file(contents, file)
 
-              <div className="form-group full-width">
-                <label htmlFor="name">Nombre del Producto *</label>
-                <input type="text" id="name" name="name" value={formData.name} onChange={handleInputChange}
-                  placeholder="Ej: Smart Watch Serie 8" className={errors.name ? 'error' : ''} />
-                {errors.name && <span className="error-text">{errors.name}</span>}
-              </div>
+    existing = crud_image.get_image_by_user(db, user.user_id)
+    if existing:
+        delete_profile_image(existing.image_url)
+        crud_image.delete_image(db, existing.image_id)
 
-              <div className="form-group">
-                <label htmlFor="sku">SKU *</label>
-                <div className="input-with-icon">
-                  <Tag size={18} />
-                  <input type="text" id="sku" name="sku" value={formData.sku} onChange={handleInputChange}
-                    placeholder="SW-001" className={errors.sku ? 'error' : ''} />
-                </div>
-                {errors.sku && <span className="error-text">{errors.sku}</span>}
-              </div>
+    blob_name = upload_profile_image(file, user.user_id)
+    return crud_image.create_image(db, image=ImageCreate(
+        image_url=blob_name,
+        is_primary=True,
+        user_id=user.user_id,
+        created_at=datetime.utcnow()
+    ))
 
-              <div className="form-group">
-                <label htmlFor="category">Categoría *</label>
-                <div className="input-with-icon">
-                  <Grid size={18} />
-                  <select id="category" name="category" value={formData.category} onChange={handleInputChange}
-                    className={errors.category ? 'error' : ''}>
-                    {categories.map(cat => <option key={cat.value} value={cat.value}>{cat.label}</option>)}
-                  </select>
-                </div>
-                {errors.category && <span className="error-text">{errors.category}</span>}
-              </div>
 
-              <div className="form-group full-width">
-                <label htmlFor="description">Descripción *</label>
-                <textarea id="description" name="description" value={formData.description} onChange={handleInputChange}
-                  placeholder="Describí tu producto..." rows="4" className={errors.description ? 'error' : ''} />
-                <span className="char-count">{formData.description.length} caracteres</span>
-                {errors.description && <span className="error-text">{errors.description}</span>}
-              </div>
-            </div>
-          </div>
+@router.get("/profile/{user_id}", response_model=ImageOut)
+def get_profile_image(user_id: int, db: Session = Depends(get_db)):
+    image = crud_image.get_image_by_user(db, user_id)
+    if not image:
+        raise HTTPException(status_code=404, detail="Imagen de perfil no encontrada")
+    try:
+        signed = get_profile_image_url(image.image_url)
+    except Exception:
+        signed = image.image_url
+    img_dict = {c.key: getattr(image, c.key) for c in image.__table__.columns}
+    img_dict["image_url"] = signed
+    return img_dict
 
-          {/* Precio y stock */}
-          <div className="form-section">
-            <h2 className="section-title"><DollarSign size={20} />Precio y Stock</h2>
-            <div className="form-grid">
 
-              <div className="form-group">
-                <label htmlFor="price">Precio Base (Gs.) *</label>
-                <div className="input-with-icon">
-                  <span className="currency-symbol">Gs.</span>
-                  <input type="number" id="price" name="price" value={formData.price} onChange={handleInputChange}
-                    placeholder="0" min="0" step="100" className={errors.price ? 'error' : ''} />
-                </div>
-                {errors.price && <span className="error-text">{errors.price}</span>}
-              </div>
+# ─── Eliminar ─────────────────────────────────────────────────────────────────
 
-              <div className="form-group">
-                <label htmlFor="discount">Descuento (%)</label>
-                <div className="input-with-icon">
-                  <span className="currency-symbol">%</span>
-                  <input type="number" id="discount" name="discount" value={formData.discount} onChange={handleInputChange}
-                    placeholder="0" min="0" max="100" step="1" />
-                </div>
-              </div>
+@router.delete("/{image_id}", response_model=ImageOut)
+def delete_image(
+    image_id: int,
+    db: Session = Depends(get_db),
+    user = Depends(get_current_user)
+):
+    db_image = crud_image.get_image(db, image_id)
+    if not db_image:
+        raise HTTPException(status_code=404, detail="Imagen no encontrada")
 
-              <div className="form-group">
-                <label htmlFor="suggested_price">Precio Sugerido de Venta (Gs.)</label>
-                <div className="input-with-icon">
-                  <span className="currency-symbol">Gs.</span>
-                  <input type="number" id="suggested_price" name="suggested_price" value={formData.suggested_price}
-                    onChange={handleInputChange} placeholder="0" min="0" step="100" />
-                </div>
-                <span className="char-count" style={{ marginTop: '4px' }}>Visible para los vendedores</span>
-              </div>
+    if db_image.product_id:
+        delete_product_image(db_image.image_url)
+    elif db_image.user_id:
+        delete_profile_image(db_image.image_url)
 
-              <div className="form-group">
-                <label htmlFor="stock">Stock disponible</label>
-                <div className="input-with-icon">
-                  <Package size={18} />
-                  <input type="number" id="stock" name="stock" value={formData.stock}
-                    onChange={handleInputChange} placeholder="0" min="0" step="1" />
-                </div>
-                <span className="char-count" style={{ marginTop: '4px' }}>Unidades disponibles para vender</span>
-              </div>
-
-            </div>
-          </div>
-
-          {errors.submit && <div className="error-box" style={{ marginBottom: '16px' }}>{errors.submit}</div>}
-
-          <div className="form-actions">
-            <button type="button" className="btn-secondary" onClick={handleCancel} disabled={isSubmitting}>
-              Cancelar
-            </button>
-            <button type="submit" className="btn-primary" disabled={isSubmitting}>
-              {isSubmitting ? 'Guardando...' : 'Guardar Cambios'}
-            </button>
-          </div>
-
-        </form>
-      </div>
-    </div>
-  );
-};
-
-export default EditProductForm;
+    return crud_image.delete_image(db, image_id)
