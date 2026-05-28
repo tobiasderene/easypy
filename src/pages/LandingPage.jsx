@@ -33,12 +33,48 @@ const benefits = [
 ];
 
 const products = [
-  { name: "Apple Watch Series 9", price: "Gs. 87.000", suggested: "Gs. 219.000", category: "Electrónica", img: "https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=400&h=300&fit=crop" },
-  { name: "Maleta Cabina 55cm", price: "Gs. 145.000", suggested: "Gs. 350.000", category: "Equipaje", img: "https://images.unsplash.com/photo-1581553680321-4fffae59fccd?w=400&h=300&fit=crop" },
-  { name: "Set Skincare Vitamina C", price: "Gs. 55.000", suggested: "Gs. 120.000", category: "Belleza", img: "https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=400&h=300&fit=crop" },
-  { name: "Auriculares Sony WH-1000XM5", price: "Gs. 65.000", suggested: "Gs. 160.000", category: "Electrónica", img: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=300&fit=crop" },
-  { name: "Silla Ergonómica Herman Miller", price: "Gs. 380.000", suggested: "Gs. 750.000", category: "Hogar", img: "https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=400&h=300&fit=crop" },
-  { name: "Licuadora Portátil NutriBullet", price: "Gs. 38.000", suggested: "Gs. 85.000", category: "Hogar", img: "https://images.unsplash.com/photo-1570222094114-d054a817e56b?w=400&h=300&fit=crop" },
+  {
+    name: "Apple Watch Series 9",
+    price: "Gs. 87.000",
+    suggested: "Gs. 219.000",
+    category: "Electrónica",
+    img: "https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&h=300&fit=crop"
+  },
+  {
+    name: "Maleta Cabina 55cm",
+    price: "Gs. 145.000",
+    suggested: "Gs. 350.000",
+    category: "Equipaje",
+    img: "https://images.unsplash.com/photo-1565026057447-bc90a3dceb87?w=400&h=300&fit=crop"
+  },
+  {
+    name: "Set Skincare Vitamina C",
+    price: "Gs. 55.000",
+    suggested: "Gs. 120.000",
+    category: "Belleza",
+    img: "https://images.unsplash.com/photo-1556228578-8c89e6adf883?w=400&h=300&fit=crop"
+  },
+  {
+    name: "Auriculares Sony WH-1000XM5",
+    price: "Gs. 65.000",
+    suggested: "Gs. 160.000",
+    category: "Electrónica",
+    img: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=300&fit=crop"
+  },
+  {
+    name: "Silla Ergonómica",
+    price: "Gs. 380.000",
+    suggested: "Gs. 750.000",
+    category: "Hogar",
+    img: "https://images.unsplash.com/photo-1582582494700-5f8b1b4c0b8b?w=400&h=300&fit=crop"
+  },
+  {
+    name: "Licuadora Portátil",
+    price: "Gs. 38.000",
+    suggested: "Gs. 85.000",
+    category: "Hogar",
+    img: "https://images.unsplash.com/photo-1570222094114-d054a817e56b?w=400&h=300&fit=crop"
+  }
 ];
 
 const stats = [
