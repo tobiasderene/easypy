@@ -127,7 +127,7 @@ export default function LandingPage() {
           </div>
 
           <nav className="desktop-nav" style={{ display: "flex", alignItems: "center", gap: 4 }}>
-            {[["Beneficios","benefits"],["Productos","products"],["Nosotros","about"]].map(([label, id]) => (
+            {[["Beneficios","benefits"],["Nosotros","about"]].map(([label, id]) => (
               <button key={id} className="nav-link" onClick={() => scrollTo(id)}>{label}</button>
             ))}
           </nav>
