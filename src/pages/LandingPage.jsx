@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
-import "../styles/landingpage.css";
+import "./LandingPage.css";
+
+const BRAND = "#056EB7";
+const BRAND_DARK = "#045A94";
 
 const useVisible = (threshold = 0.15) => {
   const ref = useRef(null);
@@ -17,24 +20,17 @@ const useVisible = (threshold = 0.15) => {
   return [ref, visible];
 };
 
-const BRAND = "#056EB7";
-
 const BenefitIcons = [
-  "📦",
-  "🚚",
-  "📊",
-  "📈",
-  "🔐",
-  "⚡"
+  "📦", "🚚", "📊", "📈", "🔐", "⚡"
 ];
 
 const benefits = [
   { title: "Sin Stock Propio", desc: "Vendé sin inventario. El proveedor se encarga." },
-  { title: "Logística Integrada", desc: "Envíos automáticos con múltiples transportadoras." },
-  { title: "Ganancias Claras", desc: "Visualizá tu margen en tiempo real." },
-  { title: "Analytics", desc: "Datos de ventas y rendimiento centralizados." },
-  { title: "Pagos Seguros", desc: "Wallet con control total de tus ingresos." },
-  { title: "Alta Rápida", desc: "Empezá a vender en minutos." },
+  { title: "Logística Integrada", desc: "Envíos automáticos con transportadoras." },
+  { title: "Ganancias Claras", desc: "Margen visible en tiempo real." },
+  { title: "Analytics en Tiempo Real", desc: "Seguimiento de ventas y métricas." },
+  { title: "Pagos Seguros", desc: "Wallet claro y controlado." },
+  { title: "Alta en Minutos", desc: "Empezá rápido sin burocracia." },
 ];
 
 const products = [
@@ -62,9 +58,17 @@ const products = [
 ];
 
 export default function LandingPage() {
+  const [scrolled, setScrolled] = useState(false);
+
   const [heroRef, heroVisible] = useVisible();
   const [benefitsRef, benefitsVisible] = useVisible();
   const [productsRef, productsVisible] = useVisible();
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   const scrollTo = (id) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
@@ -74,8 +78,9 @@ export default function LandingPage() {
     <div className="lp">
 
       {/* HEADER */}
-      <header className="lp-header">
-        <div className="lp-container header-inner">
+      <header className={`header ${scrolled ? "scrolled" : ""}`}>
+        <div className="container header-inner">
+
           <div className="logo">EasyPy</div>
 
           <nav className="nav">
@@ -83,38 +88,45 @@ export default function LandingPage() {
             <button onClick={() => scrollTo("products")}>Productos</button>
           </nav>
 
-          <button className="btn primary" onClick={() => window.location.href = "/login"}>
+          <button
+            className="btn primary"
+            onClick={() => window.location.href = "/login"}
+          >
             Conectate
           </button>
+
         </div>
       </header>
 
       {/* HERO */}
       <section id="hero" ref={heroRef} className="hero section">
         <div className={`fade ${heroVisible ? "show" : ""}`}>
+
           <h1>
-            Vendé sin stock<br />
+            Vendé sin stock <br />
             <span>Ganá en serio</span>
           </h1>
 
           <p>
-            Plataforma de dropshipping con proveedores locales y logística integrada.
+            Plataforma de dropshipping con logística integrada y proveedores locales.
           </p>
 
           <div className="cta">
             <button className="btn primary" onClick={() => window.location.href = "/signup"}>
               Empezar gratis
             </button>
+
             <button className="btn outline" onClick={() => scrollTo("products")}>
               Ver productos
             </button>
           </div>
+
         </div>
       </section>
 
       {/* BENEFITS */}
       <section id="benefits" ref={benefitsRef} className="section white">
-        <div className="lp-container">
+        <div className="container">
 
           <h2 className={`fade ${benefitsVisible ? "show" : ""}`}>
             Todo lo que necesitás
@@ -135,7 +147,7 @@ export default function LandingPage() {
 
       {/* PRODUCTS */}
       <section id="products" ref={productsRef} className="section gray">
-        <div className="lp-container">
+        <div className="container">
 
           <h2 className={`fade ${productsVisible ? "show" : ""}`}>
             Productos listos para vender
@@ -150,14 +162,17 @@ export default function LandingPage() {
                   loading="lazy"
                   onError={(e) => e.target.src = "/placeholder.jpg"}
                 />
+
                 <div className="product-body">
                   <span>{p.category}</span>
                   <h3>{p.name}</h3>
+
                   <div className="prices">
                     <div>{p.price}</div>
                     <small>{p.suggested}</small>
                   </div>
                 </div>
+
               </div>
             ))}
           </div>
@@ -168,10 +183,12 @@ export default function LandingPage() {
       {/* CTA FINAL */}
       <section className="cta-section">
         <h2>Empezá hoy mismo</h2>
+
         <div className="cta">
           <button className="btn white" onClick={() => window.location.href = "/signup"}>
             Crear cuenta
           </button>
+
           <button className="btn outline-white" onClick={() => window.location.href = "/login"}>
             Login
           </button>
