@@ -146,11 +146,6 @@ export default function LandingPage() {
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "80px 24px", width: "100%" }}>
           <div className="hero-grid" style={{ display: "flex", alignItems: "center", gap: 64 }}>
             <div style={{ flex: 1 }}>
-              <div className={`fade-up ${heroVisible ? "visible" : ""}`}>
-                <span style={{ display: "inline-block", background: "#dbeafe", color: BRAND, fontSize: 12, fontWeight: 700, padding: "5px 14px", borderRadius: 100, marginBottom: 20, letterSpacing: 0.5, textTransform: "uppercase" }}>
-                  Dropshipping en Paraguay
-                </span>
-              </div>
               <h1 className={`fade-up d1 ${heroVisible ? "visible" : ""}`} style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: "clamp(36px, 5vw, 64px)", fontWeight: 800, lineHeight: 1.1, marginBottom: 24, color: "#0f172a" }}>
                 Vendé sin stock.<br />
                 <span style={{ color: BRAND }}>Ganá en serio.</span>
@@ -206,9 +201,6 @@ export default function LandingPage() {
       <section id="benefits" ref={benefitsRef} style={{ background: "white", padding: "96px 24px" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto" }}>
           <div className={`fade-up ${benefitsVisible ? "visible" : ""}`} style={{ textAlign: "center", marginBottom: 64 }}>
-            <span style={{ display: "inline-block", background: "#dbeafe", color: BRAND, fontSize: 12, fontWeight: 700, padding: "5px 14px", borderRadius: 100, marginBottom: 16, textTransform: "uppercase", letterSpacing: 0.5 }}>
-              Por qué EasyPy
-            </span>
             <h2 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: "clamp(28px, 4vw, 44px)", fontWeight: 800, color: "#0f172a", marginBottom: 16 }}>
               Todo lo que necesitás<br />para empezar a vender
             </h2>
@@ -235,9 +227,6 @@ export default function LandingPage() {
         <div style={{ maxWidth: 1200, margin: "0 auto" }}>
           <div className="about-grid" style={{ display: "flex", gap: 80, alignItems: "center" }}>
             <div className={`fade-up ${aboutVisible ? "visible" : ""}`} style={{ flex: 1 }}>
-              <span style={{ display: "inline-block", background: "#dbeafe", color: BRAND, fontSize: 12, fontWeight: 700, padding: "5px 14px", borderRadius: 100, marginBottom: 20, textTransform: "uppercase", letterSpacing: 0.5 }}>
-                Quiénes somos
-              </span>
               <h2 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: "clamp(28px, 4vw, 44px)", fontWeight: 800, color: "#0f172a", marginBottom: 20, lineHeight: 1.15 }}>
                 Nació en Paraguay<br />para Paraguay
               </h2>
