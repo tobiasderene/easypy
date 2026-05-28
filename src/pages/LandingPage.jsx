@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import "./LandingPage.css";
+import "./landingpage.css";
 
 const useVisible = (threshold = 0.15) => {
   const ref = useRef(null);
