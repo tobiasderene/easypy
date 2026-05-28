@@ -201,7 +201,7 @@ function App() {
           <Route path="/transacciones" element={<SellerRoute><Transactions /></SellerRoute>} />
           <Route path="/wallet"        element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
           <Route path="/product/:id"   element={<SellerRoute><ProductPage /></SellerRoute>} />
-          <Route path="/analytics"     element={<SellerRoute><Analytics /></SellerRoute>} />
+          <Route path="/analytics"     element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
 
           {/* Configuración — disponible para seller y logistics */}
           <Route path="/configuracion" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
