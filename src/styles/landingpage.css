@@ -1,31 +1,36 @@
-/* BASE */
 .lp {
   font-family: "Inter", sans-serif;
   background: #f8fafc;
   color: #0f172a;
 }
 
-.lp-container {
+/* CONTAINER */
+.container {
   max-width: 1100px;
   margin: 0 auto;
   padding: 0 20px;
 }
 
 /* HEADER */
-.lp-header {
+.header {
   position: fixed;
   top: 0;
   width: 100%;
+  z-index: 100;
+  background: transparent;
+  transition: 0.3s;
+}
+
+.header.scrolled {
   background: white;
   border-bottom: 1px solid #e5e7eb;
-  z-index: 100;
 }
 
 .header-inner {
   height: 64px;
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: center;
 }
 
 .logo {
@@ -46,13 +51,8 @@
   padding: 120px 0;
 }
 
-.white {
-  background: white;
-}
-
-.gray {
-  background: #f1f5f9;
-}
+.white { background: white; }
+.gray { background: #f1f5f9; }
 
 /* HERO */
 .hero {
@@ -60,7 +60,7 @@
   display: flex;
   align-items: center;
   text-align: center;
-  padding-top: 100px;
+  padding-top: 80px;
 }
 
 .hero h1 {
@@ -86,7 +86,7 @@
   gap: 20px;
 }
 
-/* CARDS */
+/* CARD */
 .card {
   background: white;
   padding: 24px;
@@ -94,12 +94,8 @@
   border: 1px solid #e5e7eb;
 }
 
-.card:hover {
-  border-color: #056EB7;
-}
-
 .icon {
-  font-size: 26px;
+  font-size: 24px;
   margin-bottom: 10px;
 }
 
@@ -121,16 +117,10 @@
   padding: 16px;
 }
 
-.product-body span {
-  font-size: 12px;
-  color: #056EB7;
-  font-weight: 700;
-}
-
 .prices {
-  margin-top: 10px;
   display: flex;
   justify-content: space-between;
+  margin-top: 10px;
 }
 
 /* CTA */
@@ -152,8 +142,8 @@
 .btn {
   padding: 12px 20px;
   border-radius: 10px;
-  cursor: pointer;
   font-weight: 700;
+  cursor: pointer;
   border: none;
 }
 
@@ -179,15 +169,7 @@
   color: white;
 }
 
-/* FOOTER */
-.footer {
-  padding: 30px;
-  text-align: center;
-  background: #0f172a;
-  color: #94a3b8;
-}
-
-/* ANIMATIONS */
+/* FADE */
 .fade {
   opacity: 0;
   transform: translateY(20px);
@@ -197,6 +179,14 @@
 .fade.show {
   opacity: 1;
   transform: translateY(0);
+}
+
+/* FOOTER */
+.footer {
+  background: #0f172a;
+  color: #94a3b8;
+  text-align: center;
+  padding: 30px;
 }
 
 /* RESPONSIVE */
