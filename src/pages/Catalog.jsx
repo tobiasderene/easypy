@@ -134,11 +134,7 @@ const Catalog = () => {
   };
 
   const StockBadge = ({ stock, status }) => {
-    if (status === 'out_of_stock' || stock === 0) return (
-      <span style={{ fontSize: '10px', fontWeight: '700', color: '#dc2626', background: '#fee2e2', padding: '2px 8px', borderRadius: '100px' }}>
-        Sin stock
-      </span>
-    );
+    if (status === 'out_of_stock' || stock === 0) return null;
     if (stock !== null && stock <= 5) return (
       <span style={{ fontSize: '10px', fontWeight: '700', color: '#d97706', background: '#fef3c7', padding: '2px 8px', borderRadius: '100px' }}>
         Últimas {stock} unidades
@@ -160,6 +156,7 @@ const Catalog = () => {
         className="product-card"
         onClick={() => navigate(`/product/${product.id}`)}
         style={{ cursor: 'pointer', opacity: outOfStock ? 0.75 : 1 }}
+        data-out-of-stock={outOfStock ? 'true' : undefined}
       >
         <div className="product-image-container">
           {product.image ? (
@@ -174,11 +171,7 @@ const Catalog = () => {
           {product.isPrivate && (
             <span className="product-badge" style={{ background: '#7c3aed' }}>⭐ Exclusivo</span>
           )}
-          {outOfStock && (
-            <span className="product-out-of-stock-overlay">
-              <span className="product-out-of-stock-label">SIN STOCK</span>
-            </span>
-          )}
+
         </div>
 
         <div className="product-info">
