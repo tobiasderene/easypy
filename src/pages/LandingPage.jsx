@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import "./LandingPage.css";
+import "../styles/landingpage.css";
 
 const BRAND = "#056EB7";
 const BRAND_DARK = "#045A94";
