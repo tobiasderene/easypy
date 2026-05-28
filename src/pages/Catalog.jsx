@@ -25,10 +25,14 @@ const Catalog = () => {
           currentSkip === 0 ? getProviders() : Promise.resolve(null)
         ]);
 
+        // Construir map local — no depender del state para evitar closure stale
+        let localMap = {};
         if (providers) {
-          const map = {};
-          (providers || []).forEach(p => { map[p.user_id] = { name: p.user_nickname, city: p.city || '' }; });
-          setProviderMap(map);
+          (providers || []).forEach(p => { localMap[p.user_id] = { name: p.user_nickname, city: p.city || '' }; });
+          setProviderMap(localMap);
+        } else {
+          // En páginas siguientes usar el state existente
+          localMap = providerMap;
         }
 
         if (data && data.length > 0) {
@@ -47,8 +51,8 @@ const Catalog = () => {
                 id:             p.product_id,
                 name:           p.product_name,
                 provider:       p.user_id,
-                providerName:   providerMap[p.user_id]?.name || `Proveedor #${p.user_id}`,
-                providerCity:   providerMap[p.user_id]?.city || '',
+                providerName:   localMap[p.user_id]?.name || `Proveedor #${p.user_id}`,
+                providerCity:   localMap[p.user_id]?.city || '',
                 price:          parseFloat(p.product_base_cost),
                 suggestedPrice: p.suggested_price ? parseFloat(p.suggested_price) : null,
                 stock:          p.stock_available ?? null,
@@ -70,7 +74,7 @@ const Catalog = () => {
         setLoading(false);
         setLoadingMore(false);
       }
-  }, []);
+  }, [providerMap]);
 
   useEffect(() => { fetchProducts(0, false); }, []);
 
@@ -93,7 +97,7 @@ const Catalog = () => {
   const categories = ['all', 'exclusive', ...new Set(products.map(p => p.category))];
   const filters    = categories.map(cat => ({
     id:    cat,
-    label: cat === 'all' ? 'Todos' : cat === 'exclusive' ? 'Exclusivos' : cat.charAt(0).toUpperCase() + cat.slice(1),
+    label: cat === 'all' ? 'Todos' : cat === 'exclusive' ? '⭐ Exclusivos' : cat.charAt(0).toUpperCase() + cat.slice(1),
   }));
 
   const toggleFilter = (catId) => {
@@ -168,7 +172,7 @@ const Catalog = () => {
             </div>
           )}
           {product.isPrivate && (
-            <span className="product-badge" style={{ background: '#7c3aed' }}>Exclusivo</span>
+            <span className="product-badge" style={{ background: '#7c3aed' }}>⭐ Exclusivo</span>
           )}
           {outOfStock && (
             <span className="product-out-of-stock-overlay">
