@@ -186,12 +186,12 @@ export default function LandingPage() {
                     <span style={{ fontSize: 10, fontWeight: 700, color: BRAND, textTransform: "uppercase", letterSpacing: 0.5 }}>Electrónica</span>
                     <h3 style={{ fontSize: 18, fontWeight: 700, marginTop: 6, marginBottom: 8 }}>Smart Watch Pro</h3>
                     <div style={{ fontSize: 13, color: "#64748b", marginBottom: 14 }}>Precio de compra</div>
-                    <div style={{ fontSize: 26, fontWeight: 800, color: BRAND, marginBottom: 4 }}>Gs. 87.000</div>
-                    <div style={{ fontSize: 13, color: "#16a34a", fontWeight: 600 }}>Venta sugerida: Gs. 219.000</div>
+                    <div style={{ fontSize: 26, fontWeight: 800, color: BRAND, marginBottom: 4 }}>Gs. 800.000</div>
+                    <div style={{ fontSize: 13, color: "#16a34a", fontWeight: 600 }}>Venta sugerida: Gs. 1.200.000</div>
                   </div>
                 </div>
                 <div style={{ position: "absolute", top: -16, right: -24, background: "#16a34a", color: "white", borderRadius: 12, padding: "10px 16px", fontSize: 13, fontWeight: 700, boxShadow: "0 4px 16px rgba(22,163,74,0.3)" }}>
-                  +Gs. 132k ganancia
+                  +Gs. 400k ganancia
                 </div>
                 <div style={{ position: "absolute", bottom: 40, left: -28, background: "white", borderRadius: 12, padding: "10px 16px", fontSize: 12, fontWeight: 600, boxShadow: "0 4px 20px rgba(0,0,0,0.1)", border: "1px solid #e5e7eb", color: "#374151" }}>
                   Envío en 24hs
