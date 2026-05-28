@@ -26,8 +26,10 @@ import OrderForm from './components/OrderForm';
 import LogisticsPanel from './pages/LogisticsPanel';
 import ProviderProfile from './pages/ProviderProfile';
 import EditProductForm from './pages/EditProductForm';
+import LandingPage from './pages/LandingPage';
 import { getMe, exchangeSession, getWalletByUser } from './services/api';
 import LoadingScreen from './components/LoadingScreen';
+
 import './App.css';
 
 // ─── Context de usuario ───────────────────────────────
