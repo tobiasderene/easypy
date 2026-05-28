@@ -42,9 +42,16 @@ const Catalog = () => {
             activeData.map(async (p) => {
               let imageUrl = null;
               try {
-                const images  = await getProductImages(p.product_id);
-                const primary = images.find(img => img.is_primary) || images[0];
-                imageUrl      = primary?.image_url || null;
+                // Cache en memoria para evitar requests repetidos dentro de la misma sesión
+                if (!window._imgCache) window._imgCache = {};
+                if (window._imgCache[p.product_id]) {
+                  imageUrl = window._imgCache[p.product_id];
+                } else {
+                  const images  = await getProductImages(p.product_id);
+                  const primary = images.find(img => img.is_primary) || images[0];
+                  imageUrl      = primary?.image_url || null;
+                  if (imageUrl) window._imgCache[p.product_id] = imageUrl;
+                }
               } catch {}
 
               return {
@@ -97,7 +104,7 @@ const Catalog = () => {
   const categories = ['all', 'exclusive', ...new Set(products.map(p => p.category))];
   const filters    = categories.map(cat => ({
     id:    cat,
-    label: cat === 'all' ? 'Todos' : cat === 'exclusive' ? 'Exclusivos' : cat.charAt(0).toUpperCase() + cat.slice(1),
+    label: cat === 'all' ? 'Todos' : cat === 'exclusive' ? '⭐ Exclusivos' : cat.charAt(0).toUpperCase() + cat.slice(1),
   }));
 
   const toggleFilter = (catId) => {
@@ -169,7 +176,7 @@ const Catalog = () => {
             </div>
           )}
           {product.isPrivate && (
-            <span className="product-badge" style={{ background: '#7c3aed' }}>Exclusivo</span>
+            <span className="product-badge" style={{ background: '#7c3aed' }}>⭐ Exclusivo</span>
           )}
 
         </div>
@@ -205,7 +212,7 @@ const Catalog = () => {
               disabled={outOfStock}
 
             >
-              <span>{outOfStock ? 'Sin stock' : 'Comprar'}</span>
+              <span>{outOfStock ? 'Sin stock' : '→ Comprar'}</span>
             </button>
           </div>
         </div>
