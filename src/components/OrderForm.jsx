@@ -1043,7 +1043,7 @@ const OrderForm = () => {
               </div>
               {totalRecaudo > 0 && earnings < 0 && (
                 <div style={{ background: '#fef2f2', border: '1.5px solid #fecaca', borderRadius: '8px', padding: '8px 12px', fontSize: '12px', color: '#dc2626', fontWeight: '600' }}>
-                  ⚠️ Subí el precio de venta para cubrir los costos
+                  El precio de venta debe cubrir todos los costos
                 </div>
               )}
             </div>
