@@ -1,0 +1,215 @@
+/* BASE */
+.lp {
+  font-family: "Inter", sans-serif;
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.lp-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* HEADER */
+.lp-header {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+  z-index: 100;
+}
+
+.header-inner {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo {
+  font-weight: 800;
+  color: #056EB7;
+}
+
+.nav button {
+  background: none;
+  border: none;
+  margin: 0 10px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+/* SECTIONS */
+.section {
+  padding: 120px 0;
+}
+
+.white {
+  background: white;
+}
+
+.gray {
+  background: #f1f5f9;
+}
+
+/* HERO */
+.hero {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  text-align: center;
+  padding-top: 100px;
+}
+
+.hero h1 {
+  font-size: 48px;
+  font-weight: 800;
+}
+
+.hero span {
+  color: #056EB7;
+}
+
+.hero p {
+  margin-top: 20px;
+  color: #64748b;
+  font-size: 18px;
+}
+
+/* GRID */
+.grid-3 {
+  margin-top: 50px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+/* CARDS */
+.card {
+  background: white;
+  padding: 24px;
+  border-radius: 16px;
+  border: 1px solid #e5e7eb;
+}
+
+.card:hover {
+  border-color: #056EB7;
+}
+
+.icon {
+  font-size: 26px;
+  margin-bottom: 10px;
+}
+
+/* PRODUCTS */
+.product {
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+}
+
+.product img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+}
+
+.product-body {
+  padding: 16px;
+}
+
+.product-body span {
+  font-size: 12px;
+  color: #056EB7;
+  font-weight: 700;
+}
+
+.prices {
+  margin-top: 10px;
+  display: flex;
+  justify-content: space-between;
+}
+
+/* CTA */
+.cta {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.cta-section {
+  background: #056EB7;
+  color: white;
+  text-align: center;
+  padding: 100px 20px;
+}
+
+/* BUTTONS */
+.btn {
+  padding: 12px 20px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 700;
+  border: none;
+}
+
+.primary {
+  background: #056EB7;
+  color: white;
+}
+
+.outline {
+  border: 2px solid #056EB7;
+  background: transparent;
+  color: #056EB7;
+}
+
+.white {
+  background: white;
+  color: #056EB7;
+}
+
+.outline-white {
+  border: 2px solid white;
+  background: transparent;
+  color: white;
+}
+
+/* FOOTER */
+.footer {
+  padding: 30px;
+  text-align: center;
+  background: #0f172a;
+  color: #94a3b8;
+}
+
+/* ANIMATIONS */
+.fade {
+  opacity: 0;
+  transform: translateY(20px);
+  transition: 0.6s ease;
+}
+
+.fade.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .grid-3 {
+    grid-template-columns: 1fr;
+  }
+
+  .hero h1 {
+    font-size: 36px;
+  }
+
+  .cta {
+    flex-direction: column;
+  }
+}
