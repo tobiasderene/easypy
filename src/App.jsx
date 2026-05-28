@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useRef, createContext, useContext } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
+import React, { useState, useEffect, createContext, useContext } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+
 import Header from './components/Header';
 import Sidebar from './components/Sidebar';
 import ProviderSidebar from './components/ProviderSidebar';
 import LogisticsSidebar from './components/LogisticsSidebar';
 import AdminSidebar from './components/AdminSidebar';
-import CreateLogisticsUser from './pages/CreateLogisticsUser';
+
 import LoginMinimal from './pages/Login';
 import Signup from './pages/SignUp';
 import Catalog from './pages/Catalog';
@@ -17,166 +18,144 @@ import Wallet from './pages/Wallet';
 import ProviderOrders from './pages/ProviderOrders';
 import ProviderCatalog from './pages/ProviderCatalog';
 import AddProductForm from './pages/AddProductForm';
+import EditProductForm from './pages/EditProductForm';
+
 import AdminPage from './pages/AdminPage';
-import PendingApproval from './pages/PendingApproval';
-import Settings from './pages/Settings';
-import Analytics from './pages/Analytics';
-import AuthCallback from './pages/AuthCallback';
-import OrderForm from './components/OrderForm';
+import CreateLogisticsUser from './pages/CreateLogisticsUser';
+
 import LogisticsPanel from './pages/LogisticsPanel';
 import ProviderProfile from './pages/ProviderProfile';
-import EditProductForm from './pages/EditProductForm';
+
+import Settings from './pages/Settings';
+import Analytics from './pages/Analytics';
+
+import PendingApproval from './pages/PendingApproval';
+import AuthCallback from './pages/AuthCallback';
+import OrderForm from './components/OrderForm';
 import LandingPage from './pages/LandingPage';
-import { getMe, exchangeSession, getWalletByUser } from './services/api';
 import LoadingScreen from './components/LoadingScreen';
+
+import {
+  getMe,
+  exchangeSession,
+  getWalletByUser
+} from './services/api';
 
 import './App.css';
 
-// ─── Context de usuario ───────────────────────────────
+/* ───────────────────────────────
+   CONTEXTO USER
+────────────────────────────── */
 export const UserContext = createContext(null);
 export const useUser = () => useContext(UserContext);
 
-// ─── Layout ───────────────────────────────────────────
+/* ───────────────────────────────
+   LAYOUT
+────────────────────────────── */
 const Layout = ({ children }) => {
   const { user } = useUser();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [walletBalance, setWalletBalance] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    if (user?.user_id) {
-      getWalletByUser(user.user_id)
-        .then(w => setWalletBalance(w ? parseFloat(w.balance_available) : 0))
-        .catch(() => setWalletBalance(0));
-    }
+    if (!user?.user_id) return;
+
+    getWalletByUser(user.user_id)
+      .then(w => setWalletBalance(w ? parseFloat(w.balance_available) : 0))
+      .catch(() => setWalletBalance(0));
   }, [user]);
 
-  const renderSidebar = () => {
-    if (user?.user_role === 'provider')  return <ProviderSidebar  isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />;
-    if (user?.user_role === 'logistics') return <LogisticsSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />;
-    if (user?.user_role === 'admin')     return <AdminSidebar     isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />;
-    return <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />;
-  };
+  const SidebarComponent =
+    user?.user_role === 'provider'
+      ? ProviderSidebar
+      : user?.user_role === 'logistics'
+      ? LogisticsSidebar
+      : user?.user_role === 'admin'
+      ? AdminSidebar
+      : Sidebar;
 
   return (
     <>
       <Header
         userName={user?.user_nickname || 'Usuario'}
         userBalance={walletBalance}
-        userAvatar={null}
-        onMenuClick={() => setIsSidebarOpen(true)}
-        onSearch={(v) => console.log('Searching:', v)}
-        onUserClick={() => console.log('User profile clicked')}
+        onMenuClick={() => setSidebarOpen(true)}
       />
-      {renderSidebar()}
+
+      <SidebarComponent isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+
       <main>{children}</main>
     </>
   );
 };
 
-// ─── Ruta protegida (cualquier usuario autenticado) ───
-const ProtectedRoute = ({ children, withLayout = true }) => {
+/* ───────────────────────────────
+   GUARDS
+────────────────────────────── */
+
+const useAuth = () => {
   const { user, loading } = useUser();
-  if (loading) return <LoadingScreen />;
-  if (!user) return <Navigate to="/login" replace />;
-  if (user.user_status === 'pending') return <PendingApproval />;
-  return withLayout ? <Layout>{children}</Layout> : children;
+  return { user, loading };
 };
 
-// ─── Ruta solo seller/buyer — bloquea logistics y provider ───
-const SellerRoute = ({ children }) => {
-  const { user, loading } = useUser();
-  if (loading) return <LoadingScreen />;
-  if (!user) return <Navigate to="/login" replace />;
-  if (user.user_status === 'pending') return <PendingApproval />;
-  if (user.user_role === 'logistics') return <Navigate to="/logistics" replace />;
-  if (user.user_role === 'provider')  return <Navigate to="/provider-orders" replace />;
-  if (user.user_role === 'admin')     return <Navigate to="/admin" replace />;
-  return <Layout>{children}</Layout>;
-};
+const RequireAuth = ({ children }) => {
+  const { user, loading } = useAuth();
 
-// ─── Ruta solo provider ───────────────────────────────
-const ProviderRoute = ({ children }) => {
-  const { user, loading } = useUser();
   if (loading) return <LoadingScreen />;
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) return <Navigate to="/" replace />;
   if (user.user_status === 'pending') return <PendingApproval />;
-  if (user.user_role === 'logistics') return <Navigate to="/logistics" replace />;
-  if (user.user_role !== 'provider' && user.user_role !== 'admin') return <Navigate to="/" replace />;
-  return <Layout>{children}</Layout>;
-};
 
-// ─── Ruta solo admin ──────────────────────────────────
-const AdminRoute = ({ children }) => {
-  const { user, loading } = useUser();
-  if (loading) return <LoadingScreen />;
-  if (!user) return <Navigate to="/login" replace />;
-  if (user.user_status === 'pending') return <PendingApproval />;
-  if (user.user_role !== 'admin') return <Navigate to="/" replace />;
-  return <Layout>{children}</Layout>;
-};
-
-// ─── Ruta solo logistics ──────────────────────────────
-const LogisticsRoute = ({ children }) => {
-  const { user, loading } = useUser();
-  if (loading) return <LoadingScreen />;
-  if (!user) return <Navigate to="/login" replace />;
-  if (user.user_status === 'pending') return <PendingApproval />;
-  if (user.user_role !== 'logistics') return <Navigate to="/" replace />;
-  return <Layout>{children}</Layout>;
-};
-
-// ─── Ruta pública ─────────────────────────────────────
-const PublicRoute = ({ children }) => {
-  const { user, loading } = useUser();
-  if (loading) return <LoadingScreen />;
-  if (user) {
-    if (user.user_status === 'pending')  return <PendingApproval />;
-    if (user.user_role === 'provider')   return <Navigate to="/provider-orders" replace />;
-    if (user.user_role === 'admin')      return <Navigate to="/admin" replace />;
-    if (user.user_role === 'logistics')  return <Navigate to="/logistics" replace />;
-    return <Navigate to="/catalogo" replace />;
-  }
   return children;
 };
 
-// ─── Dashboard ────────────────────────────────────────
-const Dashboard = () => {
-  const { user, setUser } = useUser();
-  const [searchParams]    = useSearchParams();
-  const navigate          = useNavigate();
-  const handled           = useRef(false);
+const RoleGuard = ({ roles, children }) => {
+  const { user, loading } = useAuth();
 
-  const redirectUser = (u) => {
-    if (u.user_status === 'pending') return;
-    if (u.user_role === 'provider')      navigate('/provider-orders', { replace: true });
-    else if (u.user_role === 'admin')    navigate('/admin',           { replace: true });
-    else if (u.user_role === 'logistics') navigate('/logistics',      { replace: true });
-    else                                 navigate('/catalogo',         { replace: true });
-  };
+  if (loading) return <LoadingScreen />;
+  if (!user) return <Navigate to="/" replace />;
+  if (user.user_status === 'pending') return <PendingApproval />;
 
-  useEffect(() => {
-    if (handled.current) return;
-    handled.current = true;
+  if (!roles.includes(user.user_role)) {
+    return <Navigate to="/" replace />;
+  }
 
-    const token = searchParams.get('token');
-    if (token) {
-      exchangeSession(token)
-        .then(() => getMe())
-        .then((u) => { if (u) { setUser(u); redirectUser(u); } else navigate('/login', { replace: true }); })
-        .catch(() => navigate('/login', { replace: true }));
-    } else if (user) {
-      redirectUser(user);
-    } else {
-      navigate('/login', { replace: true });
-    }
-  }, []);
-
-  return <LoadingScreen />;
+  return <Layout>{children}</Layout>;
 };
 
-// ─── App ──────────────────────────────────────────────
+/* ───────────────────────────────
+   LANDING GATE (/)
+────────────────────────────── */
+const LandingGate = () => {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (loading) return;
+
+    if (!user) return; // se queda en landing
+
+    if (user.user_status === 'pending') {
+      navigate('/pending', { replace: true });
+      return;
+    }
+
+    if (user.user_role === 'provider') return navigate('/provider-orders', { replace: true });
+    if (user.user_role === 'admin') return navigate('/admin', { replace: true });
+    if (user.user_role === 'logistics') return navigate('/logistics', { replace: true });
+
+    navigate('/catalogo', { replace: true });
+  }, [user, loading]);
+
+  if (loading) return <LoadingScreen />;
+
+  return <LandingPage />;
+};
+
+/* ───────────────────────────────
+   APP
+────────────────────────────── */
 function App() {
-  const [user, setUser]       = useState(null);
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -190,49 +169,123 @@ function App() {
     <UserContext.Provider value={{ user, setUser, loading }}>
       <Router>
         <Routes>
-          <Route path="/login"         element={<PublicRoute><LoginMinimal /></PublicRoute>} />
-          <Route path="/signup"        element={<PublicRoute><Signup /></PublicRoute>} />
-          <Route path="/dashboard"     element={<Dashboard />} />
+
+          {/* PUBLIC */}
+          <Route path="/" element={<LandingGate />} />
+          <Route path="/login" element={<LoginMinimal />} />
+          <Route path="/signup" element={<Signup />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
-          <Route path="/order/new"     element={<SellerRoute><OrderForm /></SellerRoute>} />
 
-          {/* Rutas seller — bloqueadas para logistics y provider */}
-          <Route path="/catalogo"      element={<SellerRoute><Catalog /></SellerRoute>} />
-          <Route path="/proveedor"     element={<SellerRoute><Proveedor /></SellerRoute>} />
-          <Route path="/proveedores"   element={<SellerRoute><Providers /></SellerRoute>} />
-          <Route path="/transacciones" element={<SellerRoute><Transactions /></SellerRoute>} />
-          <Route path="/wallet"        element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
-          <Route path="/product/:id"   element={<SellerRoute><ProductPage /></SellerRoute>} />
-          <Route path="/analytics"     element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
-
-          {/* Configuración — disponible para seller y logistics */}
-          <Route path="/configuracion" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-
-          {/* Perfil público de proveedor */}
-          <Route path="/perfil-proveedor/:id" element={<SellerRoute><ProviderProfile /></SellerRoute>} />
-
-          {/* Rutas provider */}
-          <Route path="/provider-orders"  element={<ProviderRoute><ProviderOrders /></ProviderRoute>} />
-          <Route path="/provider-catalog" element={<ProviderRoute><ProviderCatalog /></ProviderRoute>} />
-          <Route path="/add-product"      element={<ProviderRoute><AddProductForm /></ProviderRoute>} />
-          <Route path="/edit-product/:id"  element={<ProviderRoute><EditProductForm /></ProviderRoute>} />
-
-          {/* Rutas logistics */}
-          <Route path="/logistics" element={<LogisticsRoute><LogisticsPanel /></LogisticsRoute>} />
-
-          {/* Rutas admin */}
-          <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
-          <Route path="/admin/create-logistics" element={<AdminRoute><CreateLogisticsUser /></AdminRoute>} />
-
-          <Route path="/" element={<Dashboard />} />
-          <Route path="*" element={
-            <ProtectedRoute>
-              <div style={{ padding: '40px', textAlign: 'center' }}>
-                <h1>404 - Página no encontrada</h1>
-                <p>La página que buscas no existe.</p>
-              </div>
-            </ProtectedRoute>
+          {/* SELLER */}
+          <Route path="/catalogo" element={
+            <RoleGuard roles={['buyer', 'seller']}>
+              <Catalog />
+            </RoleGuard>
           } />
+
+          <Route path="/proveedor" element={
+            <RoleGuard roles={['buyer', 'seller']}>
+              <Proveedor />
+            </RoleGuard>
+          } />
+
+          <Route path="/proveedores" element={
+            <RoleGuard roles={['buyer', 'seller']}>
+              <Providers />
+            </RoleGuard>
+          } />
+
+          <Route path="/product/:id" element={
+            <RoleGuard roles={['buyer', 'seller']}>
+              <ProductPage />
+            </RoleGuard>
+          } />
+
+          <Route path="/transacciones" element={
+            <RoleGuard roles={['buyer', 'seller']}>
+              <Transactions />
+            </RoleGuard>
+          } />
+
+          <Route path="/wallet" element={
+            <RequireAuth>
+              <Wallet />
+            </RequireAuth>
+          } />
+
+          <Route path="/analytics" element={
+            <RequireAuth>
+              <Analytics />
+            </RequireAuth>
+          } />
+
+          <Route path="/configuracion" element={
+            <RequireAuth>
+              <Settings />
+            </RequireAuth>
+          } />
+
+          {/* PROVIDER */}
+          <Route path="/provider-orders" element={
+            <RoleGuard roles={['provider', 'admin']}>
+              <ProviderOrders />
+            </RoleGuard>
+          } />
+
+          <Route path="/provider-catalog" element={
+            <RoleGuard roles={['provider', 'admin']}>
+              <ProviderCatalog />
+            </RoleGuard>
+          } />
+
+          <Route path="/add-product" element={
+            <RoleGuard roles={['provider', 'admin']}>
+              <AddProductForm />
+            </RoleGuard>
+          } />
+
+          <Route path="/edit-product/:id" element={
+            <RoleGuard roles={['provider', 'admin']}>
+              <EditProductForm />
+            </RoleGuard>
+          } />
+
+          {/* LOGISTICS */}
+          <Route path="/logistics" element={
+            <RoleGuard roles={['logistics']}>
+              <LogisticsPanel />
+            </RoleGuard>
+          } />
+
+          {/* ADMIN */}
+          <Route path="/admin" element={
+            <RoleGuard roles={['admin']}>
+              <AdminPage />
+            </RoleGuard>
+          } />
+
+          <Route path="/admin/create-logistics" element={
+            <RoleGuard roles={['admin']}>
+              <CreateLogisticsUser />
+            </RoleGuard>
+          } />
+
+          {/* ORDER */}
+          <Route path="/order/new" element={
+            <RequireAuth>
+              <OrderForm />
+            </RequireAuth>
+          } />
+
+          {/* FALLBACK */}
+          <Route path="*" element={
+            <RequireAuth>
+              <div style={{ padding: 40, textAlign: 'center' }}>
+                <h1>404 - No existe</h1>
+              </div>
+            </RequireAuth>
+          } />
+
         </Routes>
       </Router>
     </UserContext.Provider>
