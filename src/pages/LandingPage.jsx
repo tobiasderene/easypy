@@ -180,7 +180,7 @@ export default function LandingPage() {
               <div style={{ position: "relative", animation: "float 4s ease-in-out infinite" }}>
                 <div style={{ width: 340, height: 420, background: "white", borderRadius: 28, boxShadow: "0 32px 80px rgba(5,110,183,0.18)", overflow: "hidden", border: "1.5px solid #e5e7eb" }}>
                   <div style={{ height: 200, overflow: "hidden" }}>
-                    <img src="https://images.unsplash.com/photo-1546868871-7041f2a55e12?w=400&h=200&fit=crop" alt="Smart Watch" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                    <img src="/smartwatch.jpeg"alt="Smart Watch" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                   </div>
                   <div style={{ padding: "20px 24px" }}>
                     <span style={{ fontSize: 10, fontWeight: 700, color: BRAND, textTransform: "uppercase", letterSpacing: 0.5 }}>Electrónica</span>
