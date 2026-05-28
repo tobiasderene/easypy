@@ -219,7 +219,7 @@ const Analytics = () => {
             <button
               className={`an-period-btn ${customRange ? 'active' : ''}`}
               onClick={() => setShowCalendar(!showCalendar)}>
-              📅 {customRange
+              {customRange
                 ? `${cutoffFrom.toLocaleDateString('es-PY', { day: '2-digit', month: 'short' })} – ${cutoffTo.toLocaleDateString('es-PY', { day: '2-digit', month: 'short' })}`
                 : 'Rango'}
             </button>
