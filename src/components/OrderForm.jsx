@@ -499,7 +499,7 @@ const OrderForm = () => {
       return;
     }
     if (items.length === 0) { setSubmitError('Agregá al menos un producto'); return; }
-    if (earnings < 0) { setErrors(prev => ({ ...prev, general: 'La utilidad no puede ser negativa. Subí el precio de venta.' })); return; }
+    if (earnings < 0) { setErrors(prev => ({ ...prev, general: 'El precio del producto debe cubrir todos los costos.' })); return; }
     if (!form.logisticsId) { setErrors(prev => ({ ...prev, logisticsId: 'Seleccioná una transportadora' })); return; }
     if (logisticCost <= 0) { setErrors(prev => ({ ...prev, logisticsId: 'La logística seleccionada no tiene costo configurado para esta ciudad' })); return; }
     setShowConfirm(true);
@@ -954,7 +954,7 @@ const OrderForm = () => {
                       <button key={l.logistic_id}
                         className={`of-logistics-opt ${form.logisticsId === l.logistic_id ? 'active' : ''}`}
                         disabled={disabled}
-                        onClick={() => { if (disabled) return; handleChange('logisticsId', l.logistic_id); setQuote(null); setOtraCiudad(false); }}
+                        onClick={() => { if (disabled) return; handleChange('logisticsId', l.logistic_id); if (l.api_type !== 'fixy') setQuote(null); setOtraCiudad(false); }}
                         style={disabled ? { opacity: 0.45, cursor: 'not-allowed', filter: 'grayscale(1)' } : {}}
                       >
                         <div className="of-logistics-info">
@@ -1044,7 +1044,7 @@ const OrderForm = () => {
               </div>
               {totalRecaudo > 0 && earnings < 0 && (
                 <div style={{ background: '#fef2f2', border: '1.5px solid #fecaca', borderRadius: '8px', padding: '8px 12px', fontSize: '12px', color: '#dc2626', fontWeight: '600' }}>
-                  El precio de venta debe cubrir los costos
+                  El precio del producto debe cubrir todos los costos
                 </div>
               )}
             </div>
