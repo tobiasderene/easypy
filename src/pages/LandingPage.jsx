@@ -139,7 +139,7 @@ export default function LandingPage() {
                 </button>
               </div>
               <div className={`hero-stats fade-up d4 ${heroVisible ? "visible" : ""}`} style={{ display: "flex", gap: 28, marginTop: 40, justifyContent: "center", flexWrap: "wrap" }}>
-                {[["500+","Productos"],["3","Logísticas"],["0 stock","Requerido"]].map(([val, label]) => (
+                {[["100+","Productos"],["3","Logísticas"],["0 stock","Requerido"]].map(([val, label]) => (
                   <div key={label} style={{ textAlign: "center" }}>
                     <div style={{ fontSize: 22, fontWeight: 800, color: BRAND, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>{val}</div>
                     <div style={{ fontSize: 12, color: "#94a3b8", fontWeight: 500 }}>{label}</div>
