@@ -149,15 +149,16 @@ const OrderForm = () => {
         const sPrice = supplierZone ? parseFloat(supplierZone.price) : 0;
         prices[l.logistic_id] = Math.max(rPrice, sPrice);
       } else if (l.api_type === 'fixy') {
-        // Fixy — usar cotización disponible o marcar como cotizando
         if (quoting) {
           prices[l.logistic_id] = 'quoting';
         } else if (quote && !quote.error && quote.total) {
           prices[l.logistic_id] = quote.total;
-        } else if (quote === null && fixyCp) {
+        } else if (quote && (quote.error || !quote.total)) {
+          // Solo marcar unavailable si vino respuesta pero sin precio válido
           prices[l.logistic_id] = 'unavailable';
         } else {
-          prices[l.logistic_id] = null;
+          // quote es null — todavía no cotizó, mostrar como quoting si hay cp
+          prices[l.logistic_id] = fixyCp ? 'quoting' : null;
         }
       }
     });
@@ -1043,7 +1044,7 @@ const OrderForm = () => {
               </div>
               {totalRecaudo > 0 && earnings < 0 && (
                 <div style={{ background: '#fef2f2', border: '1.5px solid #fecaca', borderRadius: '8px', padding: '8px 12px', fontSize: '12px', color: '#dc2626', fontWeight: '600' }}>
-                  El precio de venta debe cubrir todos los costos
+                  El precio de venta debe cubrir los costos
                 </div>
               )}
             </div>
