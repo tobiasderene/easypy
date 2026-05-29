@@ -106,6 +106,7 @@ export const adminDeleteUser   = (userId) =>
 
 // ─── Products ─────────────────────────────────────────
 export const getProducts   = (skip = 0, limit = 50)  => api(`/products?skip=${skip}&limit=${limit}`);
+export const getMySalesCount = () => api('/products/my-sales-count');
 export const getMyProducts    = (skip = 0, limit = 50)  => api(`/products/my-products?skip=${skip}&limit=${limit}`);
 export const getProductsByUser = (userId, skip = 0, limit = 50)  => api(`/products/user/${userId}?skip=${skip}&limit=${limit}`);
 export const getProduct    = (productId)             => api(`/products/${productId}`);
