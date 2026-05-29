@@ -157,8 +157,8 @@ const OrderForm = () => {
           // Solo marcar unavailable si vino respuesta pero sin precio válido
           prices[l.logistic_id] = 'unavailable';
         } else {
-          // quote es null — todavía no cotizó, mostrar como quoting si hay cp
-          prices[l.logistic_id] = fixyCp ? 'quoting' : null;
+          // quote es null y no estamos cotizando activamente — mostrar null
+          prices[l.logistic_id] = null;
         }
       }
     });
@@ -959,7 +959,7 @@ const OrderForm = () => {
                       <button key={l.logistic_id}
                         className={`of-logistics-opt ${form.logisticsId === l.logistic_id ? 'active' : ''}`}
                         disabled={disabled}
-                        onClick={() => { if (disabled) return; handleChange('logisticsId', l.logistic_id); if (l.api_type !== 'fixy') setQuote(null); setOtraCiudad(false); }}
+                        onClick={() => { if (disabled) return; handleChange('logisticsId', l.logistic_id); setOtraCiudad(false); }}
                         style={disabled ? { opacity: 0.45, cursor: 'not-allowed', filter: 'grayscale(1)' } : {}}
                       >
                         <div className="of-logistics-info">
