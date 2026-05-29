@@ -966,6 +966,18 @@ const OrderForm = () => {
                       </div>
                       <button onClick={() => removeItem(item.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px', fontSize: '16px', flexShrink: 0 }}>×</button>
                     </div>
+                    <div style={{ marginTop: '8px' }}>
+                      <label className="of-label" style={{ marginBottom: '4px', display: 'block' }}>
+                        Precio de venta <span className="of-req">*</span>
+                      </label>
+                      <div className={`of-price-wrap ${errors[`price_${item.id}`] ? 'err' : ''}`}>
+                        <span className="of-price-sign">Gs.</span>
+                        <input className="of-price-input" type="number" placeholder="0" min="0"
+                          value={salePrices[item.id] || ''}
+                          onChange={e => setSalePrice(item.id, e.target.value)} />
+                      </div>
+                      {errors[`price_${item.id}`] && <span className="of-err">{errors[`price_${item.id}`]}</span>}
+                    </div>
 
                   </div>
                 ))}
