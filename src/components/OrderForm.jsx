@@ -183,11 +183,16 @@ const OrderForm = () => {
     if (!fixyCp) { setQuote(null); lastQuotedCp.current = null; return; }
 
     // No recotizar si ya tenemos quote para este CP
-    if (lastQuotedCp.current === fixyCp) return;
+    console.log('[fixy-quote] useEffect fired — fixyCp:', fixyCp, '| lastQuotedCp:', lastQuotedCp.current);
+    if (lastQuotedCp.current === fixyCp) {
+      console.log('[fixy-quote] SKIP — same CP, no requote');
+      return;
+    }
 
     const fixyLogistic = logistics.find(l => l.api_type === 'fixy');
     if (!fixyLogistic) { setQuote(null); return; }
 
+    console.log('[fixy-quote] QUOTING — CP changed to', fixyCp);
     lastQuotedCp.current = fixyCp;
     const totalBultos = items.reduce((s, i) => s + i.quantity, 0) || 1;
     setQuoting(true);
