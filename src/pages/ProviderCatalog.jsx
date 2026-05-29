@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Package, TrendingUp, Edit, Trash2, Plus, Search, Filter, Eye, EyeOff } from 'lucide-react';
-import { getMyProducts, deleteProduct, updateProduct, getProductImages } from '../services/api';
+import { getMyProducts, deleteProduct, updateProduct, getProductImages, getMySalesCount } from '../services/api';
 import '../styles/providercatalog.css';
 
 const ProviderCatalog = () => {
@@ -12,6 +12,7 @@ const ProviderCatalog = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
+  const [salesCount, setSalesCount] = useState({});
 
   const formatCurrency = (amount) =>
     new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', minimumFractionDigits: 0 }).format(amount);
@@ -19,7 +20,8 @@ const ProviderCatalog = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const data = await getMyProducts();
+        const [data, sales] = await Promise.all([getMyProducts(), getMySalesCount().catch(() => ({}))]);
+        setSalesCount(sales || {});
         // Traer imagen primaria de cada producto
         const withImages = await Promise.all(
           data.map(async (p) => {
@@ -176,13 +178,18 @@ const ProviderCatalog = () => {
           ) : (
             filteredProducts.map(product => (
               <div key={product.product_id} className={`catalog-product-card ${product.product_status}`}>
-                <div className="catalog-product-image">
+                <div className="catalog-product-image" style={{ position: 'relative' }}>
                   {product.imageUrl
                     ? <img src={product.imageUrl} alt={product.product_name} />
                     : <div style={{ width: '100%', height: '100%', background: '#f3f4f6', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Package size={40} color="#d1d5db" /></div>
                   }
                   {product.product_status === 'inactive' && (
                     <div className="out-of-stock-badge">Inactivo</div>
+                  )}
+                  {salesCount[product.product_id] > 0 && (
+                    <div style={{ position: 'absolute', bottom: 8, right: 8, background: 'rgba(5,110,183,0.9)', color: 'white', borderRadius: '100px', padding: '3px 10px', fontSize: '11px', fontWeight: '700' }}>
+                      {salesCount[product.product_id]} vendidos
+                    </div>
                   )}
                   {product.product_status === 'out_of_stock' && (
                     <div className="out-of-stock-badge" style={{ background: '#dc2626' }}>Sin stock</div>
@@ -211,6 +218,10 @@ const ProviderCatalog = () => {
                     <div className="detail-row">
                       <span className="detail-label">Categoría:</span>
                       <span className="detail-value">{product.product_category}</span>
+                    </div>
+                    <div className="detail-row">
+                      <span className="detail-label">Descuento:</span>
+                      <span className="detail-value">{product.product_discount}%</span>
                     </div>
                   </div>
 
