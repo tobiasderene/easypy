@@ -131,7 +131,7 @@ export default function LandingPage() {
                 <span style={{ color: BRAND }}>Ganá en serio.</span>
               </h1>
               <p className={`fade-up d2 ${heroVisible ? "visible" : ""}`} style={{ fontSize: 18, color: "#475569", lineHeight: 1.7, marginBottom: 36, maxWidth: 520, margin: "0 auto 36px" }}>
-                EasyPy es la plataforma de dropshipping que conecta vendedores con proveedores locales. Sin inventario, sin complicaciones, solo ventas.
+                EasyPy es la plataforma que conecta vendedores con proveedores locales. Sin inventario, sin complicaciones, solo ventas.
               </p>
               <div className={`hero-cta fade-up d3 ${heroVisible ? "visible" : ""}`} style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
                 <button className="btn-primary" style={{ padding: "14px 32px", fontSize: 16 }} onClick={() => window.location.href="/login"}>
@@ -211,7 +211,7 @@ export default function LandingPage() {
                 Nació en Paraguay<br />para Paraguay
               </h2>
               <p style={{ fontSize: 16, color: "#475569", lineHeight: 1.8, marginBottom: 20 }}>
-                EasyPy es una plataforma local de dropshipping que conecta proveedores con vendedores de todo el país. Creemos que cualquier persona puede construir un negocio online sin necesidad de capital para stock.
+                EasyPy es una plataforma local que conecta proveedores con vendedores de todo el país. Vos vendes, nosotros nos encargamos del resto.
               </p>
               <p style={{ fontSize: 16, color: "#475569", lineHeight: 1.8, marginBottom: 32 }}>
                 Integramos logísticas reales como Fixy y Legex, procesamos pagos con recaudo o sin recaudo, y te damos las herramientas para escalar tu negocio con datos claros.
