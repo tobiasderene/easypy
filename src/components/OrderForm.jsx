@@ -415,9 +415,14 @@ const OrderForm = () => {
     const sPrice = supplierZone  ? parseFloat(supplierZone.price)  : 0;
     return Math.max(rPrice, sPrice);
   })();
-  const rawShipping = (quote && !quote.error && quote.total)
-    ? quote.total
-    : zonePrice;
+  const selectedLogistic = logistics.find(l => l.logistic_id === form.logisticsId);
+  const rawShipping = (() => {
+    if (!selectedLogistic) return 0;
+    if (selectedLogistic.api_type === 'manual') return zonePrice;
+    // Cualquier logística con API (fixy u otras futuras) — usar quote si existe
+    if (quote && !quote.error && quote.total) return quote.total;
+    return 0;
+  })();
   const commission        = rawShipping * 0.25;                          // 25% sobre envío
   const logisticCost      = rawShipping + commission;                    // lo que ve el vendedor (envío + comisión sumados)
   const earnings          = totalRecaudo - totalSupplierCost - logisticCost;
