@@ -869,16 +869,7 @@ const OrderForm = () => {
                       </div>
                       <button onClick={() => removeItem(item.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px', fontSize: '16px', flexShrink: 0 }}>×</button>
                     </div>
-                    <div>
-                      <label className="of-label" style={{ marginBottom: '4px', display: 'block' }}>
-                        Precio de venta <span className="of-req">*</span>
-                      </label>
-                      <div className={`of-price-wrap ${errors[`price_${item.id}`] ? 'err' : ''}`}>
-                        <span className="of-price-sign">Gs.</span>
-                        <input className="of-price-input" type="number" placeholder="0" min="0" value={salePrices[item.id] || ''} onChange={e => setSalePrice(item.id, e.target.value)} />
-                      </div>
-                      {errors[`price_${item.id}`] && <span className="of-err">{errors[`price_${item.id}`]}</span>}
-                    </div>
+
                   </div>
                 ))}
               </div>
@@ -1024,6 +1015,26 @@ const OrderForm = () => {
                   </div>
                 );
               })}
+            </div>
+
+            {/* Precios de venta por producto */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
+              {items.map(item => (
+                <div key={`sp-${item.id}`} style={{ background: '#f9fafb', borderRadius: '10px', padding: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                    {item.image && <img src={item.image} alt={item.name} style={{ width: '32px', height: '32px', borderRadius: '6px', objectFit: 'cover', flexShrink: 0 }} />}
+                    <span style={{ fontSize: '13px', fontWeight: '600', color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</span>
+                  </div>
+                  <label className="of-label" style={{ marginBottom: '4px', display: 'block' }}>
+                    Precio de venta <span className="of-req">*</span>
+                  </label>
+                  <div className={`of-price-wrap ${errors[`price_${item.id}`] ? 'err' : ''}`}>
+                    <span className="of-price-sign">Gs.</span>
+                    <input className="of-price-input" type="number" placeholder="0" min="0" value={salePrices[item.id] || ''} onChange={e => setSalePrice(item.id, e.target.value)} />
+                  </div>
+                  {errors[`price_${item.id}`] && <span className="of-err">{errors[`price_${item.id}`]}</span>}
+                </div>
+              ))}
             </div>
 
             <div className="of-breakdown">
