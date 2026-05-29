@@ -850,60 +850,6 @@ const OrderForm = () => {
               {errors.email && <span className="of-err">{errors.email}</span>}
             </div>
 
-            {/* ── Productos ── */}
-            <div className="of-field">
-              <label className="of-label">Productos</label>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {items.map(item => (
-                  <div key={item.id} style={{ border: '1.5px solid #e5e7eb', borderRadius: '9px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      {item.image && <img src={item.image} alt={item.name} className="of-product-img" style={{ flexShrink: 0 }} />}
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <span className="of-product-name">{item.name}</span>
-                        <span className="of-product-cost" style={{ display: 'block' }}>Costo: {formatCurrency(item.price)}</span>
-                      </div>
-                      <div className="of-qty" style={{ flexShrink: 0 }}>
-                        <button className="of-qty-btn" onClick={() => updateQty(item.id, item.quantity - 1)} disabled={item.quantity <= 1}>−</button>
-                        <span className="of-qty-val">{item.quantity}</span>
-                        <button className="of-qty-btn" onClick={() => updateQty(item.id, item.quantity + 1)}>+</button>
-                      </div>
-                      <button onClick={() => removeItem(item.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px', fontSize: '16px', flexShrink: 0 }}>×</button>
-                    </div>
-
-                  </div>
-                ))}
-              </div>
-
-              <button className="of-toggle-btn" style={{ marginTop: '8px', width: '100%', justifyContent: 'center' }} onClick={() => setShowProductList(!showProductList)}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14" /></svg>
-                Agregar otro producto
-              </button>
-
-              {showProductList && (
-                <div style={{ border: '1.5px solid #e5e7eb', borderRadius: '9px', overflow: 'hidden', marginTop: '6px' }}>
-                  {loadingProducts ? (
-                    <p style={{ padding: '12px', fontSize: '13px', color: '#9ca3af', textAlign: 'center' }}>Cargando productos...</p>
-                  ) : supplierProducts.filter(p => !items.find(i => i.id === p.id)).length === 0 ? (
-                    <p style={{ padding: '12px', fontSize: '13px', color: '#9ca3af', textAlign: 'center' }}>No hay otros productos disponibles</p>
-                  ) : (
-                    supplierProducts.filter(p => !items.find(i => i.id === p.id)).map(p => (
-                      <div key={p.id} onClick={() => addItem(p)}
-                        style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', cursor: 'pointer', borderBottom: '1px solid #f3f4f6', background: 'white', transition: 'background 0.2s' }}
-                        onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'}
-                        onMouseLeave={e => e.currentTarget.style.background = 'white'}
-                      >
-                        {p.image ? <img src={p.image} alt={p.name} style={{ width: '36px', height: '36px', borderRadius: '6px', objectFit: 'cover', flexShrink: 0 }} /> : <div style={{ width: '36px', height: '36px', borderRadius: '6px', background: '#f3f4f6', flexShrink: 0 }} />}
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <p style={{ fontSize: '13px', fontWeight: '600', color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</p>
-                          <p style={{ fontSize: '12px', color: '#056EB7', fontWeight: '600' }}>{formatCurrency(p.price)}</p>
-                        </div>
-                        <svg width="16" height="16" fill="none" stroke="#056EB7" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v14M5 12h14" /></svg>
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
-            </div>
           </div>
 
           <div className="of-divider" />
@@ -1001,40 +947,59 @@ const OrderForm = () => {
               </div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              {items.map(item => {
-                const sp = getSalePrice(item.id);
-                return (
-                  <div key={item.id} className="of-summary-product">
-                    {item.image && <img src={item.image} alt={item.name} className="of-sum-img" />}
-                    <div className="of-sum-product-info">
-                      <span className="of-sum-name">{item.name}</span>
-                      <span className="of-sum-qty">x{item.quantity} · Costo: {formatCurrency(item.price)}</span>
+            {/* ── Productos ── */}
+            <div className="of-field">
+              <label className="of-label">Productos</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {items.map(item => (
+                  <div key={item.id} style={{ border: '1.5px solid #e5e7eb', borderRadius: '9px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      {item.image && <img src={item.image} alt={item.name} className="of-product-img" style={{ flexShrink: 0 }} />}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <span className="of-product-name">{item.name}</span>
+                        <span className="of-product-cost" style={{ display: 'block' }}>Costo: {formatCurrency(item.price)}</span>
+                      </div>
+                      <div className="of-qty" style={{ flexShrink: 0 }}>
+                        <button className="of-qty-btn" onClick={() => updateQty(item.id, item.quantity - 1)} disabled={item.quantity <= 1}>−</button>
+                        <span className="of-qty-val">{item.quantity}</span>
+                        <button className="of-qty-btn" onClick={() => updateQty(item.id, item.quantity + 1)}>+</button>
+                      </div>
+                      <button onClick={() => removeItem(item.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px', fontSize: '16px', flexShrink: 0 }}>×</button>
                     </div>
-                    <span className="of-sum-price">{sp > 0 ? formatCurrency(sp * item.quantity) : '—'}</span>
-                  </div>
-                );
-              })}
-            </div>
 
-            {/* Precios de venta por producto */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px' }}>
-              {items.map(item => (
-                <div key={`sp-${item.id}`} style={{ background: '#f9fafb', borderRadius: '10px', padding: '12px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                    {item.image && <img src={item.image} alt={item.name} style={{ width: '32px', height: '32px', borderRadius: '6px', objectFit: 'cover', flexShrink: 0 }} />}
-                    <span style={{ fontSize: '13px', fontWeight: '600', color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</span>
                   </div>
-                  <label className="of-label" style={{ marginBottom: '4px', display: 'block' }}>
-                    Precio de venta <span className="of-req">*</span>
-                  </label>
-                  <div className={`of-price-wrap ${errors[`price_${item.id}`] ? 'err' : ''}`}>
-                    <span className="of-price-sign">Gs.</span>
-                    <input className="of-price-input" type="number" placeholder="0" min="0" value={salePrices[item.id] || ''} onChange={e => setSalePrice(item.id, e.target.value)} />
-                  </div>
-                  {errors[`price_${item.id}`] && <span className="of-err">{errors[`price_${item.id}`]}</span>}
+                ))}
+              </div>
+
+              <button className="of-toggle-btn" style={{ marginTop: '8px', width: '100%', justifyContent: 'center' }} onClick={() => setShowProductList(!showProductList)}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14" /></svg>
+                Agregar otro producto
+              </button>
+
+              {showProductList && (
+                <div style={{ border: '1.5px solid #e5e7eb', borderRadius: '9px', overflow: 'hidden', marginTop: '6px' }}>
+                  {loadingProducts ? (
+                    <p style={{ padding: '12px', fontSize: '13px', color: '#9ca3af', textAlign: 'center' }}>Cargando productos...</p>
+                  ) : supplierProducts.filter(p => !items.find(i => i.id === p.id)).length === 0 ? (
+                    <p style={{ padding: '12px', fontSize: '13px', color: '#9ca3af', textAlign: 'center' }}>No hay otros productos disponibles</p>
+                  ) : (
+                    supplierProducts.filter(p => !items.find(i => i.id === p.id)).map(p => (
+                      <div key={p.id} onClick={() => addItem(p)}
+                        style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', cursor: 'pointer', borderBottom: '1px solid #f3f4f6', background: 'white', transition: 'background 0.2s' }}
+                        onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'white'}
+                      >
+                        {p.image ? <img src={p.image} alt={p.name} style={{ width: '36px', height: '36px', borderRadius: '6px', objectFit: 'cover', flexShrink: 0 }} /> : <div style={{ width: '36px', height: '36px', borderRadius: '6px', background: '#f3f4f6', flexShrink: 0 }} />}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontSize: '13px', fontWeight: '600', color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</p>
+                          <p style={{ fontSize: '12px', color: '#056EB7', fontWeight: '600' }}>{formatCurrency(p.price)}</p>
+                        </div>
+                        <svg width="16" height="16" fill="none" stroke="#056EB7" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v14M5 12h14" /></svg>
+                      </div>
+                    ))
+                  )}
                 </div>
-              ))}
+              )}
             </div>
 
             <div className="of-breakdown">
