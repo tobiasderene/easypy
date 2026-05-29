@@ -66,6 +66,7 @@ const OrderForm = () => {
   const [quoting, setQuoting]                   = useState(false);
   const [fixySuggestions, setFixySuggestions]   = useState([]);
   const [fixyCp, setFixyCp]                     = useState(null);
+  const lastQuotedCp                            = useRef(null);
   const [showFixySug, setShowFixySug]           = useState(false);
   const [otraCiudad, setOtraCiudad]             = useState(false);
   const fixyInputRef                            = useRef(null);
@@ -179,17 +180,21 @@ const OrderForm = () => {
 
   // ── Auto-cotizar Fixy — SOLO cuando cambia fixyCp (ciudad) ──────────────
   useEffect(() => {
-    if (!fixyCp) { setQuote(null); return; }
+    if (!fixyCp) { setQuote(null); lastQuotedCp.current = null; return; }
+
+    // No recotizar si ya tenemos quote para este CP
+    if (lastQuotedCp.current === fixyCp) return;
 
     const fixyLogistic = logistics.find(l => l.api_type === 'fixy');
     if (!fixyLogistic) { setQuote(null); return; }
 
+    lastQuotedCp.current = fixyCp;
     const totalBultos = items.reduce((s, i) => s + i.quantity, 0) || 1;
     setQuoting(true);
     setQuote(null);
     getLogisticsQuote(fixyLogistic.logistic_id, totalBultos, 1.0, fixyCp)
       .then(result => setQuote(result))
-      .catch(() => setQuote(null))
+      .catch(() => { setQuote(null); lastQuotedCp.current = null; })
       .finally(() => setQuoting(false));
   }, [fixyCp]); // ← solo fixyCp, no logistics
 
@@ -320,7 +325,6 @@ const OrderForm = () => {
     } else {
       setFixyCp(null);
     }
-    setQuote(null);
   };
 
   // ── Mapa ──────────────────────────────────────────────────────────────────
@@ -752,13 +756,11 @@ const OrderForm = () => {
                       handleChange('city', loc.name);
                       handleChange('region', loc.department);
                       setFixyCp(loc.cp);
-                      setQuote(null);
-                      setLogisticPrices({});  // resetear precios al cambiar ciudad
-                      handleChange('logisticsId', null);  // deseleccionar logística
+                      setLogisticPrices({});
+                      handleChange('logisticsId', null);
                     } else {
                       handleChange('city', val);
                       setFixyCp(null);
-                      setQuote(null);
                       setLogisticPrices({});
                       handleChange('logisticsId', null);
                     }
