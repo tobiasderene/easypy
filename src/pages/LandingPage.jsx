@@ -213,9 +213,6 @@ export default function LandingPage() {
               <p style={{ fontSize: 16, color: "#475569", lineHeight: 1.8, marginBottom: 20 }}>
                 EasyPy es una plataforma local que conecta proveedores con vendedores de todo el país. Vos vendes, nosotros nos encargamos del resto.
               </p>
-              <p style={{ fontSize: 16, color: "#475569", lineHeight: 1.8, marginBottom: 32 }}>
-                Integramos logísticas reales como Fixy y Legex, procesamos pagos con recaudo o sin recaudo, y te damos las herramientas para escalar tu negocio con datos claros.
-              </p>
               <button className="btn-primary" style={{ padding: "13px 28px", fontSize: 15 }} onClick={() => window.location.href="/login"}>
                 Unirme a EasyPy
               </button>
