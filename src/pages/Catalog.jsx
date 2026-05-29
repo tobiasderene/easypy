@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getProducts, getProductImagesBulk, getProviders } from '../services/api';
+import { useUser } from '../App';
 import '../styles/catalog.css';
 
 const PAGE_SIZE = 50;
 
 const Catalog = () => {
   const navigate = useNavigate();
+  const { searchQuery } = useUser();
   const [activeFilters, setActiveFilters] = useState(['all']);
   const [products, setProducts]           = useState([]);
   const [loading, setLoading]             = useState(true);
@@ -68,6 +70,7 @@ const Catalog = () => {
             badge:          p.is_private ? 'Exclusivo' : null,
             isPrivate:      p.is_private || false,
             category:       p.product_category,
+            sku:            p.product_sku || '',
           }));
           if (append) setProducts(prev => [...prev, ...withImages]);
           else setProducts(withImages);
@@ -102,7 +105,7 @@ const Catalog = () => {
   const categories = ['all', 'exclusive', ...new Set(products.map(p => p.category))];
   const filters    = categories.map(cat => ({
     id:    cat,
-    label: cat === 'all' ? 'Todos' : cat === 'exclusive' ? 'Exclusivos' : cat.charAt(0).toUpperCase() + cat.slice(1),
+    label: cat === 'all' ? 'Todos' : cat === 'exclusive' ? '⭐ Exclusivos' : cat.charAt(0).toUpperCase() + cat.slice(1),
   }));
 
   const toggleFilter = (catId) => {
@@ -117,12 +120,19 @@ const Catalog = () => {
     });
   };
 
-  const filtered = activeFilters.includes('all')
+  const categoryFiltered = activeFilters.includes('all')
     ? products
     : products.filter(p =>
         activeFilters.includes(p.category) ||
         (activeFilters.includes('exclusive') && p.isPrivate)
       );
+
+  const filtered = searchQuery?.trim()
+    ? categoryFiltered.filter(p =>
+        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (p.sku && p.sku.toLowerCase().includes(searchQuery.toLowerCase()))
+      )
+    : categoryFiltered;
 
   const formatPrice = (price) =>
     new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', minimumFractionDigits: 0 }).format(price);
@@ -174,7 +184,7 @@ const Catalog = () => {
             </div>
           )}
           {product.isPrivate && (
-            <span className="product-badge" style={{ background: '#7c3aed' }}>Exclusivo</span>
+            <span className="product-badge" style={{ background: '#7c3aed' }}>⭐ Exclusivo</span>
           )}
 
         </div>
@@ -210,7 +220,7 @@ const Catalog = () => {
               disabled={outOfStock}
 
             >
-              <span>{outOfStock ? 'Sin stock' : 'Comprar'}</span>
+              <span>{outOfStock ? 'Sin stock' : '→ Comprar'}</span>
             </button>
           </div>
         </div>
