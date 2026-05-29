@@ -206,17 +206,18 @@ export default function LandingPage() {
       <section id="about" ref={aboutRef} style={{ background: "#f8fafc", padding: "96px 24px" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto" }}>
           <div className="about-grid" style={{ display: "flex", gap: 80, alignItems: "center" }}>
-            <div className={`fade-up ${aboutVisible ? "visible" : ""}`} style={{ flex: 1, textAlign: "center" }}>
-              <h2 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: "clamp(28px, 4vw, 44px)", fontWeight: 800, color: "#0f172a", marginBottom: 20, lineHeight: 1.15 }}>
-                Nació en Paraguay<br />para Paraguay
-              </h2>
-              <p style={{ fontSize: 16, color: "#475569", lineHeight: 1.8, marginBottom: 20 }}>
-                EasyPy es una plataforma local que conecta proveedores con vendedores de todo el país. Vos vendes, nosotros nos encargamos del resto.
-              </p>
-              <button className="btn-primary" style={{ padding: "13px 28px", fontSize: 15 }} onClick={() => window.location.href="/login"}>
-                Unirme a EasyPy
-              </button>
-            </div>
+     <div className={`fade-up ${aboutVisible ? "visible" : ""}`} style={{ flex: 1, textAlign: "center" }}>
+        <h2 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: "clamp(28px, 4vw, 44px)", fontWeight: 800, color: "#0f172a", marginBottom: 20, lineHeight: 1.15 }}>
+          Nació en Paraguay<br />para Paraguay
+        </h2>
+        <p style={{ fontSize: 16, color: "#475569", lineHeight: 1.8, marginBottom: 20 }}>
+          EasyPy es una plataforma local que conecta proveedores con vendedores de todo el país. Vos vendes, nosotros nos encargamos del resto.
+        </p>
+        <button className="btn-primary" style={{ padding: "13px 28px", fontSize: 15, display: "inline-block" }} onClick={() => window.location.href="/login"}>
+          Unirme a EasyPy
+        </button>
+      </div>
+    
             <div className={`fade-up d2 ${aboutVisible ? "visible" : ""}`} style={{ flex: 1 }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2, background: "#e5e7eb", borderRadius: 20, overflow: "hidden" }}>
                 {stats.map((s, i) => (
