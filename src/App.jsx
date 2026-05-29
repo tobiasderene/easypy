@@ -40,7 +40,7 @@ export const useUser = () => useContext(UserContext);
 
 /* ── Layout persistente — no se remonta en cada ruta ── */
 const PersistentLayout = () => {
-  const { user, walletBalance } = useUser();
+  const { user, walletBalance, setSearchQuery } = useUser();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const SidebarComponent =
@@ -55,6 +55,7 @@ const PersistentLayout = () => {
         userName={user?.user_nickname || 'Usuario'}
         userBalance={walletBalance}
         onMenuClick={() => setSidebarOpen(true)}
+        onSearch={(v) => setSearchQuery(v)}
       />
       <SidebarComponent isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <main>
@@ -105,6 +106,7 @@ function App() {
   const [user,         setUser]         = useState(null);
   const [loading,      setLoading]      = useState(true);
   const [walletBalance, setWalletBalance] = useState(null);
+  const [searchQuery, setSearchQuery]     = useState('');
 
   useEffect(() => {
     getMe()
@@ -122,7 +124,7 @@ function App() {
   }, [user?.user_id]);
 
   return (
-    <UserContext.Provider value={{ user, setUser, loading, walletBalance, setWalletBalance }}>
+    <UserContext.Provider value={{ user, setUser, loading, walletBalance, setWalletBalance, searchQuery, setSearchQuery }}>
       <Router>
         <Routes>
 
