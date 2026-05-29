@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getProducts, getProductImages, getProviders } from '../services/api';
+import { getProducts, getProductImagesBulk, getProviders } from '../services/api';
 import '../styles/catalog.css';
 
 const PAGE_SIZE = 50;
@@ -38,39 +38,37 @@ const Catalog = () => {
         if (data && data.length > 0) {
           setHasMore(data.length === PAGE_SIZE);
           const activeData = data.filter(p => p.product_status === 'active');
-          const withImages = await Promise.all(
-            activeData.map(async (p) => {
-              let imageUrl = null;
-              try {
-                // Cache en memoria para evitar requests repetidos dentro de la misma sesión
-                if (!window._imgCache) window._imgCache = {};
-                if (window._imgCache[p.product_id]) {
-                  imageUrl = window._imgCache[p.product_id];
-                } else {
-                  const images  = await getProductImages(p.product_id);
-                  const primary = images.find(img => img.is_primary) || images[0];
-                  imageUrl      = primary?.image_url || null;
-                  if (imageUrl) window._imgCache[p.product_id] = imageUrl;
-                }
-              } catch {}
 
-              return {
-                id:             p.product_id,
-                name:           p.product_name,
-                provider:       p.user_id,
-                providerName:   localMap[p.user_id]?.name || `Proveedor #${p.user_id}`,
-                providerCity:   localMap[p.user_id]?.city || '',
-                price:          parseFloat(p.product_base_cost),
-                suggestedPrice: p.suggested_price ? parseFloat(p.suggested_price) : null,
-                stock:          p.stock_available ?? null,
-                status:         p.product_status,
-                image:          imageUrl,
-                badge:          p.is_private ? 'Exclusivo' : null,
-                isPrivate:      p.is_private || false,
-                category:       p.product_category,
-              };
-            })
-          );
+          // Un solo request para todas las imágenes
+          if (!window._imgCache) window._imgCache = {};
+          const uncachedIds = activeData
+            .map(p => p.product_id)
+            .filter(id => !window._imgCache[id]);
+
+          if (uncachedIds.length > 0) {
+            try {
+              const bulkImages = await getProductImagesBulk(uncachedIds);
+              Object.entries(bulkImages).forEach(([pid, url]) => {
+                window._imgCache[parseInt(pid)] = url;
+              });
+            } catch {}
+          }
+
+          const withImages = activeData.map(p => ({
+            id:             p.product_id,
+            name:           p.product_name,
+            provider:       p.user_id,
+            providerName:   localMap[p.user_id]?.name || `Proveedor #${p.user_id}`,
+            providerCity:   localMap[p.user_id]?.city || '',
+            price:          parseFloat(p.product_base_cost),
+            suggestedPrice: p.suggested_price ? parseFloat(p.suggested_price) : null,
+            stock:          p.stock_available ?? null,
+            status:         p.product_status,
+            image:          window._imgCache[p.product_id] || null,
+            badge:          p.is_private ? 'Exclusivo' : null,
+            isPrivate:      p.is_private || false,
+            category:       p.product_category,
+          }));
           if (append) setProducts(prev => [...prev, ...withImages]);
           else setProducts(withImages);
         } else {
@@ -104,7 +102,7 @@ const Catalog = () => {
   const categories = ['all', 'exclusive', ...new Set(products.map(p => p.category))];
   const filters    = categories.map(cat => ({
     id:    cat,
-    label: cat === 'all' ? 'Todos' : cat === 'exclusive' ? 'Exclusivos' : cat.charAt(0).toUpperCase() + cat.slice(1),
+    label: cat === 'all' ? 'Todos' : cat === 'exclusive' ? '⭐ Exclusivos' : cat.charAt(0).toUpperCase() + cat.slice(1),
   }));
 
   const toggleFilter = (catId) => {
@@ -176,7 +174,7 @@ const Catalog = () => {
             </div>
           )}
           {product.isPrivate && (
-            <span className="product-badge" style={{ background: '#7c3aed' }}>Exclusivo</span>
+            <span className="product-badge" style={{ background: '#7c3aed' }}>⭐ Exclusivo</span>
           )}
 
         </div>
@@ -212,7 +210,7 @@ const Catalog = () => {
               disabled={outOfStock}
 
             >
-              <span>{outOfStock ? 'Sin stock' : 'Comprar'}</span>
+              <span>{outOfStock ? 'Sin stock' : '→ Comprar'}</span>
             </button>
           </div>
         </div>
