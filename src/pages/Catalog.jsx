@@ -105,7 +105,7 @@ const Catalog = () => {
   const categories = ['all', 'exclusive', ...new Set(products.map(p => p.category))];
   const filters    = categories.map(cat => ({
     id:    cat,
-    label: cat === 'all' ? 'Todos' : cat === 'exclusive' ? '⭐ Exclusivos' : cat.charAt(0).toUpperCase() + cat.slice(1),
+    label: cat === 'all' ? 'Todos' : cat === 'exclusive' ? 'Exclusivos' : cat.charAt(0).toUpperCase() + cat.slice(1),
   }));
 
   const toggleFilter = (catId) => {
@@ -190,7 +190,7 @@ const Catalog = () => {
             </div>
           )}
           {product.isPrivate && (
-            <span className="product-badge" style={{ background: '#7c3aed' }}>⭐ Exclusivo</span>
+            <span className="product-badge" style={{ background: '#7c3aed' }}>Exclusivo</span>
           )}
 
         </div>
@@ -226,7 +226,7 @@ const Catalog = () => {
               disabled={outOfStock}
 
             >
-              <span>{outOfStock ? 'Sin stock' : '→ Comprar'}</span>
+              <span>{outOfStock ? 'Sin stock' : 'Comprar'}</span>
             </button>
           </div>
         </div>
