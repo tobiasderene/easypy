@@ -118,6 +118,9 @@ export const getProductImages = (productId) => api(`/images/product/${productId}
 export const getProfileImage  = (userId)    => api(`/images/profile/${userId}`);
 export const deleteImage      = (imageId)   => api(`/images/${imageId}`, { method: "DELETE" });
 
+export const getProductImagesBulk = (productIds) =>
+  api('/images/bulk', { method: 'POST', body: JSON.stringify(productIds) });
+
 export const uploadProductImage = (productId, file, isPrimary = false, position = 0) => {
   const formData = new FormData();
   formData.append("file", file);
