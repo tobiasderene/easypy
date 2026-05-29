@@ -220,7 +220,7 @@ const Catalog = () => {
               disabled={outOfStock}
 
             >
-              <span>{outOfStock ? 'Sin stock' : '→ Comprar'}</span>
+              <span>{outOfStock ? 'Sin stock' : 'Comprar'}</span>
             </button>
           </div>
         </div>
