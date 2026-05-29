@@ -93,7 +93,13 @@ const Header = ({
         <span className="burger-line" />
       </button>
 
-      <div className="logo">
+      <div className="logo" style={{ cursor: 'pointer' }} onClick={() => {
+        if (!user) { navigate('/'); return; }
+        if (user.user_role === 'provider')  { navigate('/provider-orders'); return; }
+        if (user.user_role === 'admin')     { navigate('/admin'); return; }
+        if (user.user_role === 'logistics') { navigate('/logistics'); return; }
+        navigate('/catalogo');
+      }}>
         <img src="/full-logo.png" alt="EasyDrop" className="logo-img" />
       </div>
 
