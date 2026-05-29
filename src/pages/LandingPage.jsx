@@ -131,10 +131,10 @@ export default function LandingPage() {
                 <span style={{ color: BRAND }}>Ganá en serio.</span>
               </h1>
               <p className={`fade-up d2 ${heroVisible ? "visible" : ""}`} style={{ fontSize: 18, color: "#475569", lineHeight: 1.7, marginBottom: 36, maxWidth: 520, margin: "0 auto 36px" }}>
-                EasyPy es la plataforma de dropshipping que conecta vendedores con proveedores locales. Sin inventario, sin complicaciones — solo ventas.
+                EasyPy es la plataforma de dropshipping que conecta vendedores con proveedores locales. Sin inventario, sin complicaciones, solo ventas.
               </p>
               <div className={`hero-cta fade-up d3 ${heroVisible ? "visible" : ""}`} style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
-                <button className="btn-primary" style={{ padding: "14px 32px", fontSize: 16 }} onClick={() => window.location.href="/signup"}>
+                <button className="btn-primary" style={{ padding: "14px 32px", fontSize: 16 }} onClick={() => window.location.href="/login"}>
                   Empezar gratis
                 </button>
               </div>
@@ -216,7 +216,7 @@ export default function LandingPage() {
               <p style={{ fontSize: 16, color: "#475569", lineHeight: 1.8, marginBottom: 32 }}>
                 Integramos logísticas reales como Fixy y Legex, procesamos pagos con recaudo o sin recaudo, y te damos las herramientas para escalar tu negocio con datos claros.
               </p>
-              <button className="btn-primary" style={{ padding: "13px 28px", fontSize: 15 }} onClick={() => window.location.href="/signup"}>
+              <button className="btn-primary" style={{ padding: "13px 28px", fontSize: 15 }} onClick={() => window.location.href="/login"}>
                 Unirme a EasyPy
               </button>
             </div>
@@ -247,17 +247,11 @@ export default function LandingPage() {
               Registrate gratis, elegí productos del catálogo y empezá a generar ingresos desde el primer día.
             </p>
             <div className="cta-btns" style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
-              <button onClick={() => window.location.href="/signup"}
+              <button onClick={() => window.location.href="/login"}
                 style={{ background: "white", color: BRAND, border: "none", borderRadius: 12, padding: "15px 36px", fontSize: 16, fontWeight: 800, cursor: "pointer", transition: "all 0.2s", fontFamily: "'Inter', sans-serif" }}
                 onMouseEnter={e => { e.target.style.transform = "translateY(-2px)"; e.target.style.boxShadow = "0 8px 28px rgba(0,0,0,0.2)"; }}
                 onMouseLeave={e => { e.target.style.transform = "none"; e.target.style.boxShadow = "none"; }}>
                 Crear cuenta gratis
-              </button>
-              <button onClick={() => window.location.href="/login"}
-                style={{ background: "transparent", color: "white", border: "2px solid rgba(255,255,255,0.5)", borderRadius: 12, padding: "15px 28px", fontSize: 16, fontWeight: 700, cursor: "pointer", transition: "all 0.2s", fontFamily: "'Inter', sans-serif" }}
-                onMouseEnter={e => { e.target.style.borderColor = "white"; e.target.style.background = "rgba(255,255,255,0.1)"; }}
-                onMouseLeave={e => { e.target.style.borderColor = "rgba(255,255,255,0.5)"; e.target.style.background = "transparent"; }}>
-                Ya tengo cuenta
               </button>
             </div>
           </div>
