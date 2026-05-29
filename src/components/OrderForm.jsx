@@ -98,7 +98,6 @@ const OrderForm = () => {
   const [errors, setErrors] = useState({});
 
   const [supplierCity, setSupplierCity] = useState(supplierCityFromState || '');
-  console.log('[OrderForm] supplierCityFromState:', supplierCityFromState, '| supplierId:', supplierId);
 
   useEffect(() => {
     getCities().then(data => setCities(data || [])).catch(() => {});
@@ -930,8 +929,8 @@ const OrderForm = () => {
               </div>
               <p className="of-hint">
                 {form.collectionType === 'con_recaudo'
-                  ? '✓ El cliente paga contra entrega. No necesitás saldo previo.'
-                  : '✓ Ya cobraste del cliente. Se reservará el costo del proveedor de tu wallet.'}
+                  ? 'El cliente paga al recibir el pedido. No necesitás saldo previo.'
+                  : 'Ya cobraste al cliente. Se reservará el costo del proveedor de tu wallet.'}
               </p>
             </div>
 
