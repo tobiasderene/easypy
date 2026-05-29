@@ -25,7 +25,7 @@ const Sidebar = ({ isOpen, onClose }) => {
     localStorage.removeItem('auth_token'); // limpiar primero
     setUser(null);
     try { await logout(); } catch {}       // intentar limpiar cookie
-    navigate('/login', { replace: true }); // replace para no volver atrás
+    navigate('/', { replace: true }); // replace para no volver atrás
     onClose();
   };
 
