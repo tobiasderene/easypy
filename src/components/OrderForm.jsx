@@ -178,11 +178,10 @@ const OrderForm = () => {
       .catch(() => setZones([]));
   }, [form.logisticsId]);
 
-  // ── Auto-cotizar Fixy cuando cambia ciudad o logística ───────────────────
+  // ── Auto-cotizar Fixy — SOLO cuando cambia fixyCp (ciudad) ──────────────
   useEffect(() => {
     if (!fixyCp) { setQuote(null); return; }
 
-    // Buscar logística Fixy disponible
     const fixyLogistic = logistics.find(l => l.api_type === 'fixy');
     if (!fixyLogistic) { setQuote(null); return; }
 
@@ -193,7 +192,7 @@ const OrderForm = () => {
       .then(result => setQuote(result))
       .catch(() => setQuote(null))
       .finally(() => setQuoting(false));
-  }, [fixyCp, logistics]);
+  }, [fixyCp]); // ← solo fixyCp, no logistics
 
   useEffect(() => {
     if (!supplierId) return;
