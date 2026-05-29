@@ -33,7 +33,7 @@ const benefits = [
 ];
 
 const stats = [
-  { value: "500+", label: "Productos disponibles" },
+  { value: "100+", label: "Productos disponibles" },
   { value: "3",    label: "Logísticas integradas" },
   { value: "100%", label: "Digital y sin stock" },
   { value: "24h",  label: "Soporte al vendedor" },
