@@ -48,7 +48,7 @@ const Analytics = () => {
   const isProvider = user?.user_role === 'provider';
   const isAdmin    = user?.user_role === 'admin';
 
-  const [period, setPeriod]             = useState(1);
+  const [period, setPeriod]             = useState(2); // default: 1 mes
   const [customRange, setCustomRange]   = useState(null);
   const [showCalendar, setShowCalendar] = useState(false);
   const [tempFrom, setTempFrom]         = useState('');
@@ -76,6 +76,7 @@ const Analytics = () => {
 
     Promise.all([fetchOrders, fetchWallet])
       .then(async ([ords, wal]) => {
+        console.log('[analytics] orders fetched:', ords?.length, ords);
         setOrders(ords || []);
         setWallet(wal);
         if (wal?.wallet_id) {
