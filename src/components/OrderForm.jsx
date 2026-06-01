@@ -66,6 +66,7 @@ const OrderForm = () => {
   const [quoting, setQuoting]                   = useState(false);
   const [fixySuggestions, setFixySuggestions]   = useState([]);
   const [fixyCp, setFixyCp]                     = useState(null);
+  const lastQuotedCp                            = useRef(null);
   const [showFixySug, setShowFixySug]           = useState(false);
   const [otraCiudad, setOtraCiudad]             = useState(false);
   const fixyInputRef                            = useRef(null);
@@ -98,7 +99,6 @@ const OrderForm = () => {
   const [errors, setErrors] = useState({});
 
   const [supplierCity, setSupplierCity] = useState(supplierCityFromState || '');
-  console.log('[OrderForm] supplierCityFromState:', supplierCityFromState, '| supplierId:', supplierId);
 
   useEffect(() => {
     getCities().then(data => setCities(data || [])).catch(() => {});
@@ -149,14 +149,15 @@ const OrderForm = () => {
         const sPrice = supplierZone ? parseFloat(supplierZone.price) : 0;
         prices[l.logistic_id] = Math.max(rPrice, sPrice);
       } else if (l.api_type === 'fixy') {
-        // Fixy — usar cotización disponible o marcar como cotizando
         if (quoting) {
           prices[l.logistic_id] = 'quoting';
         } else if (quote && !quote.error && quote.total) {
           prices[l.logistic_id] = quote.total;
-        } else if (quote === null && fixyCp) {
+        } else if (quote && (quote.error || !quote.total)) {
+          // Solo marcar unavailable si vino respuesta pero sin precio válido
           prices[l.logistic_id] = 'unavailable';
         } else {
+          // quote es null y no estamos cotizando activamente — mostrar null
           prices[l.logistic_id] = null;
         }
       }
@@ -177,22 +178,30 @@ const OrderForm = () => {
       .catch(() => setZones([]));
   }, [form.logisticsId]);
 
-  // ── Auto-cotizar Fixy cuando cambia ciudad o logística ───────────────────
+  // ── Auto-cotizar Fixy — SOLO cuando cambia fixyCp (ciudad) ──────────────
   useEffect(() => {
-    if (!fixyCp) { setQuote(null); return; }
+    if (!fixyCp) { setQuote(null); lastQuotedCp.current = null; return; }
 
-    // Buscar logística Fixy disponible
+    // No recotizar si ya tenemos quote para este CP
+    console.log('[fixy-quote] useEffect fired — fixyCp:', fixyCp, '| lastQuotedCp:', lastQuotedCp.current);
+    if (lastQuotedCp.current === fixyCp) {
+      console.log('[fixy-quote] SKIP — same CP, no requote');
+      return;
+    }
+
     const fixyLogistic = logistics.find(l => l.api_type === 'fixy');
     if (!fixyLogistic) { setQuote(null); return; }
 
+    console.log('[fixy-quote] QUOTING — CP changed to', fixyCp);
+    lastQuotedCp.current = fixyCp;
     const totalBultos = items.reduce((s, i) => s + i.quantity, 0) || 1;
     setQuoting(true);
     setQuote(null);
     getLogisticsQuote(fixyLogistic.logistic_id, totalBultos, 1.0, fixyCp)
       .then(result => setQuote(result))
-      .catch(() => setQuote(null))
+      .catch(() => { setQuote(null); lastQuotedCp.current = null; })
       .finally(() => setQuoting(false));
-  }, [fixyCp, logistics]);
+  }, [fixyCp]); // ← solo fixyCp, no logistics
 
   useEffect(() => {
     if (!supplierId) return;
@@ -321,7 +330,6 @@ const OrderForm = () => {
     } else {
       setFixyCp(null);
     }
-    setQuote(null);
   };
 
   // ── Mapa ──────────────────────────────────────────────────────────────────
@@ -407,9 +415,14 @@ const OrderForm = () => {
     const sPrice = supplierZone  ? parseFloat(supplierZone.price)  : 0;
     return Math.max(rPrice, sPrice);
   })();
-  const rawShipping = (quote && !quote.error && quote.total)
-    ? quote.total
-    : zonePrice;
+  const selectedLogistic = logistics.find(l => l.logistic_id === form.logisticsId);
+  const rawShipping = (() => {
+    if (!selectedLogistic) return 0;
+    if (selectedLogistic.api_type === 'manual') return zonePrice;
+    // Cualquier logística con API (fixy u otras futuras) — usar quote si existe
+    if (quote && !quote.error && quote.total) return quote.total;
+    return 0;
+  })();
   const commission        = rawShipping * 0.25;                          // 25% sobre envío
   const logisticCost      = rawShipping + commission;                    // lo que ve el vendedor (envío + comisión sumados)
   const earnings          = totalRecaudo - totalSupplierCost - logisticCost;
@@ -498,7 +511,7 @@ const OrderForm = () => {
       return;
     }
     if (items.length === 0) { setSubmitError('Agregá al menos un producto'); return; }
-    if (earnings < 0) { setErrors(prev => ({ ...prev, general: 'La utilidad no puede ser negativa. Subí el precio de venta.' })); return; }
+    if (earnings < 0) { setErrors(prev => ({ ...prev, general: 'El precio del producto debe cubrir todos los costos.' })); return; }
     if (!form.logisticsId) { setErrors(prev => ({ ...prev, logisticsId: 'Seleccioná una transportadora' })); return; }
     if (logisticCost <= 0) { setErrors(prev => ({ ...prev, logisticsId: 'La logística seleccionada no tiene costo configurado para esta ciudad' })); return; }
     setShowConfirm(true);
@@ -753,13 +766,11 @@ const OrderForm = () => {
                       handleChange('city', loc.name);
                       handleChange('region', loc.department);
                       setFixyCp(loc.cp);
-                      setQuote(null);
-                      setLogisticPrices({});  // resetear precios al cambiar ciudad
-                      handleChange('logisticsId', null);  // deseleccionar logística
+                      setLogisticPrices({});
+                      handleChange('logisticsId', null);
                     } else {
                       handleChange('city', val);
                       setFixyCp(null);
-                      setQuote(null);
                       setLogisticPrices({});
                       handleChange('logisticsId', null);
                     }
@@ -839,69 +850,6 @@ const OrderForm = () => {
               {errors.email && <span className="of-err">{errors.email}</span>}
             </div>
 
-            {/* ── Productos ── */}
-            <div className="of-field">
-              <label className="of-label">Productos</label>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {items.map(item => (
-                  <div key={item.id} style={{ border: '1.5px solid #e5e7eb', borderRadius: '9px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      {item.image && <img src={item.image} alt={item.name} className="of-product-img" style={{ flexShrink: 0 }} />}
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <span className="of-product-name">{item.name}</span>
-                        <span className="of-product-cost" style={{ display: 'block' }}>Costo: {formatCurrency(item.price)}</span>
-                      </div>
-                      <div className="of-qty" style={{ flexShrink: 0 }}>
-                        <button className="of-qty-btn" onClick={() => updateQty(item.id, item.quantity - 1)} disabled={item.quantity <= 1}>−</button>
-                        <span className="of-qty-val">{item.quantity}</span>
-                        <button className="of-qty-btn" onClick={() => updateQty(item.id, item.quantity + 1)}>+</button>
-                      </div>
-                      <button onClick={() => removeItem(item.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px', fontSize: '16px', flexShrink: 0 }}>×</button>
-                    </div>
-                    <div>
-                      <label className="of-label" style={{ marginBottom: '4px', display: 'block' }}>
-                        Precio de venta <span className="of-req">*</span>
-                      </label>
-                      <div className={`of-price-wrap ${errors[`price_${item.id}`] ? 'err' : ''}`}>
-                        <span className="of-price-sign">Gs.</span>
-                        <input className="of-price-input" type="number" placeholder="0" min="0" value={salePrices[item.id] || ''} onChange={e => setSalePrice(item.id, e.target.value)} />
-                      </div>
-                      {errors[`price_${item.id}`] && <span className="of-err">{errors[`price_${item.id}`]}</span>}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              <button className="of-toggle-btn" style={{ marginTop: '8px', width: '100%', justifyContent: 'center' }} onClick={() => setShowProductList(!showProductList)}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14" /></svg>
-                Agregar otro producto
-              </button>
-
-              {showProductList && (
-                <div style={{ border: '1.5px solid #e5e7eb', borderRadius: '9px', overflow: 'hidden', marginTop: '6px' }}>
-                  {loadingProducts ? (
-                    <p style={{ padding: '12px', fontSize: '13px', color: '#9ca3af', textAlign: 'center' }}>Cargando productos...</p>
-                  ) : supplierProducts.filter(p => !items.find(i => i.id === p.id)).length === 0 ? (
-                    <p style={{ padding: '12px', fontSize: '13px', color: '#9ca3af', textAlign: 'center' }}>No hay otros productos disponibles</p>
-                  ) : (
-                    supplierProducts.filter(p => !items.find(i => i.id === p.id)).map(p => (
-                      <div key={p.id} onClick={() => addItem(p)}
-                        style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', cursor: 'pointer', borderBottom: '1px solid #f3f4f6', background: 'white', transition: 'background 0.2s' }}
-                        onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'}
-                        onMouseLeave={e => e.currentTarget.style.background = 'white'}
-                      >
-                        {p.image ? <img src={p.image} alt={p.name} style={{ width: '36px', height: '36px', borderRadius: '6px', objectFit: 'cover', flexShrink: 0 }} /> : <div style={{ width: '36px', height: '36px', borderRadius: '6px', background: '#f3f4f6', flexShrink: 0 }} />}
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <p style={{ fontSize: '13px', fontWeight: '600', color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</p>
-                          <p style={{ fontSize: '12px', color: '#056EB7', fontWeight: '600' }}>{formatCurrency(p.price)}</p>
-                        </div>
-                        <svg width="16" height="16" fill="none" stroke="#056EB7" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v14M5 12h14" /></svg>
-                      </div>
-                    ))
-                  )}
-                </div>
-              )}
-            </div>
           </div>
 
           <div className="of-divider" />
@@ -930,8 +878,8 @@ const OrderForm = () => {
               </div>
               <p className="of-hint">
                 {form.collectionType === 'con_recaudo'
-                  ? '✓ El cliente paga contra entrega. No necesitás saldo previo.'
-                  : '✓ Ya cobraste del cliente. Se reservará el costo del proveedor de tu wallet.'}
+                  ? 'El cliente paga al recibir el pedido. No necesitás saldo previo.'
+                  : 'Ya cobraste al cliente. Se reservará el costo del proveedor de tu wallet.'}
               </p>
             </div>
 
@@ -953,7 +901,7 @@ const OrderForm = () => {
                       <button key={l.logistic_id}
                         className={`of-logistics-opt ${form.logisticsId === l.logistic_id ? 'active' : ''}`}
                         disabled={disabled}
-                        onClick={() => { if (disabled) return; handleChange('logisticsId', l.logistic_id); setQuote(null); setOtraCiudad(false); }}
+                        onClick={() => { if (disabled) return; handleChange('logisticsId', l.logistic_id); setOtraCiudad(false); }}
                         style={disabled ? { opacity: 0.45, cursor: 'not-allowed', filter: 'grayscale(1)' } : {}}
                       >
                         <div className="of-logistics-info">
@@ -999,20 +947,71 @@ const OrderForm = () => {
               </div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              {items.map(item => {
-                const sp = getSalePrice(item.id);
-                return (
-                  <div key={item.id} className="of-summary-product">
-                    {item.image && <img src={item.image} alt={item.name} className="of-sum-img" />}
-                    <div className="of-sum-product-info">
-                      <span className="of-sum-name">{item.name}</span>
-                      <span className="of-sum-qty">x{item.quantity} · Costo: {formatCurrency(item.price)}</span>
+            {/* ── Productos ── */}
+            <div className="of-field">
+              <label className="of-label">Productos</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {items.map(item => (
+                  <div key={item.id} style={{ border: '1.5px solid #e5e7eb', borderRadius: '9px', padding: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      {item.image && <img src={item.image} alt={item.name} className="of-product-img" style={{ flexShrink: 0 }} />}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <span className="of-product-name">{item.name}</span>
+                        <span className="of-product-cost" style={{ display: 'block' }}>Costo: {formatCurrency(item.price)}</span>
+                      </div>
+                      <div className="of-qty" style={{ flexShrink: 0 }}>
+                        <button className="of-qty-btn" onClick={() => updateQty(item.id, item.quantity - 1)} disabled={item.quantity <= 1}>−</button>
+                        <span className="of-qty-val">{item.quantity}</span>
+                        <button className="of-qty-btn" onClick={() => updateQty(item.id, item.quantity + 1)}>+</button>
+                      </div>
+                      <button onClick={() => removeItem(item.id)} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '4px', fontSize: '16px', flexShrink: 0 }}>×</button>
                     </div>
-                    <span className="of-sum-price">{sp > 0 ? formatCurrency(sp * item.quantity) : '—'}</span>
+                    <div style={{ marginTop: '8px' }}>
+                      <label className="of-label" style={{ marginBottom: '4px', display: 'block' }}>
+                        Precio de venta <span className="of-req">*</span>
+                      </label>
+                      <div className={`of-price-wrap ${errors[`price_${item.id}`] ? 'err' : ''}`}>
+                        <span className="of-price-sign">Gs.</span>
+                        <input className="of-price-input" type="number" placeholder="0" min="0"
+                          value={salePrices[item.id] || ''}
+                          onChange={e => setSalePrice(item.id, e.target.value)} />
+                      </div>
+                      {errors[`price_${item.id}`] && <span className="of-err">{errors[`price_${item.id}`]}</span>}
+                    </div>
+
                   </div>
-                );
-              })}
+                ))}
+              </div>
+
+              <button className="of-toggle-btn" style={{ marginTop: '8px', width: '100%', justifyContent: 'center' }} onClick={() => setShowProductList(!showProductList)}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M5 12h14" /></svg>
+                Agregar otro producto
+              </button>
+
+              {showProductList && (
+                <div style={{ border: '1.5px solid #e5e7eb', borderRadius: '9px', overflow: 'hidden', marginTop: '6px' }}>
+                  {loadingProducts ? (
+                    <p style={{ padding: '12px', fontSize: '13px', color: '#9ca3af', textAlign: 'center' }}>Cargando productos...</p>
+                  ) : supplierProducts.filter(p => !items.find(i => i.id === p.id)).length === 0 ? (
+                    <p style={{ padding: '12px', fontSize: '13px', color: '#9ca3af', textAlign: 'center' }}>No hay otros productos disponibles</p>
+                  ) : (
+                    supplierProducts.filter(p => !items.find(i => i.id === p.id)).map(p => (
+                      <div key={p.id} onClick={() => addItem(p)}
+                        style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', cursor: 'pointer', borderBottom: '1px solid #f3f4f6', background: 'white', transition: 'background 0.2s' }}
+                        onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'white'}
+                      >
+                        {p.image ? <img src={p.image} alt={p.name} style={{ width: '36px', height: '36px', borderRadius: '6px', objectFit: 'cover', flexShrink: 0 }} /> : <div style={{ width: '36px', height: '36px', borderRadius: '6px', background: '#f3f4f6', flexShrink: 0 }} />}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontSize: '13px', fontWeight: '600', color: '#111827', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</p>
+                          <p style={{ fontSize: '12px', color: '#056EB7', fontWeight: '600' }}>{formatCurrency(p.price)}</p>
+                        </div>
+                        <svg width="16" height="16" fill="none" stroke="#056EB7" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v14M5 12h14" /></svg>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="of-breakdown">
@@ -1043,7 +1042,7 @@ const OrderForm = () => {
               </div>
               {totalRecaudo > 0 && earnings < 0 && (
                 <div style={{ background: '#fef2f2', border: '1.5px solid #fecaca', borderRadius: '8px', padding: '8px 12px', fontSize: '12px', color: '#dc2626', fontWeight: '600' }}>
-                  El precio de venta debe cubrir todos los costos
+                  El precio del producto debe cubrir todos los costos
                 </div>
               )}
             </div>

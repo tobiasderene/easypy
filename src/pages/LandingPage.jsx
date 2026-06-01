@@ -33,7 +33,7 @@ const benefits = [
 ];
 
 const stats = [
-  { value: "500+", label: "Productos disponibles" },
+  { value: "100+", label: "Productos disponibles" },
   { value: "3",    label: "Logísticas integradas" },
   { value: "100%", label: "Digital y sin stock" },
   { value: "24h",  label: "Soporte al vendedor" },
@@ -131,15 +131,15 @@ export default function LandingPage() {
                 <span style={{ color: BRAND }}>Ganá en serio.</span>
               </h1>
               <p className={`fade-up d2 ${heroVisible ? "visible" : ""}`} style={{ fontSize: 18, color: "#475569", lineHeight: 1.7, marginBottom: 36, maxWidth: 520, margin: "0 auto 36px" }}>
-                EasyPy es la plataforma de dropshipping que conecta vendedores con proveedores locales. Sin inventario, sin complicaciones — solo ventas.
+                EasyPy es la plataforma que conecta vendedores con proveedores locales. Sin inventario, sin complicaciones, solo ventas.
               </p>
               <div className={`hero-cta fade-up d3 ${heroVisible ? "visible" : ""}`} style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
-                <button className="btn-primary" style={{ padding: "14px 32px", fontSize: 16 }} onClick={() => window.location.href="/signup"}>
+                <button className="btn-primary" style={{ padding: "14px 32px", fontSize: 16 }} onClick={() => window.location.href="/login"}>
                   Empezar gratis
                 </button>
               </div>
               <div className={`hero-stats fade-up d4 ${heroVisible ? "visible" : ""}`} style={{ display: "flex", gap: 28, marginTop: 40, justifyContent: "center", flexWrap: "wrap" }}>
-                {[["500+","Productos"],["3","Logísticas"],["0 stock","Requerido"]].map(([val, label]) => (
+                {[["100+","Productos"],["3","Logísticas"],["0 stock","Requerido"]].map(([val, label]) => (
                   <div key={label} style={{ textAlign: "center" }}>
                     <div style={{ fontSize: 22, fontWeight: 800, color: BRAND, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>{val}</div>
                     <div style={{ fontSize: 12, color: "#94a3b8", fontWeight: 500 }}>{label}</div>
@@ -206,20 +206,18 @@ export default function LandingPage() {
       <section id="about" ref={aboutRef} style={{ background: "#f8fafc", padding: "96px 24px" }}>
         <div style={{ maxWidth: 1200, margin: "0 auto" }}>
           <div className="about-grid" style={{ display: "flex", gap: 80, alignItems: "center" }}>
-            <div className={`fade-up ${aboutVisible ? "visible" : ""}`} style={{ flex: 1, textAlign: "center" }}>
-              <h2 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: "clamp(28px, 4vw, 44px)", fontWeight: 800, color: "#0f172a", marginBottom: 20, lineHeight: 1.15 }}>
-                Nació en Paraguay<br />para Paraguay
-              </h2>
-              <p style={{ fontSize: 16, color: "#475569", lineHeight: 1.8, marginBottom: 20 }}>
-                EasyPy es una plataforma local de dropshipping que conecta proveedores con vendedores de todo el país. Creemos que cualquier persona puede construir un negocio online sin necesidad de capital para stock.
-              </p>
-              <p style={{ fontSize: 16, color: "#475569", lineHeight: 1.8, marginBottom: 32 }}>
-                Integramos logísticas reales como Fixy y Legex, procesamos pagos con recaudo o sin recaudo, y te damos las herramientas para escalar tu negocio con datos claros.
-              </p>
-              <button className="btn-primary" style={{ padding: "13px 28px", fontSize: 15 }} onClick={() => window.location.href="/signup"}>
-                Unirme a EasyPy
-              </button>
-            </div>
+     <div className={`fade-up ${aboutVisible ? "visible" : ""}`} style={{ flex: 1, textAlign: "center" }}>
+        <h2 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: "clamp(28px, 4vw, 44px)", fontWeight: 800, color: "#0f172a", marginBottom: 20, lineHeight: 1.15 }}>
+          Nació en Paraguay<br />para Paraguay
+        </h2>
+        <p style={{ fontSize: 16, color: "#475569", lineHeight: 1.8, marginBottom: 20 }}>
+          EasyPy es una plataforma local que conecta proveedores con vendedores de todo el país. Vos vendes, nosotros nos encargamos del resto.
+        </p>
+        <button className="btn-primary" style={{ padding: "13px 28px", fontSize: 15, display: "inline-block" }} onClick={() => window.location.href="/login"}>
+          Unirme a EasyPy
+        </button>
+      </div>
+    
             <div className={`fade-up d2 ${aboutVisible ? "visible" : ""}`} style={{ flex: 1 }}>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2, background: "#e5e7eb", borderRadius: 20, overflow: "hidden" }}>
                 {stats.map((s, i) => (
@@ -247,17 +245,11 @@ export default function LandingPage() {
               Registrate gratis, elegí productos del catálogo y empezá a generar ingresos desde el primer día.
             </p>
             <div className="cta-btns" style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
-              <button onClick={() => window.location.href="/signup"}
+              <button onClick={() => window.location.href="/login"}
                 style={{ background: "white", color: BRAND, border: "none", borderRadius: 12, padding: "15px 36px", fontSize: 16, fontWeight: 800, cursor: "pointer", transition: "all 0.2s", fontFamily: "'Inter', sans-serif" }}
                 onMouseEnter={e => { e.target.style.transform = "translateY(-2px)"; e.target.style.boxShadow = "0 8px 28px rgba(0,0,0,0.2)"; }}
                 onMouseLeave={e => { e.target.style.transform = "none"; e.target.style.boxShadow = "none"; }}>
                 Crear cuenta gratis
-              </button>
-              <button onClick={() => window.location.href="/login"}
-                style={{ background: "transparent", color: "white", border: "2px solid rgba(255,255,255,0.5)", borderRadius: 12, padding: "15px 28px", fontSize: 16, fontWeight: 700, cursor: "pointer", transition: "all 0.2s", fontFamily: "'Inter', sans-serif" }}
-                onMouseEnter={e => { e.target.style.borderColor = "white"; e.target.style.background = "rgba(255,255,255,0.1)"; }}
-                onMouseLeave={e => { e.target.style.borderColor = "rgba(255,255,255,0.5)"; e.target.style.background = "transparent"; }}>
-                Ya tengo cuenta
               </button>
             </div>
           </div>

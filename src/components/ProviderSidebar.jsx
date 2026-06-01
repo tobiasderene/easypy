@@ -20,7 +20,7 @@ const ProviderSidebar = ({ isOpen, onClose }) => {
   const handleLogout = async () => {
     await logout();
     setUser(null);
-    navigate('/login');
+    navigate('/');
     onClose();
   };
 

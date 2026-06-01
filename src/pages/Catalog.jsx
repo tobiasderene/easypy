@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getProducts, getProductImages, getProviders } from '../services/api';
+import { getProducts, getProductImagesBulk, getProviders } from '../services/api';
+import { useUser } from '../App';
 import '../styles/catalog.css';
 
 const PAGE_SIZE = 50;
 
 const Catalog = () => {
   const navigate = useNavigate();
+  const { searchQuery } = useUser();
   const [activeFilters, setActiveFilters] = useState(['all']);
   const [products, setProducts]           = useState([]);
   const [loading, setLoading]             = useState(true);
@@ -38,39 +40,38 @@ const Catalog = () => {
         if (data && data.length > 0) {
           setHasMore(data.length === PAGE_SIZE);
           const activeData = data.filter(p => p.product_status === 'active');
-          const withImages = await Promise.all(
-            activeData.map(async (p) => {
-              let imageUrl = null;
-              try {
-                // Cache en memoria para evitar requests repetidos dentro de la misma sesión
-                if (!window._imgCache) window._imgCache = {};
-                if (window._imgCache[p.product_id]) {
-                  imageUrl = window._imgCache[p.product_id];
-                } else {
-                  const images  = await getProductImages(p.product_id);
-                  const primary = images.find(img => img.is_primary) || images[0];
-                  imageUrl      = primary?.image_url || null;
-                  if (imageUrl) window._imgCache[p.product_id] = imageUrl;
-                }
-              } catch {}
 
-              return {
-                id:             p.product_id,
-                name:           p.product_name,
-                provider:       p.user_id,
-                providerName:   localMap[p.user_id]?.name || `Proveedor #${p.user_id}`,
-                providerCity:   localMap[p.user_id]?.city || '',
-                price:          parseFloat(p.product_base_cost),
-                suggestedPrice: p.suggested_price ? parseFloat(p.suggested_price) : null,
-                stock:          p.stock_available ?? null,
-                status:         p.product_status,
-                image:          imageUrl,
-                badge:          p.is_private ? 'Exclusivo' : null,
-                isPrivate:      p.is_private || false,
-                category:       p.product_category,
-              };
-            })
-          );
+          // Un solo request para todas las imágenes
+          if (!window._imgCache) window._imgCache = {};
+          const uncachedIds = activeData
+            .map(p => p.product_id)
+            .filter(id => !window._imgCache[id]);
+
+          if (uncachedIds.length > 0) {
+            try {
+              const bulkImages = await getProductImagesBulk(uncachedIds);
+              Object.entries(bulkImages).forEach(([pid, url]) => {
+                window._imgCache[parseInt(pid)] = url;
+              });
+            } catch {}
+          }
+
+          const withImages = activeData.map(p => ({
+            id:             p.product_id,
+            name:           p.product_name,
+            provider:       p.user_id,
+            providerName:   localMap[p.user_id]?.name || `Proveedor #${p.user_id}`,
+            providerCity:   localMap[p.user_id]?.city || '',
+            price:          parseFloat(p.product_base_cost),
+            suggestedPrice: p.suggested_price ? parseFloat(p.suggested_price) : null,
+            stock:          p.stock_available ?? null,
+            status:         p.product_status,
+            image:          window._imgCache[p.product_id] || null,
+            badge:          p.is_private ? 'Exclusivo' : null,
+            isPrivate:      p.is_private || false,
+            category:       p.product_category,
+            sku:            p.product_sku || '',
+          }));
           if (append) setProducts(prev => [...prev, ...withImages]);
           else setProducts(withImages);
         } else {
@@ -119,12 +120,19 @@ const Catalog = () => {
     });
   };
 
-  const filtered = activeFilters.includes('all')
+  const categoryFiltered = activeFilters.includes('all')
     ? products
     : products.filter(p =>
         activeFilters.includes(p.category) ||
         (activeFilters.includes('exclusive') && p.isPrivate)
       );
+
+  const filtered = searchQuery?.trim()
+    ? categoryFiltered.filter(p =>
+        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (p.sku && p.sku.toLowerCase().includes(searchQuery.toLowerCase()))
+      )
+    : categoryFiltered;
 
   const formatPrice = (price) =>
     new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', minimumFractionDigits: 0 }).format(price);
@@ -161,7 +169,13 @@ const Catalog = () => {
     return (
       <div
         className="product-card"
-        onClick={() => navigate(`/product/${product.id}`)}
+        onClick={(e) => {
+          if (e.ctrlKey || e.metaKey) {
+            window.open(`/product/${product.id}`, '_blank');
+          } else {
+            navigate(`/product/${product.id}`);
+          }
+        }}
         style={{ cursor: 'pointer', opacity: outOfStock ? 0.75 : 1 }}
         data-out-of-stock={outOfStock ? 'true' : undefined}
       >

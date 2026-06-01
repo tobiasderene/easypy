@@ -106,6 +106,7 @@ export const adminDeleteUser   = (userId) =>
 
 // ─── Products ─────────────────────────────────────────
 export const getProducts   = (skip = 0, limit = 50)  => api(`/products?skip=${skip}&limit=${limit}`);
+export const getMySalesCount = () => api('/products/my-sales-count');
 export const getMyProducts    = (skip = 0, limit = 50)  => api(`/products/my-products?skip=${skip}&limit=${limit}`);
 export const getProductsByUser = (userId, skip = 0, limit = 50)  => api(`/products/user/${userId}?skip=${skip}&limit=${limit}`);
 export const getProduct    = (productId)             => api(`/products/${productId}`);
@@ -117,6 +118,9 @@ export const deleteProduct = (productId)             => api(`/products/${product
 export const getProductImages = (productId) => api(`/images/product/${productId}`);
 export const getProfileImage  = (userId)    => api(`/images/profile/${userId}`);
 export const deleteImage      = (imageId)   => api(`/images/${imageId}`, { method: "DELETE" });
+
+export const getProductImagesBulk = (productIds) =>
+  api('/images/products/bulk', { method: 'POST', body: JSON.stringify(productIds) });
 
 export const uploadProductImage = (productId, file, isPrimary = false, position = 0) => {
   const formData = new FormData();
