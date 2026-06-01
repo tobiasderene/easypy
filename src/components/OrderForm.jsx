@@ -561,9 +561,8 @@ const OrderForm = () => {
   };
 
   // ── Modal de confirmación ────────────────────────────────────────────────
-  const ConfirmModal = () => {
-    const selectedLogistic = logistics.find(l => l.logistic_id === form.logisticsId);
-    return (
+  const selectedLogisticForModal = logistics.find(l => l.logistic_id === form.logisticsId);
+  const confirmModalJSX = (
       <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
         <div style={{ background: 'white', borderRadius: '16px', padding: '28px', maxWidth: '420px', width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
@@ -587,7 +586,7 @@ const OrderForm = () => {
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
               <span style={{ color: '#6b7280' }}>Logística</span>
-              <span style={{ fontWeight: '600', color: '#111827' }}>{selectedLogistic?.name || '—'}</span>
+              <span style={{ fontWeight: '600', color: '#111827' }}>{selectedLogisticForModal?.name || '—'}</span>
             </div>
             <div style={{ height: '1px', background: '#e5e7eb', margin: '2px 0' }} />
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px' }}>
@@ -621,8 +620,7 @@ const OrderForm = () => {
           </div>
         </div>
       </div>
-    );
-  };
+  );
 
   if (!supplierId) {
     return (
@@ -640,7 +638,7 @@ const OrderForm = () => {
 
   return (
     <div className="of-page">
-      {showConfirm && <ConfirmModal />}
+      {showConfirm && confirmModalJSX}
       <div className="of-card">
         <div className="of-columns">
 
