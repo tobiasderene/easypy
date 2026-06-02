@@ -61,8 +61,27 @@ const Settings = () => {
     setAvatarPreview(URL.createObjectURL(file));
   };
 
+  const validateProvider = () => {
+    if (!isProvider) return null;
+    const required = [
+      ['phone',          'Teléfono'],
+      ['city',           'Ciudad'],
+      ['region',         'Departamento'],
+      ['address',        'Dirección'],
+      ['address_height', 'Altura / N° de casa'],
+      ['doc_type',       'Tipo de documento'],
+      ['doc_number',     'Número de documento'],
+      ['contact_name',   'Nombre de contacto'],
+      ['razon_social',   'Razón social'],
+    ];
+    const missing = required.filter(([key]) => !form[key]?.trim()).map(([, label]) => label);
+    return missing.length > 0 ? `Campos obligatorios: ${missing.join(', ')}` : null;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const validationError = validateProvider();
+    if (validationError) { setError(validationError); return; }
     setSaving(true);
     setError('');
     setSuccess(false);
@@ -97,7 +116,9 @@ const Settings = () => {
     }
   };
 
-  const Field = ({ label, name, type = 'text', placeholder, disabled, children }) => (
+  const req = isProvider ? ' *' : '';
+
+  const Field = ({ label, name, type = 'text', placeholder, disabled, required, children }) => (
     <div className="settings-field">
       <label htmlFor={name}>{label}</label>
       {children || (
@@ -151,7 +172,7 @@ const Settings = () => {
             <div className="settings-form-grid">
               <Field label="Nombre de usuario" name="user_nickname" placeholder="Tu nombre" />
               <Field label="Correo electrónico" name="email" type="email" placeholder="tu@email.com" />
-              <Field label="Teléfono" name="phone" placeholder="+595981000000" />
+              <Field label={`Teléfono${req}`} name="phone" placeholder="+595981000000" />
 
               <div className="settings-field settings-field--full">
                 <label htmlFor="user_description">Descripción</label>
@@ -176,7 +197,7 @@ const Settings = () => {
                   <option value="pasaporte">Pasaporte</option>
                 </select>
               </div>
-              <Field label="Número de documento" name="doc_number" placeholder="12345678" />
+              <Field label={`Número de documento${req}`} name="doc_number" placeholder="12345678" />
             </div>
           </div>
 
@@ -192,9 +213,9 @@ const Settings = () => {
                   {cities.map(c => <option key={c.city_id} value={c.name}>{c.name}</option>)}
                 </select>
               </div>
-              <Field label="Departamento / Región" name="region" placeholder="Central" />
-              <Field label="Dirección" name="address" placeholder="Av. España 1234" />
-              <Field label="Altura / N° de casa" name="address_height" placeholder="Nro 1234" />
+              <Field label={`Departamento / Región${req}`} name="region" placeholder="Central" />
+              <Field label={`Dirección${req}`} name="address" placeholder="Av. España 1234" />
+              <Field label={`Altura / N° de casa${req}`} name="address_height" placeholder="Nro 1234" />
             </div>
           </div>
 
@@ -203,8 +224,8 @@ const Settings = () => {
             <div className="settings-card">
               <h2 className="settings-section-title">Datos comerciales</h2>
               <div className="settings-form-grid">
-                <Field label="Nombre de contacto" name="contact_name" placeholder="Juan Pérez" />
-                <Field label="Razón social" name="razon_social" placeholder="Empresa S.A." />
+                <Field label="Nombre de contacto *" name="contact_name" placeholder="Juan Pérez" />
+                <Field label="Razón social *" name="razon_social" placeholder="Empresa S.A." />
               </div>
             </div>
           )}
