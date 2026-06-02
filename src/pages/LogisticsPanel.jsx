@@ -238,11 +238,15 @@ const LogisticsPanel = () => {
                     {/* Ubicación proveedor */}
                     {order.supplier_city && (
                       <p className="lp-order-field full" style={{ marginTop: '4px' }}>
-                        <a href={`https://www.google.com/maps/search/${encodeURIComponent((order.supplier_address || '') + ' ' + order.supplier_city + ' Paraguay')}`}
+                        <strong>Retiro:</strong>{' '}
+                        <a href={`https://www.google.com/maps/search/${encodeURIComponent([order.supplier_address, order.supplier_height, order.supplier_city, 'Paraguay'].filter(Boolean).join(' '))}`}
                           target="_blank" rel="noopener noreferrer"
-                          style={{ fontSize: '12px', color: '#8b5cf6', fontWeight: '600', textDecoration: 'none' }}>
-                          Retirar en: {order.supplier_address ? `${order.supplier_address}, ` : ''}{order.supplier_city}
+                          style={{ color: '#8b5cf6', fontWeight: '600', textDecoration: 'none' }}>
+                          {[order.supplier_address, order.supplier_height, order.supplier_city].filter(Boolean).join(', ')}
                         </a>
+                        {order.supplier_phone && (
+                          <span style={{ marginLeft: '8px', color: '#6b7280' }}>· {order.supplier_phone}</span>
+                        )}
                       </p>
                     )}
 
