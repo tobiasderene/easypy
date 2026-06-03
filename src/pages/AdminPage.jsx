@@ -26,17 +26,19 @@ const formatDate = (d) => {
 
 const StatusBadge = ({ status }) => {
   const map = {
-    pending:          { label: 'Pendiente',   cls: 'badge-pending'    },
-    active:           { label: 'Activo',      cls: 'badge-active'     },
-    inactive:         { label: 'Inactivo',    cls: 'badge-inactive'   },
-    approved:         { label: 'Aprobado',    cls: 'badge-approved'   },
-    rejected:         { label: 'Rechazado',   cls: 'badge-rejected'   },
-    confirmed:        { label: 'Confirmado',  cls: 'badge-confirmed'  },
-    processing:       { label: 'En proceso',  cls: 'badge-processing' },
-    ready_for_pickup: { label: 'Listo',       cls: 'badge-confirmed'  },
-    in_transit:       { label: 'En tránsito', cls: 'badge-processing' },
-    cancelled:        { label: 'Cancelado',   cls: 'badge-cancelled'  },
-    completed:        { label: 'Completado',  cls: 'badge-completed'  },
+    pending:          { label: 'Pendiente',             cls: 'badge-pending'    },
+    active:           { label: 'Activo',                cls: 'badge-active'     },
+    inactive:         { label: 'Inactivo',              cls: 'badge-inactive'   },
+    approved:         { label: 'Aprobado',              cls: 'badge-approved'   },
+    rejected:         { label: 'Rechazado',             cls: 'badge-rejected'   },
+    confirmed:        { label: 'Confirmado',            cls: 'badge-confirmed'  },
+    processing:       { label: 'En preparación',        cls: 'badge-processing' },
+    ready_for_pickup: { label: 'Listo para retiro',     cls: 'badge-confirmed'  },
+    picked_up:        { label: 'Retirado',              cls: 'badge-processing' },
+    out_for_delivery: { label: 'En camino',             cls: 'badge-processing' },
+    redelivery:       { label: 'Reagendado',            cls: 'badge-pending'    },
+    cancelled:        { label: 'Cancelado',             cls: 'badge-cancelled'  },
+    completed:        { label: 'Completado',            cls: 'badge-completed'  },
   };
   const s = map[status] || { label: status, cls: 'badge-pending' };
   return <span className={`admin-badge ${s.cls}`}>{s.label}</span>;
