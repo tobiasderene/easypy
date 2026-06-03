@@ -5,7 +5,8 @@ import {
   getWithdrawalsByStatus, updateWithdrawal,
   getDeposits, getDepositsByStatus, approveDeposit, rejectDeposit,
   getOrdersByStatus, confirmOrderAdmin, cancelOrderAdmin,
-  getWallet, getUser,
+  getWallet, getUser, getWalletByUser, getTransactionsByWallet,
+  getOrdersByBuyer, getOrdersBySupplier,
 } from '../services/api';
 import '../styles/adminpage.css';
 
@@ -14,6 +15,7 @@ const TABS = [
   { id: 'orders',      label: 'Órdenes',     icon: '📦' },
   { id: 'deposits',    label: 'Ingresos',    icon: '💰' },
   { id: 'withdrawals', label: 'Egresos',     icon: '💸' },
+  { id: 'users',       label: 'Usuarios',    icon: '👥' },
 ];
 
 // ─── Helpers ──────────────────────────────────────────
@@ -451,6 +453,209 @@ const WithdrawalsTab = () => {
   );
 };
 
+// ─── Tab: Usuarios ────────────────────────────────────
+const UsersTab = () => {
+  const [users, setUsers]         = useState([]);
+  const [loading, setLoading]     = useState(true);
+  const [search, setSearch]       = useState('');
+  const [roleFilter, setRoleFilter] = useState('all');
+  const [expanded, setExpanded]   = useState(null);
+  const [userDetail, setUserDetail] = useState({});
+  const [loadingDetail, setLoadingDetail] = useState(null);
+
+  useEffect(() => {
+    getUsers()
+      .then(d => setUsers(d || []))
+      .catch(() => setUsers([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const loadUserDetail = async (u) => {
+    if (userDetail[u.user_id]) { setExpanded(u.user_id); return; }
+    setLoadingDetail(u.user_id);
+    try {
+      const [wallet, orders] = await Promise.all([
+        getWalletByUser(u.user_id).catch(() => null),
+        u.user_role === 'provider'
+          ? getOrdersBySupplier(u.user_id).catch(() => [])
+          : getOrdersByBuyer(u.user_id).catch(() => []),
+      ]);
+      let txs = [];
+      if (wallet?.wallet_id) {
+        txs = await getTransactionsByWallet(wallet.wallet_id).catch(() => []);
+      }
+      setUserDetail(prev => ({ ...prev, [u.user_id]: { wallet, orders: orders || [], txs } }));
+      setExpanded(u.user_id);
+    } catch {}
+    finally { setLoadingDetail(null); }
+  };
+
+  const filteredUsers = users.filter(u => {
+    const matchRole = roleFilter === 'all' || u.user_role === roleFilter;
+    const matchSearch = !search ||
+      (u.user_nickname || '').toLowerCase().includes(search.toLowerCase()) ||
+      (u.email || '').toLowerCase().includes(search.toLowerCase());
+    return matchRole && matchSearch;
+  });
+
+  const ROLE_LABEL = { seller: 'Vendedor', provider: 'Proveedor', admin: 'Admin', logistics: 'Logística', buyer: 'Buyer' };
+  const ROLE_COLOR = { seller: '#056EB7', provider: '#8b5cf6', admin: '#dc2626', logistics: '#d97706', buyer: '#16a34a' };
+  const STATUS_COLOR = { active: '#16a34a', pending: '#d97706', inactive: '#dc2626' };
+
+  if (loading) return <div className="tab-loading">Cargando...</div>;
+
+  return (
+    <div className="tab-content">
+      <div className="tab-header">
+        <h2 className="tab-title">Panel de usuarios</h2>
+        <span className="tab-count">{filteredUsers.length}</span>
+      </div>
+
+      {/* Filtros */}
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', flexWrap: 'wrap' }}>
+        <input
+          type="text"
+          placeholder="Buscar por nombre o email..."
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={{ flex: 1, minWidth: '200px', padding: '8px 12px', border: '1.5px solid #e5e7eb', borderRadius: '8px', fontSize: '13px' }}
+        />
+        <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)}
+          style={{ padding: '8px 12px', border: '1.5px solid #e5e7eb', borderRadius: '8px', fontSize: '13px', background: 'white' }}>
+          <option value="all">Todos los roles</option>
+          <option value="seller">Vendedores</option>
+          <option value="provider">Proveedores</option>
+          <option value="logistics">Logística</option>
+          <option value="admin">Admins</option>
+        </select>
+      </div>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        {filteredUsers.map(u => {
+          const isExpanded  = expanded === u.user_id;
+          const detail      = userDetail[u.user_id];
+          const isLoading   = loadingDetail === u.user_id;
+
+          return (
+            <div key={u.user_id} style={{ border: '1.5px solid #e5e7eb', borderRadius: '12px', overflow: 'hidden', background: 'white' }}>
+              {/* Fila principal */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', cursor: 'pointer' }}
+                onClick={() => isExpanded ? setExpanded(null) : loadUserDetail(u)}>
+                <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: ROLE_COLOR[u.user_role] + '20', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', color: ROLE_COLOR[u.user_role], fontSize: '16px', flexShrink: 0 }}>
+                  {(u.user_nickname || '?')[0].toUpperCase()}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <span style={{ fontWeight: '700', fontSize: '14px', color: '#111827' }}>{u.user_nickname}</span>
+                    <span style={{ fontSize: '11px', fontWeight: '600', padding: '2px 8px', borderRadius: '100px', background: (ROLE_COLOR[u.user_role] || '#6b7280') + '15', color: ROLE_COLOR[u.user_role] || '#6b7280' }}>
+                      {ROLE_LABEL[u.user_role] || u.user_role}
+                    </span>
+                    <span style={{ fontSize: '11px', fontWeight: '600', padding: '2px 8px', borderRadius: '100px', background: (STATUS_COLOR[u.user_status] || '#9ca3af') + '15', color: STATUS_COLOR[u.user_status] || '#9ca3af' }}>
+                      {u.user_status}
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>
+                    {u.email}
+                    {u.phone && <span style={{ marginLeft: '8px' }}>· {u.phone}</span>}
+                    {u.city  && <span style={{ marginLeft: '8px' }}>· {u.city}</span>}
+                  </div>
+                </div>
+                <div style={{ fontSize: '12px', color: '#9ca3af', flexShrink: 0 }}>
+                  {isLoading ? 'Cargando...' : isExpanded ? '▲' : '▼'}
+                </div>
+              </div>
+
+              {/* Detalle expandido */}
+              {isExpanded && detail && (
+                <div style={{ borderTop: '1.5px solid #f3f4f6', padding: '16px', background: '#fafafa', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+                  {/* Wallet */}
+                  {detail.wallet && (
+                    <div>
+                      <p style={{ fontSize: '11px', fontWeight: '800', color: '#6b7280', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Wallet</p>
+                      <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                        {[
+                          { label: 'Disponible', value: formatCurrency(detail.wallet.balance_available), color: '#16a34a' },
+                          { label: 'Pendiente',  value: formatCurrency(detail.wallet.balance_pending),   color: '#d97706' },
+                        ].map((item, i) => (
+                          <div key={i} style={{ background: 'white', border: '1.5px solid #e5e7eb', borderRadius: '8px', padding: '10px 16px', minWidth: '140px' }}>
+                            <p style={{ fontSize: '11px', color: '#6b7280', marginBottom: '4px' }}>{item.label}</p>
+                            <p style={{ fontSize: '16px', fontWeight: '800', color: item.color }}>{item.value}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Órdenes recientes */}
+                  {detail.orders?.length > 0 && (
+                    <div>
+                      <p style={{ fontSize: '11px', fontWeight: '800', color: '#6b7280', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        Últimas órdenes ({detail.orders.length})
+                      </p>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '200px', overflowY: 'auto' }}>
+                        {detail.orders.slice(0, 10).map(o => {
+                          const created = o.created_at ? new Date(o.created_at) : null;
+                          return (
+                            <div key={o.order_id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'white', borderRadius: '8px', border: '1px solid #f3f4f6', fontSize: '12px' }}>
+                              <span style={{ fontWeight: '600', color: '#111827' }}>#{o.order_id}</span>
+                              <span style={{ color: '#6b7280' }}>{o.recipient_city || '—'}</span>
+                              <span style={{ padding: '2px 8px', borderRadius: '100px', fontSize: '11px', fontWeight: '600', background: (STATUS_COLORS[o.status] || '#9ca3af') + '15', color: STATUS_COLORS[o.status] || '#9ca3af' }}>
+                                {o.status}
+                              </span>
+                              <span style={{ fontWeight: '700', color: '#056EB7' }}>{formatCurrency(o.final_price)}</span>
+                              <span style={{ color: '#9ca3af' }}>{created ? created.toLocaleDateString('es-PY', { day: '2-digit', month: 'short' }) : '—'}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Transacciones recientes */}
+                  {detail.txs?.length > 0 && (
+                    <div>
+                      <p style={{ fontSize: '11px', fontWeight: '800', color: '#6b7280', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        Transacciones ({detail.txs.length})
+                      </p>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '160px', overflowY: 'auto' }}>
+                        {detail.txs.slice(0, 8).map(t => (
+                          <div key={t.id_transaction} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', background: 'white', borderRadius: '8px', border: '1px solid #f3f4f6', fontSize: '12px' }}>
+                            <span style={{ color: '#6b7280' }}>{t.transaction_category}</span>
+                            {t.order_id && <span style={{ color: '#9ca3af' }}>Orden #{t.order_id}</span>}
+                            <span style={{ padding: '2px 8px', borderRadius: '100px', fontSize: '11px', background: t.transaction_status === 'completed' ? '#dcfce7' : '#fef3c7', color: t.transaction_status === 'completed' ? '#16a34a' : '#d97706', fontWeight: '600' }}>
+                              {t.transaction_status}
+                            </span>
+                            <span style={{ fontWeight: '700', color: t.transaction_direction === 'inbound' ? '#16a34a' : '#dc2626' }}>
+                              {t.transaction_direction === 'inbound' ? '+' : '-'}{formatCurrency(t.transaction_amount)}
+                            </span>
+                            <span style={{ color: '#9ca3af' }}>{new Date(t.created_at).toLocaleDateString('es-PY', { day: '2-digit', month: 'short' })}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {!detail.wallet && detail.orders?.length === 0 && detail.txs?.length === 0 && (
+                    <p style={{ fontSize: '13px', color: '#9ca3af', textAlign: 'center' }}>Sin actividad registrada</p>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+const STATUS_COLORS = {
+  completed: '#16a34a', confirmed: '#056EB7', processing: '#d97706',
+  ready_for_pickup: '#8b5cf6', picked_up: '#2563eb', out_for_delivery: '#d97706',
+  pending: '#9ca3af', cancelled: '#dc2626', redelivery: '#f97316',
+};
+
+
 // ─── Página principal ─────────────────────────────────
 const AdminPage = () => {
   const navigate             = useNavigate();
@@ -492,6 +697,7 @@ const AdminPage = () => {
       {activeTab === 'orders'      && <OrdersTab />}
       {activeTab === 'deposits'    && <DepositsTab />}
       {activeTab === 'withdrawals' && <WithdrawalsTab />}
+      {activeTab === 'users'       && <UsersTab />}
     </div>
   );
 };
