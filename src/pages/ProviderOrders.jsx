@@ -6,48 +6,15 @@ import OrderDetailsModal from '../components/Orderdetailsmodal';
 import '../styles/providerorders.css';
 
 const statusConfig = {
-  pending: {
-    label: 'Pendiente',
-    icon: Clock,
-    color: '#d97706',
-    bgColor: '#fffbeb'
-  },
-  confirmed: {
-    label: 'Confirmado por Admin',
-    icon: CheckCircle,
-    color: '#2563eb',
-    bgColor: '#eff6ff'
-  },
-  processing: {
-    label: 'En proceso',
-    icon: Package,
-    color: '#8b5cf6',
-    bgColor: '#f5f3ff'
-  },
-  ready_for_pickup: {
-    label: 'Listo para retirar',
-    icon: Truck,
-    color: '#16a34a',
-    bgColor: '#dcfce7'
-  },
-  in_transit: {
-    label: 'En tránsito',
-    icon: Truck,
-    color: '#d97706',
-    bgColor: '#fef3c7'
-  },
-  cancelled: {
-    label: 'Cancelado',
-    icon: XCircle,
-    color: '#dc2626',
-    bgColor: '#fef2f2'
-  },
-  completed: {
-    label: 'Completado',
-    icon: CheckCircle,
-    color: '#059669',
-    bgColor: '#d1fae5'
-  },
+  pending:          { label: 'Pendiente de aprobación',  detail: 'Esperando que el administrador apruebe la orden',                icon: Clock,        color: '#d97706', bgColor: '#fffbeb' },
+  confirmed:        { label: 'Aprobado — aceptar',       detail: 'El admin aprobó la orden. Aceptala para empezar a prepararla',  icon: CheckCircle,  color: '#2563eb', bgColor: '#eff6ff' },
+  processing:       { label: 'En preparación',           detail: 'Estás preparando este pedido. Marcalo listo cuando esté',       icon: Package,      color: '#8b5cf6', bgColor: '#f5f3ff' },
+  ready_for_pickup: { label: 'Esperando logística',      detail: 'El pedido está listo y esperando que la logística lo retire',   icon: Truck,        color: '#16a34a', bgColor: '#dcfce7' },
+  picked_up:        { label: 'Retirado',                 detail: 'La logística ya retiró el paquete de tu depósito',              icon: Truck,        color: '#2563eb', bgColor: '#eff6ff' },
+  out_for_delivery: { label: 'En camino al cliente',     detail: 'La logística está entregando el pedido al destinatario',        icon: Truck,        color: '#d97706', bgColor: '#fef3c7' },
+  redelivery:       { label: 'Reagendado',               detail: 'No se pudo entregar. La logística va a reintentar',             icon: Clock,        color: '#f97316', bgColor: '#fff7ed' },
+  completed:        { label: 'Entregado',                detail: 'El pedido fue entregado exitosamente al cliente',               icon: CheckCircle,  color: '#059669', bgColor: '#d1fae5' },
+  cancelled:        { label: 'Cancelado',                detail: 'Esta orden fue cancelada',                                     icon: XCircle,      color: '#dc2626', bgColor: '#fef2f2' },
 };
 
 const ProviderOrders = () => {
