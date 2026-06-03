@@ -6,7 +6,7 @@ import { getCities } from '../services/api';
 import '../styles/signup.css';
 
 const Signup = () => {
-  const [userType, setUserType]                       = useState('seller');
+  const [userType, setUserType]                       = useState('provider');
   const [showPassword, setShowPassword]               = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError]                             = useState('');
