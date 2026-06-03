@@ -5,6 +5,7 @@ import {
   getWithdrawalsByStatus, updateWithdrawal,
   getDeposits, getDepositsByStatus, approveDeposit, rejectDeposit,
   getOrdersByStatus, confirmOrderAdmin, cancelOrderAdmin,
+  getWallet, getUser,
 } from '../services/api';
 import '../styles/adminpage.css';
 
@@ -306,27 +307,57 @@ const DepositsTab = () => {
 // ─── Tab: Egresos ─────────────────────────────────────
 const WithdrawalsTab = () => {
   const [withdrawals, setWithdrawals] = useState([]);
+  const [enriched, setEnriched]       = useState({});  // { withdrawls_id: { user, wallet } }
   const [loading, setLoading]         = useState(true);
   const [modal, setModal]             = useState(null);
 
   useEffect(() => {
     getWithdrawalsByStatus('pending')
-      .then(d => setWithdrawals(d || []))
+      .then(async (data) => {
+        const list = data || [];
+        setWithdrawals(list);
+        // Enriquecer con datos de wallet y usuario
+        const enrichMap = {};
+        await Promise.all(list.map(async (w) => {
+          try {
+            const wallet = await getWallet(w.wallet_id);
+            const user   = wallet?.user_id ? await getUser(wallet.user_id) : null;
+            enrichMap[w.withdrawls_id] = { wallet, user };
+          } catch {}
+        }));
+        setEnriched(enrichMap);
+      })
       .catch(() => setWithdrawals([]))
       .finally(() => setLoading(false));
   }, []);
 
-  const handleAction = (w, status) => setModal({
-    title:        status === 'approved' ? 'Aprobar retiro' : 'Rechazar retiro',
-    message:      `¿${status === 'approved' ? 'Aprobás' : 'Rechazás'} el retiro de ${formatCurrency(w.amount)} al banco ${w.bank_name}?`,
-    confirmLabel: status === 'approved' ? 'Aprobar' : 'Rechazar',
-    danger:       status !== 'approved',
-    onConfirm:    async () => {
-      setModal(null);
-      await updateWithdrawal(w.withdrawls_id, { status });
-      setWithdrawals(prev => prev.filter(x => x.withdrawls_id !== w.withdrawls_id));
-    },
-  });
+  const handleAction = (w, status) => {
+    const info   = enriched[w.withdrawls_id];
+    const wallet = info?.wallet;
+    const user   = info?.user;
+
+    // Control cruzado: verificar que el saldo disponible cubra el retiro
+    if (status === 'approved' && wallet) {
+      const available = parseFloat(wallet.balance_available || 0);
+      const requested = parseFloat(w.amount || 0);
+      if (requested > available) {
+        alert(`Saldo insuficiente. Solicita: ${formatCurrency(requested)} — Disponible: ${formatCurrency(available)}`);
+        return;
+      }
+    }
+
+    setModal({
+      title:        status === 'approved' ? 'Aprobar retiro' : 'Rechazar retiro',
+      message:      `¿${status === 'approved' ? 'Aprobás' : 'Rechazás'} el retiro de ${formatCurrency(w.amount)} de ${user?.user_nickname || `Wallet #${w.wallet_id}`} al banco ${w.bank_name}?`,
+      confirmLabel: status === 'approved' ? 'Aprobar' : 'Rechazar',
+      danger:       status !== 'approved',
+      onConfirm:    async () => {
+        setModal(null);
+        await updateWithdrawal(w.withdrawls_id, { status });
+        setWithdrawals(prev => prev.filter(x => x.withdrawls_id !== w.withdrawls_id));
+      },
+    });
+  };
 
   if (loading) return <div className="tab-loading">Cargando...</div>;
 
@@ -340,24 +371,79 @@ const WithdrawalsTab = () => {
         <div className="admin-empty"><span className="admin-empty-icon">✅</span><p>Sin retiros pendientes</p></div>
       ) : (
         <div className="admin-card-list">
-          {withdrawals.map(w => (
-            <div key={w.withdrawls_id} className="admin-card">
-              <div className="admin-card-avatar emoji">💸</div>
-              <div className="admin-card-info">
-                <p className="admin-card-name">{formatCurrency(w.amount)}</p>
-                <p className="admin-card-sub">Banco: {w.bank_name}</p>
-                <p className="admin-card-sub">Cuenta: {w.bank_account_address}</p>
+          {withdrawals.map(w => {
+            const info   = enriched[w.withdrawls_id];
+            const wallet = info?.wallet;
+            const user   = info?.user;
+            const available = parseFloat(wallet?.balance_available || 0);
+            const pending   = parseFloat(wallet?.balance_pending   || 0);
+            const requested = parseFloat(w.amount || 0);
+            const insufficient = requested > available;
+
+            return (
+              <div key={w.withdrawls_id} className="admin-card" style={{ flexWrap: 'wrap' }}>
+                <div className="admin-card-avatar emoji">💸</div>
+
+                <div className="admin-card-info" style={{ flex: 2 }}>
+                  {/* Solicitante */}
+                  <p className="admin-card-name" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {user?.user_nickname || `Wallet #${w.wallet_id}`}
+                    {user?.user_role && (
+                      <span style={{ fontSize: '11px', fontWeight: '600', padding: '2px 8px', borderRadius: '100px',
+                        background: user.user_role === 'provider' ? '#eff6ff' : '#f0fdf4',
+                        color:      user.user_role === 'provider' ? '#2563eb' : '#16a34a' }}>
+                        {user.user_role === 'provider' ? 'Proveedor' : 'Vendedor'}
+                      </span>
+                    )}
+                  </p>
+
+                  {/* Monto solicitado */}
+                  <p className="admin-card-sub" style={{ fontSize: '18px', fontWeight: '800', color: insufficient ? '#dc2626' : '#111827' }}>
+                    {formatCurrency(requested)}
+                    {insufficient && <span style={{ fontSize: '12px', marginLeft: '8px', color: '#dc2626' }}>Saldo insuficiente</span>}
+                  </p>
+
+                  {/* Banco */}
+                  <p className="admin-card-sub">Banco: {w.bank_name}</p>
+                  <p className="admin-card-sub">Cuenta: {w.bank_account_address}</p>
+                </div>
+
+                {/* Control cruzado de wallet */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', padding: '10px 14px', background: '#f9fafb', borderRadius: '10px', minWidth: '180px' }}>
+                  <p style={{ fontSize: '11px', fontWeight: '700', color: '#6b7280', marginBottom: '4px' }}>Control de wallet</p>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', fontSize: '12px' }}>
+                    <span style={{ color: '#6b7280' }}>Disponible</span>
+                    <span style={{ fontWeight: '700', color: insufficient ? '#dc2626' : '#16a34a' }}>
+                      {wallet ? formatCurrency(available) : '—'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', fontSize: '12px' }}>
+                    <span style={{ color: '#6b7280' }}>Pendiente</span>
+                    <span style={{ fontWeight: '600', color: '#d97706' }}>
+                      {wallet ? formatCurrency(pending) : '—'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', fontSize: '12px', borderTop: '1px solid #e5e7eb', paddingTop: '4px', marginTop: '2px' }}>
+                    <span style={{ color: '#6b7280' }}>Solicita</span>
+                    <span style={{ fontWeight: '800', color: '#111827' }}>{formatCurrency(requested)}</span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                      <StatusBadge status={w.status} />
+                      <p className="admin-card-date">{formatDate(w.created_at)}</p>
+                    </div>
+                    <div className="admin-card-actions">
+                      <button className="admin-btn admin-btn-success" onClick={() => handleAction(w, 'approved')} disabled={insufficient}>Aprobar</button>
+                      <button className="admin-btn admin-btn-danger"  onClick={() => handleAction(w, 'rejected')}>Rechazar</button>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="admin-card-meta">
-                <StatusBadge status={w.status} />
-                <p className="admin-card-date">{formatDate(w.created_at)}</p>
-              </div>
-              <div className="admin-card-actions">
-                <button className="admin-btn admin-btn-success" onClick={() => handleAction(w, 'approved')}>Aprobar</button>
-                <button className="admin-btn admin-btn-danger"  onClick={() => handleAction(w, 'rejected')}>Rechazar</button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
       {modal && <ConfirmModal {...modal} onCancel={() => setModal(null)} />}
