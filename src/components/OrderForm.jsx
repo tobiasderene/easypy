@@ -419,12 +419,28 @@ const OrderForm = () => {
   const rawShipping = (() => {
     if (!selectedLogistic) return 0;
     if (selectedLogistic.api_type === 'manual') return zonePrice;
-    // Cualquier logística con API (fixy u otras futuras) — usar quote si existe
     if (quote && !quote.error && quote.total) return quote.total;
     return 0;
   })();
-  const commission        = rawShipping * 0.25;                          // 25% sobre envío
-  const logisticCost      = rawShipping + commission;                    // lo que ve el vendedor (envío + comisión sumados)
+
+  // Comisión dinámica según zona o logística
+  const commissionRate = (() => {
+    if (!selectedLogistic) return 0.25;
+    if (selectedLogistic.api_type === 'manual' && zones.length > 0) {
+      const normalize = s => (s || '').toLowerCase().trim();
+      // Usar la zona de mayor precio (la más lejana) para la comisión
+      const recipientZone = zones.find(z => normalize(z.city) === normalize(form.city));
+      const supplierZone  = zones.find(z => normalize(z.city) === normalize(supplierCity));
+      const rRate = recipientZone?.commission_rate ? parseFloat(recipientZone.commission_rate) / 100 : 0.30;
+      const sRate = supplierZone?.commission_rate  ? parseFloat(supplierZone.commission_rate)  / 100 : 0.30;
+      return Math.max(rRate, sRate);
+    }
+    // API (Fixy u otras) — usar commission_rate de la logística
+    return selectedLogistic.commission_rate ? parseFloat(selectedLogistic.commission_rate) / 100 : 0.25;
+  })();
+
+  const commission   = rawShipping * commissionRate;
+  const logisticCost = rawShipping + commission;
   const earnings          = totalRecaudo - totalSupplierCost - logisticCost;
 
   const formatCurrency = (v) =>
@@ -912,7 +928,7 @@ const OrderForm = () => {
                                 : isQuoting
                                   ? 'Cotizando...'
                                   : hasPrice
-                                    ? formatCurrency(price * 1.25)
+                                    ? formatCurrency(Math.round(price * (1 + (l.commission_rate ? parseFloat(l.commission_rate) / 100 : 0.25))))
                                     : '—'}
                             </span>
                           )}
