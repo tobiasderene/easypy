@@ -106,6 +106,10 @@ export const adminDeleteUser   = (userId) =>
 
 // ─── Products ─────────────────────────────────────────
 export const getProducts   = (skip = 0, limit = 50)  => api(`/products?skip=${skip}&limit=${limit}`);
+export const getProductAssignments  = (productId)           => api(`/products/${productId}/assignments`);
+export const addProductAssignment   = (productId, buyerId)   => api(`/products/${productId}/assignments`, { method: 'POST', body: JSON.stringify({ buyer_id: buyerId, quantity: 0 }) });
+export const removeProductAssignment = (productId, buyerId)  => api(`/products/${productId}/assignments/${buyerId}`, { method: 'DELETE' });
+export const toggleProductPrivate   = (productId)            => api(`/products/${productId}/private`, { method: 'PATCH' });
 export const getMySalesCount     = () => api('/products/my-sales-count');
 export const pickedUpOrder       = (id) => api(`/orders/${id}/picked-up`,       { method: 'POST' });
 export const outForDeliveryOrder = (id) => api(`/orders/${id}/out-for-delivery`, { method: 'POST' });
