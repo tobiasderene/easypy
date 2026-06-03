@@ -16,7 +16,7 @@ const Signup = () => {
   const [avatarFile, setAvatarFile]                   = useState(null);
   const [avatarPreview, setAvatarPreview]             = useState(null);
   const fileInputRef                                  = useRef(null);
-
+  const SELLER_REGISTRATION_ENABLED = false;
   const navigate       = useNavigate();
   const [searchParams] = useSearchParams();
   const { setUser }    = useUser();
@@ -168,9 +168,27 @@ const Signup = () => {
             <div className="form-group">
               <label>Tipo de cuenta</label>
               <div className="user-type-selector">
-                <button type="button" className={`user-type-option ${userType === 'seller' ? 'active' : ''}`} onClick={() => setUserType('seller')}>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-                  <div><div className="option-title">Vendedor</div><div className="option-desc">Vende productos</div></div>
+                <button
+                  type="button"
+                  disabled={!SELLER_REGISTRATION_ENABLED}
+                  className={`user-type-option ${
+                    userType === 'seller' ? 'active' : ''
+                  } ${!SELLER_REGISTRATION_ENABLED ? 'disabled' : ''}`}
+                  onClick={() => SELLER_REGISTRATION_ENABLED && setUserType('seller')}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                  </svg>
+                
+                  <div>
+                    <div className="option-title">Vendedor</div>
+                    <div className="option-desc">
+                      {SELLER_REGISTRATION_ENABLED
+                        ? 'Vende productos'
+                        : 'Registros temporalmente cerrados'}
+                    </div>
+                  </div>
                 </button>
                 <button type="button" className={`user-type-option ${userType === 'provider' ? 'active' : ''}`} onClick={() => setUserType('provider')}>
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
