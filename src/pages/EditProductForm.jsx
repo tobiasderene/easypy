@@ -4,6 +4,12 @@ import { X, Upload, DollarSign, Package, Tag, Grid, FileText, Lock, Search, User
 import { getProduct, updateProduct, getProductImages, uploadProductImage, deleteImage,
          getProductAssignments, addProductAssignment, removeProductAssignment, toggleProductPrivate,
          getUsers } from '../services/api';
+
+// API search inline para evitar cargar todos los sellers
+const searchSellers = (q) => fetch(
+  `${import.meta.env.VITE_API_URL || 'https://easypy-backend-430520813248.us-central1.run.app'}/users/search?q=${encodeURIComponent(q)}&role=seller`,
+  { headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` } }
+).then(r => r.json());
 import '../styles/addproductform.css';
 
 const EditProductForm = () => {
@@ -25,8 +31,9 @@ const EditProductForm = () => {
   // Exclusividad
   const [isPrivate, setIsPrivate]       = useState(false);
   const [assignments, setAssignments]   = useState([]); // sellers asignados
-  const [allSellers, setAllSellers]     = useState([]); // todos los sellers
-  const [sellerSearch, setSellerSearch] = useState('');
+  const [sellerResults, setSellerResults] = useState([]); // resultados de búsqueda
+  const [sellerSearch, setSellerSearch]   = useState('');
+  const [searching, setSearching]         = useState(false);
   const [addingId, setAddingId]         = useState(null);
   const [removingId, setRemovingId]     = useState(null);
 
@@ -49,7 +56,6 @@ const EditProductForm = () => {
           getProduct(id),
           getProductImages(id),
           getProductAssignments(id).catch(() => []),
-          getUsers({ role: 'seller' }).catch(() => []),
         ]);
         setFormData({
           name:            product.product_name        || '',
@@ -63,7 +69,6 @@ const EditProductForm = () => {
         });
         setIsPrivate(product.is_private || false);
         setAssignments(assigns || []);
-        setAllSellers(sellers || []);
         const sorted = [...(images || [])].sort((a, b) => b.is_primary - a.is_primary);
         setExistingImages(sorted);
       } catch {
@@ -132,11 +137,17 @@ const EditProductForm = () => {
     }
   };
 
-  const assignedIds     = new Set(assignments.map(a => a.buyer_id));
-  const filteredSellers = allSellers.filter(s =>
-    !assignedIds.has(s.user_id) &&
-    (s.user_nickname || '').toLowerCase().includes(sellerSearch.toLowerCase())
-  );
+  const assignedIds = new Set(assignments.map(a => a.buyer_id));
+
+  const handleSellerSearch = async (q) => {
+    setSellerSearch(q);
+    if (q.length < 2) { setSellerResults([]); return; }
+    setSearching(true);
+    try {
+      const results = await searchSellers(q);
+      setSellerResults((results || []).filter(s => !assignedIds.has(s.user_id)));
+    } catch {} finally { setSearching(false); }
+  };
 
   // ── Validación y submit ───────────────────────────────────────────────────
   const validateForm = () => {
@@ -389,18 +400,20 @@ const EditProductForm = () => {
                     type="text"
                     placeholder="Buscar vendedor..."
                     value={sellerSearch}
-                    onChange={e => setSellerSearch(e.target.value)}
+                    onChange={e => handleSellerSearch(e.target.value)}
                     style={{ width: '100%', padding: '9px 12px 9px 36px', border: '1.5px solid #e5e7eb', borderRadius: '8px', fontSize: '13px', boxSizing: 'border-box' }}
                   />
                 </div>
 
-                {filteredSellers.length === 0 ? (
+                {searching ? (
+                  <p style={{ fontSize: '13px', color: '#9ca3af', textAlign: 'center', padding: '12px' }}>Buscando...</p>
+                ) : sellerResults.length === 0 ? (
                   <p style={{ fontSize: '13px', color: '#9ca3af', textAlign: 'center', padding: '12px' }}>
-                    {sellerSearch ? 'No se encontraron vendedores' : 'Todos los vendedores ya tienen acceso'}
+                    {sellerSearch.length < 2 ? 'Escribí al menos 2 caracteres para buscar' : 'No se encontraron vendedores'}
                   </p>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', maxHeight: '220px', overflowY: 'auto' }}>
-                    {filteredSellers.map(s => (
+                    {sellerResults.map(s => (
                       <div key={s.user_id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'white', border: '1.5px solid #e5e7eb', borderRadius: '9px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                           <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', color: '#056EB7', fontSize: '14px' }}>
