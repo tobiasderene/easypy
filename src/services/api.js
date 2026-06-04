@@ -86,7 +86,8 @@ export const getUsers = (params = {}) => {
   const query = new URLSearchParams(params).toString();
   return api(`/users${query ? `?${query}` : ''}`);
 };
-export const getProviders = () => api("/users/providers");
+export const getProviders   = () => api("/users/providers");
+export const searchUsers    = (q, role = null, limit = 10) => api(`/users/search?q=${encodeURIComponent(q)}${role ? `&role=${role}` : ''}&limit=${limit}`);
 export const getUser      = (userId) => api(`/users/${userId}`);
 export const getBankAccounts   = ()       => api('/bank-accounts');
 export const createBankAccount = (data)    => api('/bank-accounts', { method: 'POST', body: JSON.stringify(data) });
