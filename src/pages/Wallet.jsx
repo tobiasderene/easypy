@@ -12,6 +12,7 @@ const isExpense = (t) => t.transaction_direction === 'outbound' || t.transaction
 
 const TX_LABELS = {
   order_payment:   'Pago de orden',
+  order_profit:    'Ganancia por entrega',
   withdrawal:      'Retiro de fondos',
   deposit:         'Depósito',
   commission:      'Comisión EasyPy',
