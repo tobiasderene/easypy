@@ -24,6 +24,7 @@ import CreateLogisticsUser from './pages/CreateLogisticsUser';
 import LogisticsPanel from './pages/LogisticsPanel';
 import ProviderProfile from './pages/ProviderProfile';
 import Settings from './pages/Settings';
+import ReturnsPanel from './pages/ReturnsPanel';
 import Analytics from './pages/Analytics';
 import PendingApproval from './pages/PendingApproval';
 import AuthCallback from './pages/AuthCallback';
@@ -164,6 +165,7 @@ function App() {
 
           {/* Cualquier usuario autenticado */}
           <Route element={<RequireAuth />}>
+            <Route path="/devoluciones" element={<ReturnsPanel />} />
             <Route path="/wallet"        element={<Wallet />} />
             <Route path="/analytics"     element={<Analytics />} />
             <Route path="/configuracion" element={<Settings />} />
