@@ -193,10 +193,8 @@ export const cancelOrderSupplier    = (orderId)    => api(`/orders/${orderId}/ca
 
 // ─── Logistics orders ─────────────────────────────────
 export const getOrdersByLogistics  = (logisticId, limit = 100) => api(`/orders/logistics/${logisticId}?limit=${limit}`);
-export const pickupOrder             = (orderId) => api(`/orders/${orderId}/pickup`,  { method: 'POST' });
 export const deliverOrder            = (orderId) => api(`/orders/${orderId}/deliver`, { method: 'POST' });
 export const markOrderReadyForPickup = (orderId) => api(`/orders/${orderId}/ready`,      { method: 'POST' });
-export const redeliveryOrder         = (orderId) => api(`/orders/${orderId}/redelivery`, { method: 'POST' });
 
 // ─── Wallets ──────────────────────────────────────────
 export const getWallet       = (walletId)       => api(`/wallets/${walletId}`);
