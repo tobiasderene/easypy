@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useUser } from '../App';
 import { useNavigate } from 'react-router-dom';
 import { getMyLogistics, getOrdersByLogistics, pickedUpOrder, outForDeliveryOrder,
-         redeliveryWithReason, retryDeliveryOrder, deliverOrder, cancelOrderAdmin } from '../services/api';
+         redeliveryWithReason, retryDeliveryOrder, deliverOrder, cancelOrderAdmin, createReturn } from '../services/api';
 import '../styles/logisticspanel.css';
 
 const STATUS_LABELS = {
@@ -14,7 +14,8 @@ const STATUS_LABELS = {
   in_transit:       { label: 'En camino',             color: '#d97706', bg: '#fef3c7' },
   redelivery:       { label: 'Reagendado',            color: '#f97316', bg: '#fff7ed' },
   completed:        { label: 'Entregado',             color: '#7c3aed', bg: '#f5f3ff' },
-  cancelled:        { label: 'Cancelado',             color: '#dc2626', bg: '#fef2f2' },
+  cancelled:              { label: 'Cancelado',             color: '#dc2626', bg: '#fef2f2' },
+  return_in_progress:     { label: 'Devolución en curso',    color: '#dc2626', bg: '#fef2f2' },
 };
 
 const FILTERS = ['all', 'ready_for_pickup', 'picked_up', 'out_for_delivery', 'in_transit', 'redelivery', 'completed', 'cancelled'];
@@ -38,8 +39,10 @@ const LogisticsPanel = () => {
   const [error, setError]               = useState('');
 
   // Modal reagendamiento
-  const [redeliveryModal, setRedeliveryModal] = useState(null); // order_id
+  const [redeliveryModal, setRedeliveryModal] = useState(null);
   const [redeliveryReason, setRedeliveryReason] = useState('');
+  const [returnModal, setReturnModal]           = useState(null);
+  const [returnReason, setReturnReason]         = useState('');
 
   useEffect(() => {
     if (!user || user.user_role !== 'logistics') { navigate('/'); return; }
@@ -92,6 +95,22 @@ const LogisticsPanel = () => {
   const handleCancel = async (orderId) => {
     if (!window.confirm('¿Cancelás esta orden? El cliente solicitó cancelación.')) return;
     update(orderId, cancelOrderAdmin, 'cancelled');
+  };
+
+  const handleReturnConfirm = async () => {
+    if (!returnReason.trim()) { alert('Ingresá el motivo de la devolución'); return; }
+    const orderId = returnModal;
+    setUpdating(orderId);
+    setReturnModal(null);
+    try {
+      await createReturn({ order_id: orderId, reason: returnReason });
+      setOrders(prev => prev.map(o => o.order_id === orderId ? { ...o, status: 'return_in_progress' } : o));
+      setReturnReason('');
+    } catch (e) {
+      alert(e.message || 'Error al iniciar devolución');
+    } finally {
+      setUpdating(null);
+    }
   };
 
   // Descarga etiqueta
@@ -168,6 +187,39 @@ const LogisticsPanel = () => {
               <button onClick={handleRedeliveryConfirm}
                 style={{ flex: 2, padding: '10px', border: 'none', borderRadius: '9px', background: '#f97316', color: 'white', fontWeight: '800', fontSize: '13px', cursor: 'pointer' }}>
                 Confirmar reagendamiento
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal devolución */}
+      {returnModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ background: 'white', borderRadius: '16px', padding: '28px', maxWidth: '420px', width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
+            <h3 style={{ fontSize: '16px', fontWeight: '800', marginBottom: '8px', color: '#111827' }}>Iniciar devolución</h3>
+            <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '16px' }}>El producto será devuelto al proveedor. Indicá el motivo.</p>
+            <select style={{ width: '100%', padding: '9px 12px', border: '1.5px solid #e5e7eb', borderRadius: '8px', fontSize: '13px', marginBottom: '10px', background: 'white' }}
+              value={returnReason} onChange={e => setReturnReason(e.target.value)}>
+              <option value="">Seleccioná un motivo...</option>
+              <option value="Cliente rechazó el producto">Cliente rechazó el producto</option>
+              <option value="Producto dañado">Producto dañado</option>
+              <option value="Producto incorrecto">Producto incorrecto</option>
+              <option value="Cliente desistió de la compra">Cliente desistió de la compra</option>
+              <option value="Otro">Otro</option>
+            </select>
+            {returnReason === 'Otro' && (
+              <input style={{ width: '100%', padding: '9px 12px', border: '1.5px solid #e5e7eb', borderRadius: '8px', fontSize: '13px', marginBottom: '10px' }}
+                placeholder="Describí el motivo..." onChange={e => setReturnReason(e.target.value)} />
+            )}
+            <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
+              <button onClick={() => { setReturnModal(null); setReturnReason(''); }}
+                style={{ flex: 1, padding: '10px', border: '1.5px solid #e5e7eb', borderRadius: '9px', background: 'white', color: '#6b7280', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}>
+                Cancelar
+              </button>
+              <button onClick={handleReturnConfirm}
+                style={{ flex: 2, padding: '10px', border: 'none', borderRadius: '9px', background: '#dc2626', color: 'white', fontWeight: '800', fontSize: '13px', cursor: 'pointer' }}>
+                Iniciar devolución
               </button>
             </div>
           </div>
@@ -303,6 +355,10 @@ const LogisticsPanel = () => {
                     <>
                       <button className="lp-btn pickup" onClick={() => update(order.order_id, retryDeliveryOrder, 'out_for_delivery')} disabled={isUpdating}>
                         {isUpdating ? 'Procesando...' : 'Reintentar entrega'}
+                      </button>
+                      <button className="lp-btn redelivery" onClick={() => setReturnModal(order.order_id)} disabled={isUpdating}
+                        style={{ background: '#fef2f2', color: '#dc2626', border: '1.5px solid #fecaca' }}>
+                        Iniciar devolución
                       </button>
                       <button className="lp-btn cancel" onClick={() => handleCancel(order.order_id)} disabled={isUpdating}>
                         Cliente cancela
