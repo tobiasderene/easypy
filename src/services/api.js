@@ -107,6 +107,16 @@ export const adminDeleteUser   = (userId) =>
 
 // ─── Products ─────────────────────────────────────────
 export const getProducts   = (skip = 0, limit = 50)  => api(`/products?skip=${skip}&limit=${limit}`);
+// ── Returns ──────────────────────────────────────────────────────────────────
+export const getReturns      = ()       => api('/returns');
+export const createReturn    = (data)   => api('/returns', { method: 'POST', body: JSON.stringify(data) });
+export const updateReturn    = (id, data) => api(`/returns/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+
+// ── Claims ────────────────────────────────────────────────────────────────────
+export const getClaims       = ()       => api('/claims');
+export const createClaim     = (data)   => api('/claims', { method: 'POST', body: JSON.stringify(data) });
+export const updateClaim     = (id, data) => api(`/claims/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+
 export const getProductAssignments  = (productId)           => api(`/products/${productId}/assignments`);
 export const addProductAssignment   = (productId, buyerId)   => api(`/products/${productId}/assignments`, { method: 'POST', body: JSON.stringify({ buyer_id: buyerId, quantity: 0 }) });
 export const removeProductAssignment = (productId, buyerId)  => api(`/products/${productId}/assignments/${buyerId}`, { method: 'DELETE' });
