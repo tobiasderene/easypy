@@ -1,410 +1,278 @@
-import React, { useState, useEffect } from 'react';
-import { useUser } from '../App';
-import { useNavigate } from 'react-router-dom';
-import { getMyLogistics, getOrdersByLogistics, getLogisticsEfectividad, pickedUpOrder, outForDeliveryOrder,
-         redeliveryWithReason, retryDeliveryOrder, deliverOrder, cancelOrderAdmin, createReturn } from '../services/api';
-import '../styles/logisticspanel.css';
+import React, { useState, useEffect, useRef } from "react";
 
-const STATUS_LABELS = {
-  pending:          { label: 'Pendiente',            color: '#6b7280', bg: '#f3f4f6' },
-  confirmed:        { label: 'Para retirar',          color: '#16a34a', bg: '#dcfce7' },
-  ready_for_pickup: { label: 'Listo para retirar',    color: '#16a34a', bg: '#dcfce7' },
-  picked_up:        { label: 'Retirado del proveedor', color: '#056EB7', bg: '#eff6ff' },
-  out_for_delivery: { label: 'Yendo a entregar',      color: '#d97706', bg: '#fef3c7' },
-  in_transit:       { label: 'En camino',             color: '#d97706', bg: '#fef3c7' },
-  redelivery:       { label: 'Reagendado',            color: '#f97316', bg: '#fff7ed' },
-  completed:        { label: 'Entregado',             color: '#7c3aed', bg: '#f5f3ff' },
-  cancelled:              { label: 'Cancelado',             color: '#dc2626', bg: '#fef2f2' },
-  return_in_progress:     { label: 'Devolución en curso',    color: '#dc2626', bg: '#fef2f2' },
+const BRAND = "#056EB7";
+const BRAND_DARK = "#045A94";
+
+const useVisible = (threshold = 0.15) => {
+  const ref = useRef(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) setVisible(true); }, { threshold });
+    if (ref.current) obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, []);
+  return [ref, visible];
 };
 
-const FILTERS = ['all', 'ready_for_pickup', 'picked_up', 'out_for_delivery', 'in_transit', 'redelivery', 'completed', 'cancelled'];
-
-const STATS_CONFIG = [
-  { key: 'ready_for_pickup', label: 'Para retirar',   color: '#16a34a', bg: '#dcfce7', border: '#16a34a20' },
-  { key: 'picked_up',        label: 'Retirados',      color: '#056EB7', bg: '#eff6ff', border: '#056EB720' },
-  { key: 'out_for_delivery', label: 'En camino',      color: '#d97706', bg: '#fef3c7', border: '#d9770620' },
-  { key: 'completed',        label: 'Entregados',     color: '#7c3aed', bg: '#f5f3ff', border: '#7c3aed20' },
+const BenefitIcons = [
+  <svg width="28" height="28" fill="none" stroke="#056EB7" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>,
+  <svg width="28" height="28" fill="none" stroke="#056EB7" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" /></svg>,
+  <svg width="28" height="28" fill="none" stroke="#056EB7" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>,
+  <svg width="28" height="28" fill="none" stroke="#056EB7" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>,
+  <svg width="28" height="28" fill="none" stroke="#056EB7" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>,
+  <svg width="28" height="28" fill="none" stroke="#056EB7" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>,
 ];
 
-const LogisticsPanel = () => {
-  const { user } = useUser();
-  const navigate = useNavigate();
+const benefits = [
+  { title: "Sin Stock Propio", desc: "Vendé productos sin necesidad de tener inventario. El proveedor se encarga de todo." },
+  { title: "Logística Integrada", desc: "Fixy, Legex y más transportadoras disponibles. Tu pedido sale sin que muevas un dedo." },
+  { title: "Ganancias Claras", desc: "Fijás tu precio de venta, nosotros mostramos tu ganancia estimada en tiempo real." },
+  { title: "Analytics en Tiempo Real", desc: "Seguí tus ventas, unidades y rentabilidad desde un panel centralizado." },
+  { title: "Pagos Seguros", desc: "Wallet propio con recaudo o sin recaudo. Tu dinero siempre claro y disponible." },
+  { title: "Alta en Minutos", desc: "Registrate, elegí productos y empezá a vender el mismo día. Sin burocracia." },
+];
 
-  const [logistic, setLogistic]         = useState(null);
-  const [orders, setOrders]             = useState([]);
-  const [loading, setLoading]           = useState(true);
-  const [filter, setFilter]             = useState('all');
-  const [updating, setUpdating]         = useState(null);
-  const [error, setError]               = useState('');
-  const [efectividad, setEfectividad]   = useState(null);
+const stats = [
+  { value: "500+", label: "Productos disponibles" },
+  { value: "3",    label: "Logísticas integradas" },
+  { value: "100%", label: "Digital y sin stock" },
+  { value: "24h",  label: "Soporte al vendedor" },
+];
 
-  // Modal reagendamiento
-  const [redeliveryModal, setRedeliveryModal] = useState(null);
-  const [redeliveryReason, setRedeliveryReason] = useState('');
-  const [returnModal, setReturnModal]           = useState(null);
-  const [returnReason, setReturnReason]         = useState('');
+export default function LandingPage() {
+  const [scrolled, setScrolled] = useState(false);
+  const [heroRef,     heroVisible]     = useVisible(0.1);
+  const [benefitsRef, benefitsVisible] = useVisible(0.1);
+  const [aboutRef,    aboutVisible]    = useVisible(0.1);
+  const [ctaRef,      ctaVisible]      = useVisible(0.1);
 
   useEffect(() => {
-    if (!user || user.user_role !== 'logistics') { navigate('/'); return; }
-    loadData();
-  }, [user]);
+    const onScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
-  const loadData = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const logisticData = await getMyLogistics();
-      setLogistic(logisticData);
-      const ordersData = await getOrdersByLogistics(logisticData.logistic_id);
-      setOrders(ordersData || []);
-      const ef = await getLogisticsEfectividad(logisticData.logistic_id).catch(() => null);
-      setEfectividad(ef);
-    } catch {
-      setError('No se pudieron cargar las órdenes.');
-    } finally {
-      setLoading(false);
-    }
+  const scrollTo = (id) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
   };
-
-  const update = async (orderId, fn, newStatus) => {
-    setUpdating(orderId);
-    try {
-      await fn(orderId);
-      setOrders(prev => prev.map(o => o.order_id === orderId ? { ...o, status: newStatus } : o));
-    } catch (e) {
-      alert(e.message || 'Error al actualizar la orden');
-    } finally {
-      setUpdating(null);
-    }
-  };
-
-  const handleRedeliveryConfirm = async () => {
-    if (!redeliveryReason.trim()) { alert('Ingresá el motivo del reagendamiento'); return; }
-    const orderId = redeliveryModal;
-    setUpdating(orderId);
-    setRedeliveryModal(null);
-    try {
-      await redeliveryWithReason(orderId, redeliveryReason);
-      setOrders(prev => prev.map(o => o.order_id === orderId ? { ...o, status: 'redelivery', redelivery_reason: redeliveryReason } : o));
-      setRedeliveryReason('');
-    } catch (e) {
-      alert(e.message || 'Error al reagendar');
-    } finally {
-      setUpdating(null);
-    }
-  };
-
-  const handleCancel = async (orderId) => {
-    if (!window.confirm('¿Cancelás esta orden? El cliente solicitó cancelación.')) return;
-    update(orderId, cancelOrderAdmin, 'cancelled');
-  };
-
-  const handleReturnConfirm = async () => {
-    if (!returnReason.trim()) { alert('Ingresá el motivo de la devolución'); return; }
-    const orderId = returnModal;
-    setUpdating(orderId);
-    setReturnModal(null);
-    try {
-      await createReturn({ order_id: orderId, reason: returnReason });
-      setOrders(prev => prev.map(o => o.order_id === orderId ? { ...o, status: 'return_in_progress' } : o));
-      setReturnReason('');
-    } catch (e) {
-      alert(e.message || 'Error al iniciar devolución');
-    } finally {
-      setUpdating(null);
-    }
-  };
-
-  // Descarga etiqueta
-  const downloadLabel = async (order) => {
-    try {
-      const token = localStorage.getItem('auth_token');
-      const base  = import.meta.env.VITE_API_URL || 'https://easypy-backend-430520813248.us-central1.run.app';
-      const endpoint = order.tracking_number
-        ? `/orders/${order.order_id}/etiqueta?token=${token}`
-        : `/orders/${order.order_id}/etiqueta-manual?token=${token}`;
-      const res  = await fetch(`${base}${endpoint}`);
-      if (!res.ok) throw new Error('Error al obtener etiqueta');
-      const blob = await res.blob();
-      const url  = URL.createObjectURL(blob);
-      const a    = document.createElement('a');
-      a.href     = url;
-      a.download = `guia-${order.order_id}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 5000);
-    } catch {
-      alert('No se pudo descargar la etiqueta');
-    }
-  };
-
-  const formatCurrency = (v) =>
-    new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', minimumFractionDigits: 0 }).format(v);
-
-  const formatDate = (d) => {
-    if (!d) return '—';
-    try { return new Date(d).toLocaleDateString('es-PY', { day: '2-digit', month: 'short', year: 'numeric' }); }
-    catch { return '—'; }
-  };
-
-  const filtered = filter === 'all' ? orders : orders.filter(o => o.status === filter);
-
-  const stats = {
-    ready_for_pickup: orders.filter(o => o.status === 'ready_for_pickup').length,
-    picked_up:        orders.filter(o => o.status === 'picked_up').length,
-    out_for_delivery: orders.filter(o => ['out_for_delivery','in_transit'].includes(o.status)).length,
-    completed:        orders.filter(o => o.status === 'completed').length,
-  };
-
-  if (loading) return <div className="lp-loading">Cargando panel...</div>;
 
   return (
-    <div className="lp-page">
+    <div style={{ fontFamily: "'Inter', sans-serif", background: "#f8fafc", color: "#111827", overflowX: "hidden" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&display=swap');
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        .fade-up { opacity: 0; transform: translateY(32px); transition: opacity 0.7s ease, transform 0.7s ease; }
+        .fade-up.visible { opacity: 1; transform: translateY(0); }
+        .fade-up.d1 { transition-delay: 0.1s; }
+        .fade-up.d2 { transition-delay: 0.2s; }
+        .fade-up.d3 { transition-delay: 0.3s; }
+        .fade-up.d4 { transition-delay: 0.4s; }
+        .fade-up.d5 { transition-delay: 0.5s; }
+        .fade-up.d6 { transition-delay: 0.6s; }
+        .nav-link { background: none; border: none; cursor: pointer; font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 600; color: #374151; transition: color 0.2s; padding: 8px 12px; border-radius: 8px; }
+        .nav-link:hover { color: ${BRAND}; }
+        .btn-primary { background: ${BRAND}; color: white; border: none; border-radius: 10px; font-family: 'Inter', sans-serif; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+        .btn-primary:hover { background: ${BRAND_DARK}; transform: translateY(-2px); box-shadow: 0 8px 24px rgba(5,110,183,0.25); }
+        .btn-outline { background: white; color: ${BRAND}; border: 2px solid ${BRAND}; border-radius: 10px; font-family: 'Inter', sans-serif; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+        .btn-outline:hover { background: ${BRAND}; color: white; transform: translateY(-2px); }
+        .benefit-card { background: white; border-radius: 16px; padding: 28px 24px; border: 1.5px solid #e5e7eb; transition: all 0.3s; text-align: center; }
+        .benefit-card:hover { border-color: ${BRAND}; box-shadow: 0 8px 32px rgba(5,110,183,0.1); transform: translateY(-4px); }
+        .hero-blob { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.15; pointer-events: none; }
+        @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-12px); } }
+        .stat-item { text-align: center; padding: 24px 16px; }
+        @media (max-width: 768px) {
+          .hero-grid { flex-direction: column !important; text-align: center; }
+          .hero-stats { justify-content: center !important; }
+          .hero-cta { justify-content: center !important; }
+          .benefits-grid { grid-template-columns: 1fr 1fr !important; }
+          .about-grid { flex-direction: column !important; text-align: center; }
+          .cta-btns { flex-direction: column !important; align-items: center !important; }
+        }
+        @media (max-width: 480px) {
+          .benefits-grid { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
 
-      {/* Modal reagendamiento */}
-      {redeliveryModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div style={{ background: 'white', borderRadius: '16px', padding: '28px', maxWidth: '420px', width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: '800', marginBottom: '8px', color: '#111827' }}>Reagendar entrega</h3>
-            <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '16px' }}>Indicá el motivo por el que no se pudo entregar</p>
-            <select style={{ width: '100%', padding: '9px 12px', border: '1.5px solid #e5e7eb', borderRadius: '8px', fontSize: '13px', marginBottom: '10px', background: 'white' }}
-              value={redeliveryReason} onChange={e => setRedeliveryReason(e.target.value)}>
-              <option value="">Seleccioná un motivo...</option>
-              <option value="Cliente no estaba en casa">Cliente no estaba en casa</option>
-              <option value="Dirección incorrecta">Dirección incorrecta</option>
-              <option value="Cliente solicitó cambiar horario">Cliente solicitó cambiar horario</option>
-              <option value="Zona de difícil acceso">Zona de difícil acceso</option>
-              <option value="Otro">Otro</option>
-            </select>
-            {redeliveryReason === 'Otro' && (
-              <input style={{ width: '100%', padding: '9px 12px', border: '1.5px solid #e5e7eb', borderRadius: '8px', fontSize: '13px', marginBottom: '10px' }}
-                placeholder="Describí el motivo..." onChange={e => setRedeliveryReason(e.target.value)} />
-            )}
-            <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
-              <button onClick={() => { setRedeliveryModal(null); setRedeliveryReason(''); }}
-                style={{ flex: 1, padding: '10px', border: '1.5px solid #e5e7eb', borderRadius: '9px', background: 'white', color: '#6b7280', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}>
-                Cancelar
-              </button>
-              <button onClick={handleRedeliveryConfirm}
-                style={{ flex: 2, padding: '10px', border: 'none', borderRadius: '9px', background: '#f97316', color: 'white', fontWeight: '800', fontSize: '13px', cursor: 'pointer' }}>
-                Confirmar reagendamiento
-              </button>
-            </div>
+      {/* ── HEADER ── */}
+      <header style={{
+        position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
+        background: scrolled ? "rgba(255,255,255,0.95)" : "transparent",
+        backdropFilter: scrolled ? "blur(12px)" : "none",
+        borderBottom: scrolled ? "1px solid #e5e7eb" : "none",
+        transition: "all 0.3s", padding: "0 24px",
+      }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", height: 68 }}>
+          <div style={{ cursor: "pointer" }} onClick={() => scrollTo("hero")}>
+            <img src="/full-logo.png" alt="EasyPy" style={{ height: 36, objectFit: "contain" }} />
           </div>
+          <nav style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            {[["Beneficios","benefits"],["Nosotros","about"]].map(([label, id]) => (
+              <button key={id} className="nav-link" onClick={() => scrollTo(id)}>{label}</button>
+            ))}
+          </nav>
+          <button className="btn-primary" style={{ padding: "9px 24px", fontSize: 14 }} onClick={() => window.location.href="/login"}>
+            Conectate
+          </button>
         </div>
-      )}
+      </header>
 
-      {/* Modal devolución */}
-      {returnModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-          <div style={{ background: 'white', borderRadius: '16px', padding: '28px', maxWidth: '420px', width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: '800', marginBottom: '8px', color: '#111827' }}>Iniciar devolución</h3>
-            <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '16px' }}>El producto será devuelto al proveedor. Indicá el motivo.</p>
-            <select style={{ width: '100%', padding: '9px 12px', border: '1.5px solid #e5e7eb', borderRadius: '8px', fontSize: '13px', marginBottom: '10px', background: 'white' }}
-              value={returnReason} onChange={e => setReturnReason(e.target.value)}>
-              <option value="">Seleccioná un motivo...</option>
-              <option value="Cliente rechazó el producto">Cliente rechazó el producto</option>
-              <option value="Producto dañado">Producto dañado</option>
-              <option value="Producto incorrecto">Producto incorrecto</option>
-              <option value="Cliente desistió de la compra">Cliente desistió de la compra</option>
-              <option value="Otro">Otro</option>
-            </select>
-            {returnReason === 'Otro' && (
-              <input style={{ width: '100%', padding: '9px 12px', border: '1.5px solid #e5e7eb', borderRadius: '8px', fontSize: '13px', marginBottom: '10px' }}
-                placeholder="Describí el motivo..." onChange={e => setReturnReason(e.target.value)} />
-            )}
-            <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
-              <button onClick={() => { setReturnModal(null); setReturnReason(''); }}
-                style={{ flex: 1, padding: '10px', border: '1.5px solid #e5e7eb', borderRadius: '9px', background: 'white', color: '#6b7280', fontWeight: '700', fontSize: '13px', cursor: 'pointer' }}>
-                Cancelar
-              </button>
-              <button onClick={handleReturnConfirm}
-                style={{ flex: 2, padding: '10px', border: 'none', borderRadius: '9px', background: '#dc2626', color: 'white', fontWeight: '800', fontSize: '13px', cursor: 'pointer' }}>
-                Iniciar devolución
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* ── HERO ── */}
+      <section id="hero" ref={heroRef} style={{ position: "relative", minHeight: "100vh", display: "flex", alignItems: "center", overflow: "hidden", background: "linear-gradient(135deg, #f0f7ff 0%, #ffffff 50%, #f8fafc 100%)", paddingTop: 68 }}>
+        <div className="hero-blob" style={{ width: 500, height: 500, background: BRAND, top: -100, right: -100 }} />
+        <div className="hero-blob" style={{ width: 300, height: 300, background: "#22d3ee", bottom: 50, left: -80 }} />
 
-      <div className="lp-header">
-        <h1 className="lp-title">Panel Logístico</h1>
-        <p className="lp-subtitle">{logistic?.name || '—'} — Gestión de envíos</p>
-      </div>
+        <div style={{ maxWidth: 1200, margin: "0 auto", padding: "80px 24px", width: "100%" }}>
+          <div className="hero-grid" style={{ display: "flex", alignItems: "center", gap: 64 }}>
 
-      {error && <div className="lp-error">{error}</div>}
-
-      {efectividad && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: 'white', border: '1.5px solid #e5e7eb', borderRadius: '12px', padding: '14px 20px', marginBottom: '16px', flexWrap: 'wrap' }}>
-          <div style={{ flex: 1, minWidth: '120px' }}>
-            <p style={{ fontSize: '11px', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Efectividad de entregas</p>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '6px' }}>
-              <div style={{ flex: 1, height: '8px', background: '#f3f4f6', borderRadius: '100px', overflow: 'hidden' }}>
-                <div style={{ width: `${efectividad.efectividad}%`, height: '100%', background: efectividad.efectividad >= 80 ? '#16a34a' : efectividad.efectividad >= 60 ? '#d97706' : '#dc2626', borderRadius: '100px', transition: 'width 0.5s ease' }} />
-              </div>
-              <span style={{ fontSize: '20px', fontWeight: '800', color: efectividad.efectividad >= 80 ? '#16a34a' : efectividad.efectividad >= 60 ? '#d97706' : '#dc2626', minWidth: '52px' }}>
-                {efectividad.efectividad}%
+            {/* Left — texto centrado */}
+            <div style={{ flex: 1, textAlign: "center" }}>
+              <h1 className={`fade-up d1 ${heroVisible ? "visible" : ""}`} style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: "clamp(36px, 5vw, 64px)", fontWeight: 800, lineHeight: 1.1, marginBottom: 24, color: "#0f172a" }}>
+                Vendé sin stock.<br />
+                <span style={{ color: BRAND }}>Ganá en serio.</span>
+              </h1>
+              <span className={`fade-up d2 ${heroVisible ? "visible" : ""}`} style={{ fontSize: 18, color: "#475569", lineHeight: 1.7, marginBottom: 36, maxWidth: 520, margin: "0 auto 36px" }}>
+                EasyPy es la plataforma que conecta vendedores con proveedores locales. Sin inventario, sin complicaciones. Solo ventas.
               </span>
+              <div className={`hero-cta fade-up d3 ${heroVisible ? "visible" : ""}`} style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
+                <button className="btn-primary" style={{ padding: "14px 32px", fontSize: 16 }} onClick={() => window.location.href="/signup"}>
+                  Empezar gratis
+                </button>
+              </div>
+              <div className={`hero-stats fade-up d4 ${heroVisible ? "visible" : ""}`} style={{ display: "flex", gap: 28, marginTop: 40, justifyContent: "center", flexWrap: "wrap" }}>
+                {[["500+","Productos"],["3","Logísticas"],["0 stock","Requerido"]].map(([val, label]) => (
+                  <div key={label} style={{ textAlign: "center" }}>
+                    <div style={{ fontSize: 22, fontWeight: 800, color: BRAND, fontFamily: "'Plus Jakarta Sans', sans-serif" }}>{val}</div>
+                    <div style={{ fontSize: 12, color: "#94a3b8", fontWeight: 500 }}>{label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right — card */}
+            <div className={`fade-up d2 ${heroVisible ? "visible" : ""}`} style={{ flex: 1, display: "flex", justifyContent: "center", position: "relative" }}>
+              <div style={{ position: "relative", animation: "float 4s ease-in-out infinite" }}>
+                <div style={{ width: 340, height: 420, background: "white", borderRadius: 28, boxShadow: "0 32px 80px rgba(5,110,183,0.18)", overflow: "hidden", border: "1.5px solid #e5e7eb" }}>
+                  <div style={{ height: 200, overflow: "hidden" }}>
+                    <img src="/smartwatch.jpeg" alt="Smart Watch" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  </div>
+                  <div style={{ padding: "20px 24px" }}>
+                    <span style={{ fontSize: 10, fontWeight: 700, color: BRAND, textTransform: "uppercase", letterSpacing: 0.5 }}>Electrónica</span>
+                    <h3 style={{ fontSize: 18, fontWeight: 700, marginTop: 6, marginBottom: 8 }}>Smart Watch Pro</h3>
+                    <div style={{ fontSize: 13, color: "#64748b", marginBottom: 14 }}>Precio de compra</div>
+                    <div style={{ fontSize: 26, fontWeight: 800, color: BRAND, marginBottom: 4 }}>Gs. 800.000</div>
+                    <div style={{ fontSize: 13, color: "#16a34a", fontWeight: 600 }}>Venta sugerida: Gs. 1.200.000</div>
+                  </div>
+                </div>
+                <div style={{ position: "absolute", top: -16, right: -24, background: "#16a34a", color: "white", borderRadius: 12, padding: "10px 16px", fontSize: 13, fontWeight: 700, boxShadow: "0 4px 16px rgba(22,163,74,0.3)" }}>
+                  +Gs. 400k ganancia
+                </div>
+                <div style={{ position: "absolute", bottom: 40, left: -28, background: "white", borderRadius: 12, padding: "10px 16px", fontSize: 12, fontWeight: 600, boxShadow: "0 4px 20px rgba(0,0,0,0.1)", border: "1px solid #e5e7eb", color: "#374151" }}>
+                  Envío en 24hs
+                </div>
+              </div>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: '16px' }}>
-            {[
-              { label: 'Entregadas', value: efectividad.completed, color: '#16a34a' },
-              { label: 'Reagendadas', value: efectividad.redelivery, color: '#f97316' },
-              { label: 'Canceladas', value: efectividad.cancelled, color: '#dc2626' },
-              { label: 'Total', value: efectividad.total, color: '#6b7280' },
-            ].map((s, i) => (
-              <div key={i} style={{ textAlign: 'center' }}>
-                <p style={{ fontSize: '18px', fontWeight: '800', color: s.color }}>{s.value}</p>
-                <p style={{ fontSize: '10px', color: '#9ca3af', fontWeight: '600' }}>{s.label}</p>
+        </div>
+      </section>
+
+      {/* ── BENEFITS ── */}
+      <section id="benefits" ref={benefitsRef} style={{ background: "white", padding: "96px 24px" }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+          <div className={`fade-up ${benefitsVisible ? "visible" : ""}`} style={{ textAlign: "center", marginBottom: 64 }}>
+            <h2 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: "clamp(28px, 4vw, 44px)", fontWeight: 800, color: "#0f172a", marginBottom: 16 }}>
+              Todo lo que necesitás<br />para empezar a vender
+            </h2>
+            <span style={{ fontSize: 17, color: "#64748b", maxWidth: 520, margin: "0 auto" }}>
+              Una plataforma completa diseñada para vendedores que quieren crecer sin complicaciones.
+            </span>
+          </div>
+          <div className="benefits-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20 }}>
+            {benefits.map((b, i) => (
+              <div key={i} className={`benefit-card fade-up d${Math.min(i+1,6)} ${benefitsVisible ? "visible" : ""}`}>
+                <div style={{ marginBottom: 16, display: "flex", justifyContent: "center" }}>
+                  <div style={{ width: 52, height: 52, background: "#eff6ff", borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    {BenefitIcons[i]}
+                  </div>
+                </div>
+                <h3 style={{ fontSize: 17, fontWeight: 700, marginBottom: 8, color: "#0f172a" }}>{b.title}</h3>
+                <span style={{ fontSize: 14, color: "#64748b", lineHeight: 1.6 }}>{b.desc}</span>
               </div>
             ))}
           </div>
         </div>
-      )}
+      </section>
 
-      <div className="lp-stats">
-        {STATS_CONFIG.map(s => (
-          <div key={s.key} className="lp-stat" style={{ background: s.bg, borderColor: s.border }}>
-            <p className="lp-stat-label" style={{ color: s.color }}>{s.label}</p>
-            <p className="lp-stat-value" style={{ color: s.color }}>{stats[s.key]}</p>
-          </div>
-        ))}
-      </div>
-
-      <div className="lp-filters">
-        {FILTERS.map(f => (
-          <button key={f} className={`lp-filter-btn ${filter === f ? 'active' : ''}`} onClick={() => setFilter(f)}>
-            {f === 'all' ? 'Todas' : STATUS_LABELS[f]?.label || f}
-            {f !== 'all' && <span className="lp-filter-count">({orders.filter(o => o.status === f).length})</span>}
-          </button>
-        ))}
-      </div>
-
-      {filtered.length === 0 ? (
-        <div className="lp-empty">No hay órdenes en este estado</div>
-      ) : (
-        <div className="lp-orders">
-          {filtered.map(order => {
-            const st         = STATUS_LABELS[order.status] || { label: order.status, color: '#6b7280', bg: '#f3f4f6' };
-            const isUpdating = updating === order.order_id;
-
-            return (
-              <div key={order.order_id} className="lp-order">
-                <div className="lp-order-info">
-                  <div className="lp-order-top">
-                    <span className="lp-order-id">Orden #{order.order_id}</span>
-                    <span className="lp-badge" style={{ background: st.bg, color: st.color }}>{st.label}</span>
-                    {order.collection_type === 'con_recaudo' && (
-                      <span className="lp-badge" style={{ background: '#fef3c7', color: '#d97706' }}>Con recaudo</span>
-                    )}
+      {/* ── ABOUT US ── */}
+      <section id="about" ref={aboutRef} style={{ background: "#f8fafc", padding: "96px 24px" }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+          <div className="about-grid" style={{ display: "flex", gap: 80, alignItems: "center" }}>
+            <div className={`fade-up ${aboutVisible ? "visible" : ""}`} style={{ flex: 1, textAlign: "center" }}>
+              <h2 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: "clamp(28px, 4vw, 44px)", fontWeight: 800, color: "#0f172a", marginBottom: 20, lineHeight: 1.15 }}>
+                Nació en Paraguay<br />para Paraguay
+              </h2>
+              <span style={{ fontSize: 16, color: "#475569", lineHeight: 1.8, marginBottom: 20 }}>
+                EasyPy es una plataforma local que conecta proveedores con vendedores de todo el país. Creemos que cualquier persona puede construir un negocio online sin necesidad de capital para stock.
+              </span>
+              <span style={{ fontSize: 16, color: "#475569", lineHeight: 1.8, marginBottom: 32 }}>
+                Integramos logísticas reales, procesamos pagos con recaudo o sin recaudo, y te damos las herramientas para escalar tu negocio con datos claros.
+              </span>
+              <button className="btn-primary" style={{ padding: "13px 28px", fontSize: 15 }} onClick={() => window.location.href="/signup"}>
+                Unirme a EasyPy
+              </button>
+            </div>
+            <div className={`fade-up d2 ${aboutVisible ? "visible" : ""}`} style={{ flex: 1 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2, background: "#e5e7eb", borderRadius: 20, overflow: "hidden" }}>
+                {stats.map((s, i) => (
+                  <div key={i} className="stat-item" style={{ background: i % 2 === 0 ? "#f0f7ff" : "white" }}>
+                    <div style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: 36, fontWeight: 800, color: BRAND, marginBottom: 6 }}>{s.value}</div>
+                    <div style={{ fontSize: 13, color: "#64748b", fontWeight: 500 }}>{s.label}</div>
                   </div>
-
-                  <div className="lp-order-grid">
-                    <p className="lp-order-field"><strong>Destinatario:</strong> {order.recipient_name || '—'}</p>
-                    <p className="lp-order-field"><strong>Teléfono:</strong> {order.recipient_phone || '—'}</p>
-                    <p className="lp-order-field"><strong>Ciudad:</strong> {order.recipient_city || '—'}, {order.recipient_region || '—'}</p>
-                    <p className="lp-order-field"><strong>Fecha:</strong> {formatDate(order.created_at)}</p>
-                    <p className="lp-order-field full"><strong>Dirección:</strong> {order.recipient_address || '—'} {order.recipient_address_complement || ''}</p>
-
-                    {/* Ubicación destinatario */}
-                    {order.recipient_lat && order.recipient_lng && (
-                      <p className="lp-order-field full">
-                        <a href={`https://www.google.com/maps?q=${order.recipient_lat},${order.recipient_lng}`}
-                          target="_blank" rel="noopener noreferrer" className="lp-maps-link">
-                          Ver ubicación del cliente en Maps
-                        </a>
-                      </p>
-                    )}
-
-                    {/* Ubicación proveedor */}
-                    {order.supplier_city && (
-                      <p className="lp-order-field full" style={{ marginTop: '4px' }}>
-                        <strong>Retiro:</strong>{' '}
-                        <a href={`https://www.google.com/maps/search/${encodeURIComponent([order.supplier_address, order.supplier_height, order.supplier_city, 'Paraguay'].filter(Boolean).join(' '))}`}
-                          target="_blank" rel="noopener noreferrer"
-                          style={{ color: '#8b5cf6', fontWeight: '600', textDecoration: 'none' }}>
-                          {[order.supplier_address, order.supplier_height, order.supplier_city].filter(Boolean).join(', ')}
-                        </a>
-                        {order.supplier_phone && (
-                          <span style={{ marginLeft: '8px', color: '#6b7280' }}>· {order.supplier_phone}</span>
-                        )}
-                      </p>
-                    )}
-
-                    {/* Motivo reagendamiento */}
-                    {order.redelivery_reason && (
-                      <p className="lp-order-field full" style={{ marginTop: '4px' }}>
-                        <span style={{ fontSize: '12px', color: '#f97316', fontWeight: '600' }}>
-                          Motivo: {order.redelivery_reason}
-                        </span>
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <div className="lp-order-actions">
-                  <div>
-                    <p className="lp-price-label">Total</p>
-                    <p className="lp-price-value">{formatCurrency(order.final_price)}</p>
-                  </div>
-
-                  {/* Etiqueta — siempre disponible si la orden está activa */}
-                  {!['pending','cancelled'].includes(order.status) && (
-                    <button className="lp-btn" onClick={() => downloadLabel(order)} disabled={isUpdating}
-                      style={{ background: '#f3f4f6', color: '#374151', border: '1.5px solid #e5e7eb', fontSize: '12px' }}>
-                      Etiqueta
-                    </button>
-                  )}
-
-                  {/* Flujo de estados */}
-                  {order.status === 'ready_for_pickup' && (
-                    <button className="lp-btn pickup" onClick={() => update(order.order_id, pickedUpOrder, 'picked_up')} disabled={isUpdating}>
-                      {isUpdating ? 'Procesando...' : 'Retirar del proveedor'}
-                    </button>
-                  )}
-
-                  {order.status === 'picked_up' && (
-                    <button className="lp-btn pickup" onClick={() => update(order.order_id, outForDeliveryOrder, 'out_for_delivery')} disabled={isUpdating}>
-                      {isUpdating ? 'Procesando...' : 'Salir a entregar'}
-                    </button>
-                  )}
-
-                  {['out_for_delivery', 'in_transit'].includes(order.status) && (
-                    <>
-                      <button className="lp-btn deliver" onClick={() => update(order.order_id, deliverOrder, 'completed')} disabled={isUpdating}>
-                        {isUpdating ? 'Procesando...' : 'Confirmar entrega'}
-                      </button>
-                      <button className="lp-btn redelivery" onClick={() => setRedeliveryModal(order.order_id)} disabled={isUpdating}>
-                        No entregado
-                      </button>
-                    </>
-                  )}
-
-                  {order.status === 'redelivery' && (
-                    <>
-                      <button className="lp-btn pickup" onClick={() => update(order.order_id, retryDeliveryOrder, 'out_for_delivery')} disabled={isUpdating}>
-                        {isUpdating ? 'Procesando...' : 'Reintentar entrega'}
-                      </button>
-                      <button className="lp-btn redelivery" onClick={() => setReturnModal(order.order_id)} disabled={isUpdating}
-                        style={{ background: '#fef2f2', color: '#dc2626', border: '1.5px solid #fecaca' }}>
-                        Iniciar devolución
-                      </button>
-                      <button className="lp-btn cancel" onClick={() => handleCancel(order.order_id)} disabled={isUpdating}>
-                        Cliente cancela
-                      </button>
-                    </>
-                  )}
-                </div>
+                ))}
               </div>
-            );
-          })}
+            </div>
+          </div>
         </div>
-      )}
+      </section>
+
+      {/* ── CTA ── */}
+      <section ref={ctaRef} style={{ background: `linear-gradient(135deg, ${BRAND} 0%, #0284c7 100%)`, padding: "96px 24px", position: "relative", overflow: "hidden" }}>
+        <div style={{ position: "absolute", top: -80, right: -80, width: 300, height: 300, background: "rgba(255,255,255,0.06)", borderRadius: "50%" }} />
+        <div style={{ position: "absolute", bottom: -60, left: -60, width: 200, height: 200, background: "rgba(255,255,255,0.06)", borderRadius: "50%" }} />
+        <div style={{ maxWidth: 700, margin: "0 auto", textAlign: "center", position: "relative" }}>
+          <div className={`fade-up ${ctaVisible ? "visible" : ""}`}>
+            <h2 style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", fontSize: "clamp(28px, 4vw, 48px)", fontWeight: 800, color: "white", marginBottom: 20, lineHeight: 1.15 }}>
+              Empezá a vender hoy.<br />Sin stock. Sin excusas.
+            </h2>
+            <span style={{ fontSize: 18, color: "rgba(255,255,255,0.85)", marginBottom: 40, lineHeight: 1.6 }}>
+              Registrate gratis, elegí productos del catálogo y empezá a generar ingresos desde el primer día.
+            </span>
+            <div className="cta-btns" style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
+              <button onClick={() => window.location.href="/signup"}
+                style={{ background: "white", color: BRAND, border: "none", borderRadius: 12, padding: "15px 36px", fontSize: 16, fontWeight: 800, cursor: "pointer", transition: "all 0.2s", fontFamily: "'Inter', sans-serif" }}
+                onMouseEnter={e => { e.target.style.transform = "translateY(-2px)"; e.target.style.boxShadow = "0 8px 28px rgba(0,0,0,0.2)"; }}
+                onMouseLeave={e => { e.target.style.transform = "none"; e.target.style.boxShadow = "none"; }}>
+                Crear cuenta gratis
+              </button>
+              <button onClick={() => window.location.href="/login"}
+                style={{ background: "transparent", color: "white", border: "2px solid rgba(255,255,255,0.5)", borderRadius: 12, padding: "15px 28px", fontSize: 16, fontWeight: 700, cursor: "pointer", transition: "all 0.2s", fontFamily: "'Inter', sans-serif" }}
+                onMouseEnter={e => { e.target.style.borderColor = "white"; e.target.style.background = "rgba(255,255,255,0.1)"; }}
+                onMouseLeave={e => { e.target.style.borderColor = "rgba(255,255,255,0.5)"; e.target.style.background = "transparent"; }}>
+                Ya tengo cuenta
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── FOOTER ── */}
+      <footer style={{ background: "#0f172a", color: "#94a3b8", padding: "40px 24px", textAlign: "center" }}>
+        <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
+            <img src="/full-logo.png" alt="EasyPy" style={{ height: 32, objectFit: "contain", filter: "brightness(0) invert(1)" }} />
+          </div>
+          <span style={{ fontSize: 14 }}>© 2026 EasyPy. Todos los derechos reservados.</span>
+        </div>
+      </footer>
     </div>
   );
-};
-
-export default LogisticsPanel;
+}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useUser } from '../App';
 import { useNavigate } from 'react-router-dom';
-import { getMyLogistics, getOrdersByLogistics, pickedUpOrder, outForDeliveryOrder,
+import { getMyLogistics, getOrdersByLogistics, getLogisticsEfectividad, pickedUpOrder, outForDeliveryOrder,
          redeliveryWithReason, retryDeliveryOrder, deliverOrder, cancelOrderAdmin, createReturn } from '../services/api';
 import '../styles/logisticspanel.css';
 
@@ -37,6 +37,7 @@ const LogisticsPanel = () => {
   const [filter, setFilter]             = useState('all');
   const [updating, setUpdating]         = useState(null);
   const [error, setError]               = useState('');
+  const [efectividad, setEfectividad]   = useState(null);
 
   // Modal reagendamiento
   const [redeliveryModal, setRedeliveryModal] = useState(null);
@@ -57,6 +58,8 @@ const LogisticsPanel = () => {
       setLogistic(logisticData);
       const ordersData = await getOrdersByLogistics(logisticData.logistic_id);
       setOrders(ordersData || []);
+      const ef = await getLogisticsEfectividad(logisticData.logistic_id).catch(() => null);
+      setEfectividad(ef);
     } catch {
       setError('No se pudieron cargar las órdenes.');
     } finally {
@@ -232,6 +235,35 @@ const LogisticsPanel = () => {
       </div>
 
       {error && <div className="lp-error">{error}</div>}
+
+      {efectividad && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', background: 'white', border: '1.5px solid #e5e7eb', borderRadius: '12px', padding: '14px 20px', marginBottom: '16px', flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: '120px' }}>
+            <p style={{ fontSize: '11px', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Efectividad de entregas</p>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '6px' }}>
+              <div style={{ flex: 1, height: '8px', background: '#f3f4f6', borderRadius: '100px', overflow: 'hidden' }}>
+                <div style={{ width: `${efectividad.efectividad}%`, height: '100%', background: efectividad.efectividad >= 80 ? '#16a34a' : efectividad.efectividad >= 60 ? '#d97706' : '#dc2626', borderRadius: '100px', transition: 'width 0.5s ease' }} />
+              </div>
+              <span style={{ fontSize: '20px', fontWeight: '800', color: efectividad.efectividad >= 80 ? '#16a34a' : efectividad.efectividad >= 60 ? '#d97706' : '#dc2626', minWidth: '52px' }}>
+                {efectividad.efectividad}%
+              </span>
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '16px' }}>
+            {[
+              { label: 'Entregadas', value: efectividad.completed, color: '#16a34a' },
+              { label: 'Reagendadas', value: efectividad.redelivery, color: '#f97316' },
+              { label: 'Canceladas', value: efectividad.cancelled, color: '#dc2626' },
+              { label: 'Total', value: efectividad.total, color: '#6b7280' },
+            ].map((s, i) => (
+              <div key={i} style={{ textAlign: 'center' }}>
+                <p style={{ fontSize: '18px', fontWeight: '800', color: s.color }}>{s.value}</p>
+                <p style={{ fontSize: '10px', color: '#9ca3af', fontWeight: '600' }}>{s.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="lp-stats">
         {STATS_CONFIG.map(s => (
