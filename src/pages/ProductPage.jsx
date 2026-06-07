@@ -1,58 +1,114 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getProduct, getProductImages, getUser } from '../services/api';
+import { getProduct, getProductImages, getUser, getProductVariants, getFavorites, toggleFavorite } from '../services/api';
+import { useUser } from '../App';
 import '../styles/assets.css';
 import '../styles/product.css';
 
 const ProductPage = () => {
   const { id }     = useParams();
   const navigate   = useNavigate();
+  const { user }   = useUser();
 
-  const [product, setProduct]             = useState(null);
-  const [images, setImages]               = useState([]);
-  const [loading, setLoading]             = useState(true);
-  const [selectedImage, setSelectedImage] = useState(0);
-  const [quantity, setQuantity]           = useState(1);
-  const [isFavorite, setIsFavorite]       = useState(false);
-  const [supplierCity, setSupplierCity]   = useState('');
+  const [product, setProduct]               = useState(null);
+  const [images, setImages]                 = useState([]);
+  const [loading, setLoading]               = useState(true);
+  const [selectedImage, setSelectedImage]   = useState(0);
+  const [quantity, setQuantity]             = useState(1);
+  const [isFavorite, setIsFavorite]         = useState(false);
+  const [supplierCity, setSupplierCity]     = useState('');
+  const [variants, setVariants]             = useState([]);
+  const [selectedColor, setSelectedColor]   = useState(null);
+  const [selectedTalle, setSelectedTalle]   = useState(null);
 
   useEffect(() => { window.scrollTo({ top: 0, behavior: 'instant' }); }, []);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [prod, imgs] = await Promise.all([getProduct(id), getProductImages(id)]);
+        const [prod, imgs, vars] = await Promise.all([
+          getProduct(id),
+          getProductImages(id),
+          getProductVariants(id).catch(() => []),
+        ]);
         setProduct(prod);
+        setVariants(vars || []);
         const sorted = [...(imgs || [])].sort((a, b) => b.is_primary - a.is_primary);
         setImages(sorted);
-        // Fetchear ciudad del proveedor
         if (prod?.user_id) {
-          try {
-            const supplier = await getUser(prod.user_id);
-            setSupplierCity(supplier?.city || '');
-          } catch {}
+          try { const s = await getUser(prod.user_id); setSupplierCity(s?.city || ''); } catch {}
         }
       } catch {
-      } finally {
-        setLoading(false);
-      }
+      } finally { setLoading(false); }
     };
     fetchData();
   }, [id]);
 
+  // Cargar si está en favoritos
+  useEffect(() => {
+    if (!user?.user_id) return;
+    getFavorites().then(favs => {
+      const isFav = (favs || []).some(f => f.product_id === parseInt(id));
+      setIsFavorite(isFav);
+    }).catch(() => {});
+  }, [user, id]);
+
+  const handleToggleFavorite = async () => {
+    try {
+      const res = await toggleFavorite({ product_id: parseInt(id) });
+      setIsFavorite(res.favorited);
+    } catch {}
+  };
+
+  const formatPrice = (price) =>
+    new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', minimumFractionDigits: 0 }).format(price);
+
+  // Lógica de variantes
+  const colors  = [...new Set(variants.filter(v => v.color).map(v => v.color))];
+  const talles  = [...new Set(variants.filter(v => v.talle).map(v => v.talle))];
+  const hasVariants = variants.length > 0;
+
+  // Variante seleccionada actualmente
+  const selectedVariant = hasVariants ? variants.find(v =>
+    (!selectedColor || v.color === selectedColor) &&
+    (!selectedTalle || v.talle === selectedTalle)
+  ) : null;
+
+  // Stock efectivo: si hay variantes, usar la variante; sino usar el producto
+  const effectiveStock = hasVariants
+    ? (selectedVariant?.stock_available ?? null)
+    : (product?.stock_available ?? null);
+
+  // Precio con modificador
+  const basePrice     = product ? parseFloat(product.product_base_cost) : 0;
+  const priceModifier = selectedVariant ? parseFloat(selectedVariant.price_modifier || 0) : 0;
+  const finalPrice    = basePrice + priceModifier;
+
+  // Disponibilidad de talle dado el color seleccionado
+  const isTalleAvailable = (talle) => {
+    if (!selectedColor) return variants.some(v => v.talle === talle && v.stock_available > 0);
+    return variants.some(v => v.color === selectedColor && v.talle === talle && v.stock_available > 0);
+  };
+
+  const isColorAvailable = (color) => {
+    if (!selectedTalle) return variants.some(v => v.color === color && v.stock_available > 0);
+    return variants.some(v => v.talle === selectedTalle && v.color === color && v.stock_available > 0);
+  };
+
+  const canBuy = hasVariants
+    ? selectedVariant && effectiveStock > 0
+    : product?.product_status === 'active' && (product?.stock_available ?? 1) > 0;
+
   const handleBuy = () => {
-    if (!product) return;
+    if (!product || !canBuy) return;
     navigate('/order/new', {
       state: {
-        initialItem:  { id: product.product_id, name: product.product_name, price: parseFloat(product.product_base_cost), image: images[0]?.image_url || null, quantity },
+        initialItem:  { id: product.product_id, name: product.product_name, price: finalPrice, image: images[0]?.image_url || null, quantity, variant_id: selectedVariant?.variant_id || null },
         supplierId:   product.user_id,
         supplierCity: supplierCity,
       }
     });
   };
-
-  const formatPrice = (price) =>
-    new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', minimumFractionDigits: 0 }).format(price);
 
   if (loading) return (
     <div className="product-page">
@@ -73,12 +129,12 @@ const ProductPage = () => {
     </div>
   );
 
-  const currentImage    = images[selectedImage]?.image_url || null;
-  const discount        = product.product_discount ? parseFloat(product.product_discount) : 0;
-  const originalPrice   = discount > 0 ? parseFloat(product.product_base_cost) / (1 - discount / 100) : null;
-  const suggestedPrice  = product.suggested_price ? parseFloat(product.suggested_price) : null;
+  const currentImage   = images[selectedImage]?.image_url || null;
+  const discount       = product.product_discount ? parseFloat(product.product_discount) : 0;
+  const originalPrice  = discount > 0 ? basePrice / (1 - discount / 100) : null;
+  const suggestedPrice = product.suggested_price ? parseFloat(product.suggested_price) : null;
   const suggestedMargin = suggestedPrice
-    ? Math.round(((suggestedPrice - parseFloat(product.product_base_cost)) / suggestedPrice) * 100)
+    ? Math.round(((suggestedPrice - finalPrice) / suggestedPrice) * 100)
     : null;
 
   return (
@@ -99,7 +155,11 @@ const ProductPage = () => {
                 </div>
               )}
               {discount > 0 && <div className="discount-badge">-{discount}% OFF</div>}
-              <button className={`favorite-btn ${isFavorite ? 'active' : ''}`} onClick={() => setIsFavorite(!isFavorite)} aria-label="Agregar a favoritos">
+              <button
+                className={`favorite-btn ${isFavorite ? 'active' : ''}`}
+                onClick={handleToggleFavorite}
+                aria-label="Agregar a favoritos"
+              >
                 <svg width="24" height="24" viewBox="0 0 24 24" fill={isFavorite ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
                   <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
                 </svg>
@@ -130,8 +190,9 @@ const ProductPage = () => {
 
             <div className="price-section">
               <div className="price-row">
-                <span className="current-price">{formatPrice(product.product_base_cost)}</span>
+                <span className="current-price">{formatPrice(finalPrice)}</span>
                 {originalPrice && <span className="original-price">{formatPrice(originalPrice)}</span>}
+                {priceModifier > 0 && <span style={{ fontSize: '12px', color: '#16a34a', fontWeight: '600' }}>+{formatPrice(priceModifier)} por esta variante</span>}
               </div>
               {discount > 0 && <div className="save-text">Ahorrás {discount}% con este precio</div>}
               {suggestedPrice && (
@@ -153,31 +214,82 @@ const ProductPage = () => {
             {product.product_description && <p className="description">{product.product_description}</p>}
             {product.product_sku && <p style={{ fontSize: '13px', color: '#9ca3af' }}>SKU: {product.product_sku}</p>}
 
+            {/* ── Selector de colores ── */}
+            {colors.length > 0 && (
+              <div style={{ marginBottom: '16px' }}>
+                <p style={{ fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '8px' }}>
+                  Color: <span style={{ color: '#056EB7' }}>{selectedColor || 'Seleccioná uno'}</span>
+                </p>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {colors.map(color => {
+                    const available = isColorAvailable(color);
+                    const selected  = selectedColor === color;
+                    return (
+                      <button key={color} onClick={() => setSelectedColor(selected ? null : color)} disabled={!available}
+                        style={{ padding: '6px 14px', border: `2px solid ${selected ? '#056EB7' : available ? '#e5e7eb' : '#f3f4f6'}`, borderRadius: '100px', fontSize: '13px', fontWeight: '600', cursor: available ? 'pointer' : 'not-allowed', background: selected ? '#eff6ff' : 'white', color: selected ? '#056EB7' : available ? '#374151' : '#d1d5db', textDecoration: available ? 'none' : 'line-through', transition: 'all 0.15s' }}>
+                        {color}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* ── Selector de talles ── */}
+            {talles.length > 0 && (
+              <div style={{ marginBottom: '16px' }}>
+                <p style={{ fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '8px' }}>
+                  Talle: <span style={{ color: '#056EB7' }}>{selectedTalle || 'Seleccioná uno'}</span>
+                </p>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {talles.map(talle => {
+                    const available = isTalleAvailable(talle);
+                    const selected  = selectedTalle === talle;
+                    return (
+                      <button key={talle} onClick={() => setSelectedTalle(selected ? null : talle)} disabled={!available}
+                        style={{ minWidth: '44px', padding: '6px 12px', border: `2px solid ${selected ? '#056EB7' : available ? '#e5e7eb' : '#f3f4f6'}`, borderRadius: '8px', fontSize: '13px', fontWeight: '700', cursor: available ? 'pointer' : 'not-allowed', background: selected ? '#eff6ff' : 'white', color: selected ? '#056EB7' : available ? '#374151' : '#d1d5db', textDecoration: available ? 'none' : 'line-through', transition: 'all 0.15s', position: 'relative' }}>
+                        {talle}
+                        {!available && <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><span style={{ position: 'absolute', width: '100%', height: '1.5px', background: '#d1d5db', transform: 'rotate(-20deg)' }} /></span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Aviso si hay variantes sin seleccionar */}
+            {hasVariants && !selectedVariant && (
+              <p style={{ fontSize: '12px', color: '#dc2626', fontWeight: '600', marginBottom: '12px' }}>
+                {colors.length > 0 && !selectedColor && 'Seleccioná un color. '}
+                {talles.length > 0 && !selectedTalle && 'Seleccioná un talle.'}
+              </p>
+            )}
+
             <div className="quantity-section">
               <div className="variant-label">Cantidad</div>
               <div className="quantity-selector">
                 <button className="qty-btn" onClick={() => setQuantity(Math.max(1, quantity - 1))} disabled={quantity <= 1}>−</button>
                 <span className="qty-display">{quantity}</span>
-                <button className="qty-btn" onClick={() => setQuantity(quantity + 1)}>+</button>
+                <button className="qty-btn" onClick={() => setQuantity(quantity + 1)} disabled={effectiveStock !== null && quantity >= effectiveStock}>+</button>
               </div>
             </div>
 
             <div className="stock-info">
-              <span className="stock-dot" style={{ background: product.stock_available === 0 ? '#ef4444' : product.stock_available <= 5 ? '#d97706' : '#16a34a' }} />
+              <span className="stock-dot" style={{ background: effectiveStock === 0 ? '#ef4444' : effectiveStock !== null && effectiveStock <= 5 ? '#d97706' : '#16a34a' }} />
               <span className="stock-text">
-                {product.stock_available === 0
+                {effectiveStock === 0
                   ? 'Sin stock'
-                  : product.stock_available <= 5
-                    ? `Últimas ${product.stock_available} unidades`
-                    : `${product.stock_available} disponibles`}
+                  : effectiveStock !== null && effectiveStock <= 5
+                    ? `Últimas ${effectiveStock} unidades`
+                    : effectiveStock !== null
+                      ? `${effectiveStock} disponibles`
+                      : 'Disponible'}
               </span>
             </div>
 
             <div className="action-buttons">
-              <button className="buy-now-btn" style={{ flex: 1 }}
-                onClick={handleBuy}
-                disabled={product.product_status !== 'active' || product.stock_available === 0}>
-                {product.stock_available === 0 ? 'Sin stock' : 'Comprar'}
+              <button className="buy-now-btn" style={{ flex: 1 }} onClick={handleBuy} disabled={!canBuy}>
+                {effectiveStock === 0 ? 'Sin stock' : hasVariants && !selectedVariant ? 'Seleccioná variante' : 'Comprar'}
               </button>
             </div>
           </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getProducts, getProductImagesBulk, getProviders } from '../services/api';
+import { getProducts, getProductImagesBulk, getProviders, getFavorites, toggleFavorite } from '../services/api';
 import { useUser } from '../App';
 import '../styles/catalog.css';
 
@@ -8,7 +8,7 @@ const PAGE_SIZE = 50;
 
 const Catalog = () => {
   const navigate = useNavigate();
-  const { searchQuery } = useUser();
+  const { searchQuery, user } = useUser();
   const [activeFilters, setActiveFilters] = useState(['all']);
   const [products, setProducts]           = useState([]);
   const [loading, setLoading]             = useState(true);
@@ -16,6 +16,7 @@ const Catalog = () => {
   const [hasMore, setHasMore]             = useState(true);
   const [skip, setSkip]                   = useState(0);
   const [providerMap, setProviderMap]     = useState({});
+  const [favorites, setFavorites]         = useState(new Set()); // Set de product_ids favoritos
   const loaderRef                         = useRef(null);
 
   const fetchProducts = useCallback(async (currentSkip = 0, append = false) => {
@@ -27,13 +28,11 @@ const Catalog = () => {
           currentSkip === 0 ? getProviders() : Promise.resolve(null)
         ]);
 
-        // Construir map local — no depender del state para evitar closure stale
         let localMap = {};
         if (providers) {
           (providers || []).forEach(p => { localMap[p.user_id] = { name: p.user_nickname, city: p.city || '' }; });
           setProviderMap(localMap);
         } else {
-          // En páginas siguientes usar el state existente
           localMap = providerMap;
         }
 
@@ -41,18 +40,12 @@ const Catalog = () => {
           setHasMore(data.length === PAGE_SIZE);
           const activeData = data.filter(p => p.product_status === 'active');
 
-          // Un solo request para todas las imágenes
           if (!window._imgCache) window._imgCache = {};
-          const uncachedIds = activeData
-            .map(p => p.product_id)
-            .filter(id => !window._imgCache[id]);
-
+          const uncachedIds = activeData.map(p => p.product_id).filter(id => !window._imgCache[id]);
           if (uncachedIds.length > 0) {
             try {
               const bulkImages = await getProductImagesBulk(uncachedIds);
-              Object.entries(bulkImages).forEach(([pid, url]) => {
-                window._imgCache[parseInt(pid)] = url;
-              });
+              Object.entries(bulkImages).forEach(([pid, url]) => { window._imgCache[parseInt(pid)] = url; });
             } catch {}
           }
 
@@ -67,7 +60,6 @@ const Catalog = () => {
             stock:          p.stock_available ?? null,
             status:         p.product_status,
             image:          window._imgCache[p.product_id] || null,
-            badge:          p.is_private ? 'Exclusivo' : null,
             isPrivate:      p.is_private || false,
             category:       p.product_category,
             sku:            p.product_sku || '',
@@ -84,9 +76,17 @@ const Catalog = () => {
       }
   }, [providerMap]);
 
+  // Cargar favoritos
+  useEffect(() => {
+    if (!user?.user_id) return;
+    getFavorites().then(favs => {
+      const ids = new Set((favs || []).filter(f => f.product_id).map(f => f.product_id));
+      setFavorites(ids);
+    }).catch(() => {});
+  }, [user]);
+
   useEffect(() => { fetchProducts(0, false); }, []);
 
-  // Intersection observer for infinite scroll
   useEffect(() => {
     const observer = new IntersectionObserver(
       entries => {
@@ -102,10 +102,23 @@ const Catalog = () => {
     return () => observer.disconnect();
   }, [hasMore, loadingMore, loading, skip, fetchProducts]);
 
-  const categories = ['all', 'exclusive', ...new Set(products.map(p => p.category))];
+  const handleToggleFavorite = async (productId, e) => {
+    e.stopPropagation();
+    try {
+      const res = await toggleFavorite({ product_id: productId });
+      setFavorites(prev => {
+        const next = new Set(prev);
+        if (res.favorited) next.add(productId);
+        else next.delete(productId);
+        return next;
+      });
+    } catch {}
+  };
+
+  const categories = ['all', 'exclusive', 'favorites', ...new Set(products.map(p => p.category))];
   const filters    = categories.map(cat => ({
     id:    cat,
-    label: cat === 'all' ? 'Todos' : cat === 'exclusive' ? 'Exclusivos' : cat.charAt(0).toUpperCase() + cat.slice(1),
+    label: cat === 'all' ? 'Todos' : cat === 'exclusive' ? 'Exclusivos' : cat === 'favorites' ? '❤️ Favoritos' : cat.charAt(0).toUpperCase() + cat.slice(1),
   }));
 
   const toggleFilter = (catId) => {
@@ -124,7 +137,8 @@ const Catalog = () => {
     ? products
     : products.filter(p =>
         activeFilters.includes(p.category) ||
-        (activeFilters.includes('exclusive') && p.isPrivate)
+        (activeFilters.includes('exclusive') && p.isPrivate) ||
+        (activeFilters.includes('favorites') && favorites.has(p.id))
       );
 
   const filtered = searchQuery?.trim()
@@ -156,25 +170,21 @@ const Catalog = () => {
       </span>
     );
     if (stock !== null) return (
-      <span style={{ fontSize: '10px', fontWeight: '600', color: '#6b7280' }}>
-        {stock} disponibles
-      </span>
+      <span style={{ fontSize: '10px', fontWeight: '600', color: '#6b7280' }}>{stock} disponibles</span>
     );
     return null;
   };
 
   const ProductCard = ({ product }) => {
     const outOfStock = product.status === 'out_of_stock' || product.stock === 0;
+    const isFav      = favorites.has(product.id);
 
     return (
       <div
         className="product-card"
         onClick={(e) => {
-          if (e.ctrlKey || e.metaKey) {
-            window.open(`/product/${product.id}`, '_blank');
-          } else {
-            navigate(`/product/${product.id}`);
-          }
+          if (e.ctrlKey || e.metaKey) window.open(`/product/${product.id}`, '_blank');
+          else navigate(`/product/${product.id}`);
         }}
         style={{ cursor: 'pointer', opacity: outOfStock ? 0.75 : 1 }}
         data-out-of-stock={outOfStock ? 'true' : undefined}
@@ -192,40 +202,38 @@ const Catalog = () => {
           {product.isPrivate && (
             <span className="product-badge" style={{ background: '#7c3aed' }}>Exclusivo</span>
           )}
-
+          {/* Botón favorito */}
+          <button
+            onClick={(e) => handleToggleFavorite(product.id, e)}
+            style={{ position: 'absolute', top: '8px', right: '8px', width: '32px', height: '32px', borderRadius: '50%', background: 'white', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.15)', transition: 'transform 0.15s' }}
+            aria-label="Favorito"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill={isFav ? '#dc2626' : 'none'} stroke={isFav ? '#dc2626' : '#9ca3af'} strokeWidth="2">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+            </svg>
+          </button>
         </div>
 
         <div className="product-info">
           <h3 className="product-name">{product.name}</h3>
-
-          {/* Proveedor */}
           <div className="product-provider">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
             </svg>
             {product.providerName}
           </div>
-
           <div className="product-footer">
             <div>
               <div className="product-price-label">Precio de compra</div>
               <div className="product-price">{formatPrice(product.price)}</div>
               {product.suggestedPrice && (
-                <div className="product-suggested-price">
-                  Venta sugerida: {formatPrice(product.suggestedPrice)}
-                </div>
+                <div className="product-suggested-price">Venta sugerida: {formatPrice(product.suggestedPrice)}</div>
               )}
-              {/* Stock */}
               <div style={{ marginTop: '4px' }}>
                 <StockBadge stock={product.stock} status={product.status} />
               </div>
             </div>
-            <button
-              className="add-to-cart-btn"
-              onClick={(e) => handleBuy(product, e)}
-              disabled={outOfStock}
-
-            >
+            <button className="add-to-cart-btn" onClick={(e) => handleBuy(product, e)} disabled={outOfStock}>
               <span>{outOfStock ? 'Sin stock' : 'Comprar'}</span>
             </button>
           </div>
@@ -238,16 +246,11 @@ const Catalog = () => {
     <div className="catalog-container">
       <div className="catalog-filters">
         {filters.map(filter => (
-          <button
-            key={filter.id}
-            className={`filter-button ${activeFilters.includes(filter.id) ? 'active' : ''}`}
-            onClick={() => toggleFilter(filter.id)}
-          >
+          <button key={filter.id} className={`filter-button ${activeFilters.includes(filter.id) ? 'active' : ''}`} onClick={() => toggleFilter(filter.id)}>
             {filter.label}
           </button>
         ))}
       </div>
-
       {loading ? (
         <p style={{ textAlign: 'center', color: '#9ca3af', marginTop: '40px', fontSize: '13px' }}>Cargando productos...</p>
       ) : filtered.length === 0 ? (
