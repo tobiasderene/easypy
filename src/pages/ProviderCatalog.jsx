@@ -219,10 +219,12 @@ const ProviderCatalog = () => {
                       <span className="detail-label">Categoría:</span>
                       <span className="detail-value">{product.product_category}</span>
                     </div>
+                    {product.product_discount > 0 && (
                     <div className="detail-row">
                       <span className="detail-label">Descuento:</span>
-                      <span className="detail-value">{product.product_discount}%</span>
+                      <span className="detail-value">{parseFloat(product.product_discount).toFixed(0)}%</span>
                     </div>
+                    )}
                   </div>
 
                   <div className="product-actions">

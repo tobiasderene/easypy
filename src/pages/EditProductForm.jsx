@@ -70,7 +70,7 @@ const EditProductForm = () => {
           description:     product.product_description || '',
           category:        product.product_category    || '',
           price:           String(product.product_base_cost || ''),
-          discount:        String(product.product_discount  || '0'),
+          discount:        String(parseFloat(product.product_discount || 0).toFixed(0)),
           suggested_price: product.suggested_price ? String(product.suggested_price) : '',
           stock:           String(product.stock_available ?? ''),
         });

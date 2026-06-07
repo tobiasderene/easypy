@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, Upload, DollarSign, Package, Tag, Grid, FileText } from 'lucide-react';
-import { createProduct, uploadProductImage } from '../services/api';
+import { createProduct, uploadProductImage, createVariant } from '../services/api';
 import { useUser } from '../App';
 import '../styles/addproductform.css';
 
@@ -14,6 +14,8 @@ const AddProductForm = () => {
     price: '', discount: '0', suggested_price: '', stock: '', images: []
   });
   const [errors, setErrors]             = useState({});
+  const [variants, setVariants]         = useState([]);
+  const [newVariant, setNewVariant]     = useState({ color: '', talle: '', stock_available: '', price_modifier: 0 });
   const [previewImages, setPreviewImages] = useState([]);
   const [isSubmitting, setIsSubmitting]   = useState(false);
 
@@ -50,6 +52,14 @@ const AddProductForm = () => {
     setPreviewImages(prev => prev.filter((_, i) => i !== index));
     setFormData(prev => ({ ...prev, images: prev.images.filter((_, i) => i !== index) }));
   };
+
+  const handleAddVariant = () => {
+    if (!newVariant.color && !newVariant.talle) { alert('Ingresá al menos color o talle'); return; }
+    setVariants(prev => [...prev, { ...newVariant, _id: Date.now() }]);
+    setNewVariant({ color: '', talle: '', stock_available: '', price_modifier: 0 });
+  };
+
+  const handleRemoveVariant = (id) => setVariants(prev => prev.filter(v => v._id !== id));
 
   const validateForm = () => {
     const newErrors = {};
@@ -90,6 +100,19 @@ const AddProductForm = () => {
           uploadProductImage(product.product_id, file, index === 0, index)
         )
       );
+
+      // Crear variantes si las hay
+      if (variants.length > 0) {
+        await Promise.all(variants.map(v =>
+          createVariant({
+            product_id:      dbProduct.product_id,
+            color:           v.color || null,
+            talle:           v.talle || null,
+            stock_available: parseInt(v.stock_available) || 0,
+            price_modifier:  parseFloat(v.price_modifier) || 0,
+          })
+        ));
+      }
 
       navigate('/provider-catalog');
     } catch (err) {
