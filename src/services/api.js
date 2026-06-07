@@ -226,6 +226,16 @@ export const getLogistic        = (logisticId) => api(`/logistics/${logisticId}`
 export const getMyLogistics     = ()           => api("/logistics/me");
 export const getLogisticsQuote  = (logisticId, bultos = 1, peso = 1.0, cp = null) => api(`/logistics/${logisticId}/quote?bultos=${bultos}&peso=${peso}${cp ? `&cp=${cp}` : ''}`, { method: 'POST' });
 export const getLogisticsZones       = (logisticId) => api(`/logistics/${logisticId}/zones`);
+// ── Variants ─────────────────────────────────────────────────────────────────
+export const getProductVariants = (productId)         => api(`/variants/product/${productId}`);
+export const createVariant      = (data)              => api('/variants', { method: 'POST', body: JSON.stringify(data) });
+export const updateVariant      = (variantId, data)   => api(`/variants/${variantId}`, { method: 'PATCH', body: JSON.stringify(data) });
+export const deleteVariant      = (variantId)         => api(`/variants/${variantId}`, { method: 'DELETE' });
+
+// ── Favorites ─────────────────────────────────────────────────────────────────
+export const getFavorites       = ()     => api('/favorites');
+export const toggleFavorite     = (data) => api('/favorites/toggle', { method: 'POST', body: JSON.stringify(data) });
+
 export const getLogisticsEfectividad = (logisticId) => api(`/logistics/${logisticId}/efectividad`);
 export const createLogistics    = (data)       => api("/logistics", { method: "POST", body: JSON.stringify(data) });
 export const updateLogistics    = (id, data)   => api(`/logistics/${id}`, { method: "PATCH", body: JSON.stringify(data) });

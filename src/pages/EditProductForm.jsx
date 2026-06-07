@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { X, Upload, DollarSign, Package, Tag, Grid, FileText, Lock, Search, UserCheck } from 'lucide-react';
 import { getProduct, updateProduct, getProductImages, uploadProductImage, deleteImage,
+         getProductVariants, createVariant, updateVariant, deleteVariant,
          getProductAssignments, addProductAssignment, removeProductAssignment, toggleProductPrivate,
          getUsers } from '../services/api';
 
@@ -27,6 +28,11 @@ const EditProductForm = () => {
   const [existingImages, setExistingImages] = useState([]);
   const [newImages, setNewImages]           = useState([]);
   const [deletedImageIds, setDeletedImageIds] = useState([]);
+
+  // Variantes
+  const [variants, setVariants]       = useState([]);
+  const [newVariant, setNewVariant]   = useState({ color: '', talle: '', stock_available: 0, price_modifier: 0 });
+  const [savingVariant, setSavingVariant] = useState(false);
 
   // Exclusividad
   const [isPrivate, setIsPrivate]       = useState(false);
@@ -56,6 +62,7 @@ const EditProductForm = () => {
           getProduct(id),
           getProductImages(id),
           getProductAssignments(id).catch(() => []),
+          getProductVariants(id).catch(() => []),
         ]);
         setFormData({
           name:            product.product_name        || '',
@@ -69,6 +76,7 @@ const EditProductForm = () => {
         });
         setIsPrivate(product.is_private || false);
         setAssignments(assigns || []);
+        setVariants(variantsData || []);
         const sorted = [...(images || [])].sort((a, b) => b.is_primary - a.is_primary);
         setExistingImages(sorted);
       } catch {
@@ -147,6 +155,32 @@ const EditProductForm = () => {
       const results = await searchSellers(q);
       setSellerResults((results || []).filter(s => !assignedIds.has(s.user_id)));
     } catch {} finally { setSearching(false); }
+  };
+
+  // ── Variantes ─────────────────────────────────────────────────────────────
+  const handleAddVariant = async () => {
+    if (!newVariant.color && !newVariant.talle) { alert('Ingresá al menos color o talle'); return; }
+    setSavingVariant(true);
+    try {
+      const v = await createVariant({ ...newVariant, product_id: parseInt(id), stock_available: parseInt(newVariant.stock_available) || 0, price_modifier: parseFloat(newVariant.price_modifier) || 0 });
+      setVariants(prev => [...prev, v]);
+      setNewVariant({ color: '', talle: '', stock_available: 0, price_modifier: 0 });
+    } catch { alert('Error al crear variante'); }
+    finally { setSavingVariant(false); }
+  };
+
+  const handleDeleteVariant = async (variantId) => {
+    try {
+      await deleteVariant(variantId);
+      setVariants(prev => prev.filter(v => v.variant_id !== variantId));
+    } catch { alert('Error al eliminar variante'); }
+  };
+
+  const handleVariantStockChange = async (variantId, newStock) => {
+    try {
+      const updated = await updateVariant(variantId, { stock_available: parseInt(newStock) });
+      setVariants(prev => prev.map(v => v.variant_id === variantId ? updated : v));
+    } catch {}
   };
 
   // ── Validación y submit ───────────────────────────────────────────────────
@@ -329,6 +363,68 @@ const EditProductForm = () => {
                     onChange={handleInputChange} placeholder="0" min="0" />
                 </div>
               </div>
+            </div>
+          </div>
+
+          {/* ── Variantes ── */}
+          <div className="form-section">
+            <h2 className="section-title"><Package size={20} />Variantes (colores y talles)</h2>
+
+            {/* Variantes existentes */}
+            {variants.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '16px' }}>
+                {variants.map(v => (
+                  <div key={v.variant_id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', background: '#f9fafb', border: '1.5px solid #e5e7eb', borderRadius: '9px' }}>
+                    <div style={{ flex: 1, display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                      {v.color && <span style={{ fontSize: '13px', fontWeight: '700', color: '#056EB7' }}>🎨 {v.color}</span>}
+                      {v.talle && <span style={{ fontSize: '13px', fontWeight: '700', color: '#8b5cf6' }}>📏 {v.talle}</span>}
+                      {v.price_modifier !== 0 && <span style={{ fontSize: '12px', color: '#16a34a' }}>+Gs. {v.price_modifier}</span>}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <label style={{ fontSize: '11px', color: '#6b7280' }}>Stock:</label>
+                      <input type="number" defaultValue={v.stock_available} min="0"
+                        onBlur={e => handleVariantStockChange(v.variant_id, e.target.value)}
+                        style={{ width: '60px', padding: '4px 8px', border: '1.5px solid #e5e7eb', borderRadius: '6px', fontSize: '13px', fontWeight: '700' }} />
+                    </div>
+                    <button type="button" onClick={() => handleDeleteVariant(v.variant_id)}
+                      style={{ background: 'none', border: '1.5px solid #fecaca', borderRadius: '7px', color: '#dc2626', padding: '4px 10px', fontSize: '12px', cursor: 'pointer' }}>
+                      Quitar
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Agregar nueva variante */}
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'flex-end', padding: '12px', background: '#f3f4f6', borderRadius: '10px' }}>
+              <div style={{ flex: '1 1 100px' }}>
+                <label style={{ fontSize: '11px', fontWeight: '700', color: '#374151', display: 'block', marginBottom: '4px' }}>Color</label>
+                <input type="text" placeholder="Rojo, Azul..." value={newVariant.color}
+                  onChange={e => setNewVariant(p => ({ ...p, color: e.target.value }))}
+                  style={{ width: '100%', padding: '8px 10px', border: '1.5px solid #e5e7eb', borderRadius: '7px', fontSize: '13px', boxSizing: 'border-box' }} />
+              </div>
+              <div style={{ flex: '1 1 100px' }}>
+                <label style={{ fontSize: '11px', fontWeight: '700', color: '#374151', display: 'block', marginBottom: '4px' }}>Talle</label>
+                <input type="text" placeholder="S, M, L, XL..." value={newVariant.talle}
+                  onChange={e => setNewVariant(p => ({ ...p, talle: e.target.value }))}
+                  style={{ width: '100%', padding: '8px 10px', border: '1.5px solid #e5e7eb', borderRadius: '7px', fontSize: '13px', boxSizing: 'border-box' }} />
+              </div>
+              <div style={{ flex: '1 1 80px' }}>
+                <label style={{ fontSize: '11px', fontWeight: '700', color: '#374151', display: 'block', marginBottom: '4px' }}>Stock</label>
+                <input type="number" placeholder="0" min="0" value={newVariant.stock_available}
+                  onChange={e => setNewVariant(p => ({ ...p, stock_available: e.target.value }))}
+                  style={{ width: '100%', padding: '8px 10px', border: '1.5px solid #e5e7eb', borderRadius: '7px', fontSize: '13px', boxSizing: 'border-box' }} />
+              </div>
+              <div style={{ flex: '1 1 100px' }}>
+                <label style={{ fontSize: '11px', fontWeight: '700', color: '#374151', display: 'block', marginBottom: '4px' }}>Diferencia precio (Gs.)</label>
+                <input type="number" placeholder="0" value={newVariant.price_modifier}
+                  onChange={e => setNewVariant(p => ({ ...p, price_modifier: e.target.value }))}
+                  style={{ width: '100%', padding: '8px 10px', border: '1.5px solid #e5e7eb', borderRadius: '7px', fontSize: '13px', boxSizing: 'border-box' }} />
+              </div>
+              <button type="button" onClick={handleAddVariant} disabled={savingVariant}
+                style={{ padding: '8px 16px', background: '#056EB7', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '13px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                {savingVariant ? '...' : '+ Agregar'}
+              </button>
             </div>
           </div>
 
