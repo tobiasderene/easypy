@@ -28,7 +28,8 @@ const AddProductForm = () => {
     { value: 'accessories', label: 'Accesorios' },
     { value: 'beauty', label: 'Belleza' },
     { value: 'clothing', label: 'Ropa' },
-    { value: 'toys', label: 'Juguetes' }
+    { value: 'toys', label: 'Juguetes' },
+    { value: 'pets', label: 'Mascotas' }
   ];
 
   const handleInputChange = (e) => {

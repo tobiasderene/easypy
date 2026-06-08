@@ -53,6 +53,7 @@ const EditProductForm = () => {
     { value: 'beauty', label: 'Belleza' },
     { value: 'clothing', label: 'Ropa' },
     { value: 'toys', label: 'Juguetes' },
+    { value: 'pets', label: 'Mascotas' }
   ];
 
   useEffect(() => {
