@@ -217,17 +217,18 @@ const Settings = () => {
             <h2 className="settings-section-title">Documento</h2>
             <div className="settings-form-grid">
               <div className="settings-field">
-                <label>Tipo de documento</label>
+                <label>Tipo de documento{req}</label>
                 <select name="doc_type" value={form.doc_type} onChange={handleChange}
-                  style={{ width: '100%', padding: '9px 12px', border: '1.5px solid #e5e7eb', borderRadius: '8px', fontSize: '13px', background: 'white' }}>
+                  style={{ width: '100%', padding: '9px 12px', border: `1.5px solid ${fieldErrors.doc_type ? '#dc2626' : '#e5e7eb'}`, borderRadius: '8px', fontSize: '13px', background: 'white' }}>
                   <option value="">Sin documento</option>
                   <option value="cedula">Cédula</option>
                   <option value="ruc">RUC</option>
                   <option value="pasaporte">Pasaporte</option>
                 </select>
+                {fieldErrors.doc_type && <span style={{fontSize:'11px',color:'#dc2626'}}>{fieldErrors.doc_type}</span>}
               </div>
               <div className="settings-field">
-                <label htmlFor="doc_number"></label>
+                <label htmlFor="doc_number">Número de documento{req}</label>
                 <input type="text" id="doc_number" name="doc_number"
                   value={form['doc_number']} onChange={handleChange}
                   placeholder="12345678" />
