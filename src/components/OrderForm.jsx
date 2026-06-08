@@ -155,8 +155,12 @@ const OrderForm = () => {
           const q = quotes[l.logistic_id];
           if (q && !q.error && q.total) {
             prices[l.logistic_id] = q.total;
-          } else if (q && (q.error || !q.total)) {
+          } else if (q !== undefined) {
+            // Ya se intentó cotizar pero falló o no tiene precio
             prices[l.logistic_id] = 'unavailable';
+          } else if (fixyCp) {
+            // Hay CP pero todavía no llegó la cotización
+            prices[l.logistic_id] = 'quoting';
           } else {
             prices[l.logistic_id] = null;
           }
@@ -788,6 +792,8 @@ const OrderForm = () => {
                       handleChange('region', loc.department);
                       setFixyCp(loc.cp);
                       setLogisticPrices({});
+                      setQuotes({});
+                      lastQuotedCp.current = null;
                       handleChange('logisticsId', null);
                     } else {
                       handleChange('city', val);
@@ -935,7 +941,20 @@ const OrderForm = () => {
                                 : isQuoting
                                   ? 'Cotizando...'
                                   : hasPrice
-                                    ? formatCurrency(Math.round(price * (1 + (l.commission_rate ? parseFloat(l.commission_rate) / 100 : 0.25))))
+                                    ? (() => {
+                                        // Para manuales usar commission_rate de la zona
+                                        let rate = l.commission_rate ? parseFloat(l.commission_rate) / 100 : 0.25;
+                                        if (l.api_type === 'manual') {
+                                          const normalize = s => (s || '').toLowerCase().trim();
+                                          const lZones = allZones[l.logistic_id] || [];
+                                          const rz = lZones.find(z => normalize(z.city) === normalize(form.city));
+                                          const sz = lZones.find(z => normalize(z.city) === normalize(supplierCity));
+                                          const rRate = rz?.commission_rate ? parseFloat(rz.commission_rate) / 100 : rate;
+                                          const sRate = sz?.commission_rate ? parseFloat(sz.commission_rate) / 100 : rate;
+                                          rate = Math.max(rRate, sRate);
+                                        }
+                                        return formatCurrency(Math.round(price * (1 + rate)));
+                                      })()
                                     : '—'}
                             </span>
                           )}
