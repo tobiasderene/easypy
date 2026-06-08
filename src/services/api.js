@@ -171,6 +171,7 @@ export const getOrdersBySupplier = (supplierId)    => api(`/orders/supplier/${su
 export const createOrder         = (data)          => api("/orders", { method: "POST", body: JSON.stringify(data) });
 export const updateOrder         = (orderId, data) => api(`/orders/${orderId}`, { method: "PATCH", body: JSON.stringify(data) });
 export const getOrderHistory     = (orderId)       => api(`/orders/${orderId}/history`);
+export const getFixyStatus       = (orderId)       => api(`/orders/${orderId}/fixy-status`);
 
 export const getOrdersByStatus = (status) =>
   fetch(`${BASE_URL}/orders/status/${status}`, {

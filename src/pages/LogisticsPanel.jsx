@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useUser } from '../App';
 import { useNavigate } from 'react-router-dom';
 import { getMyLogistics, getOrdersByLogistics, getLogisticsEfectividad, pickedUpOrder, outForDeliveryOrder,
+         getFixyStatus,
          redeliveryWithReason, retryDeliveryOrder, deliverOrder, cancelOrderAdmin, createReturn } from '../services/api';
 import '../styles/logisticspanel.css';
 
@@ -38,6 +39,9 @@ const LogisticsPanel = () => {
   const [updating, setUpdating]         = useState(null);
   const [error, setError]               = useState('');
   const [efectividad, setEfectividad]   = useState(null);
+  const [isFixy, setIsFixy]             = useState(false);
+  const [fixyStatuses, setFixyStatuses] = useState({}); // { order_id: { fixy_label, fixy_status, mapped_status } }
+  const [loadingFixy, setLoadingFixy]   = useState(null);
 
   // Modal reagendamiento
   const [redeliveryModal, setRedeliveryModal] = useState(null);
@@ -60,10 +64,23 @@ const LogisticsPanel = () => {
       setOrders(ordersData || []);
       const ef = await getLogisticsEfectividad(logisticData.logistic_id).catch(() => null);
       setEfectividad(ef);
+      setIsFixy(logisticData.api_type === 'fixy');
     } catch {
       setError('No se pudieron cargar las órdenes.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchFixyStatus = async (orderId) => {
+    setLoadingFixy(orderId);
+    try {
+      const data = await getFixyStatus(orderId);
+      setFixyStatuses(prev => ({ ...prev, [orderId]: data }));
+    } catch (e) {
+      alert('No se pudo obtener el estado de Fixy: ' + (e.message || ''));
+    } finally {
+      setLoadingFixy(null);
     }
   };
 
@@ -300,6 +317,18 @@ const LogisticsPanel = () => {
                     {order.collection_type === 'con_recaudo' && (
                       <span className="lp-badge" style={{ background: '#fef3c7', color: '#d97706' }}>Con recaudo</span>
                     )}
+                    {isFixy && order.tracking_number && (
+                      fixyStatuses[order.order_id] ? (
+                        <span style={{ padding: '2px 10px', borderRadius: '100px', fontSize: '11px', fontWeight: '700', background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0' }}>
+                          Fixy: {fixyStatuses[order.order_id].fixy_label}
+                        </span>
+                      ) : (
+                        <button onClick={() => fetchFixyStatus(order.order_id)} disabled={loadingFixy === order.order_id}
+                          style={{ padding: '2px 10px', borderRadius: '100px', fontSize: '11px', fontWeight: '700', background: '#eff6ff', color: '#056EB7', border: '1px solid #bfdbfe', cursor: 'pointer' }}>
+                          {loadingFixy === order.order_id ? 'Consultando...' : '📡 Ver estado Fixy'}
+                        </button>
+                      )
+                    )}
                   </div>
 
                   <div className="lp-order-grid">
@@ -332,6 +361,18 @@ const LogisticsPanel = () => {
                           <span style={{ marginLeft: '8px', color: '#6b7280' }}>· {order.supplier_phone}</span>
                         )}
                       </p>
+                    )}
+
+                    {/* Estado Fixy detallado */}
+                    {isFixy && fixyStatuses[order.order_id]?.eventos?.length > 0 && (
+                      <div style={{ marginTop: '8px', padding: '8px 12px', background: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                        <p style={{ fontSize: '11px', fontWeight: '700', color: '#16a34a', marginBottom: '4px' }}>HISTORIAL FIXY</p>
+                        {fixyStatuses[order.order_id].eventos.map((ev, i) => (
+                          <p key={i} style={{ fontSize: '11px', color: '#374151', marginBottom: '2px' }}>
+                            {ev.fecha || ev.created_at || ''} — {ev.estado_descripcion || ev.estado || ev.codigo || '—'}
+                          </p>
+                        ))}
+                      </div>
                     )}
 
                     {/* Motivo reagendamiento */}
