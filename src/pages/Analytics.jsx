@@ -70,6 +70,7 @@ const Analytics = () => {
   const [wallet, setWallet]             = useState(null);
   const [topProducts, setTopProducts]   = useState([]);
   const [loading, setLoading]           = useState(true);
+  const [kpiView, setKpiView]           = useState('completed'); // 'completed' | 'pending'
   const calendarRef = useRef(null);
 
   // Para admin: refetch cuando cambia el período o rango
@@ -159,19 +160,25 @@ const Analytics = () => {
     new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', minimumFractionDigits: 0 }).format(v || 0);
 
   // ── KPIs ──────────────────────────────────────────────────────────────────
-  const inProgress       = ['confirmed','processing','ready_for_pickup','picked_up','out_for_delivery','redelivery'];
+  const inProgress = ['confirmed','processing','ready_for_pickup','picked_up','out_for_delivery','redelivery'];
+
+  // Filtrar según kpiView para los KPIs financieros
+  const kpiOrders = filteredOrders.filter(o => {
+    if (kpiView === 'completed') return o.status === 'completed';
+    if (kpiView === 'pending')   return inProgress.includes(o.status);
+    return true; // 'all'
+  });
+
   const totalOrders      = filteredOrders.length;
   const completadas      = filteredOrders.filter(o => o.status === 'completed').length;
   const canceladas       = filteredOrders.filter(o => o.status === 'cancelled').length;
   const activeOrders     = filteredOrders.filter(o => inProgress.includes(o.status)).length;
-  const totalRecaudo     = filteredOrders.reduce((s, o) => s + parseFloat(o.final_price   || 0), 0);
-  const totalLogistics   = filteredOrders.reduce((s, o) => s + parseFloat(o.logistic_cost || 0), 0);
-  const totalCommission  = filteredOrders.reduce((s, o) => s + parseFloat(o.platform_fee  || 0), 0);
-  const totalBuyerProfit = filteredOrders.reduce((s, o) => s + parseFloat(o.buyer_profit  || 0), 0);
-  const gananciaEstimada = filteredOrders
-    .filter(o => o.status === 'completed' || inProgress.includes(o.status))
-    .reduce((s, o) => s + parseFloat(o.buyer_profit || 0), 0);
-  const ticketPromedio   = totalOrders > 0 ? totalRecaudo / totalOrders : 0;
+  const totalRecaudo     = kpiOrders.reduce((s, o) => s + parseFloat(o.final_price   || 0), 0);
+  const totalLogistics   = kpiOrders.reduce((s, o) => s + parseFloat(o.logistic_cost || 0), 0);
+  const totalCommission  = kpiOrders.reduce((s, o) => s + parseFloat(o.platform_fee  || 0), 0);
+  const totalBuyerProfit = kpiOrders.reduce((s, o) => s + parseFloat(o.buyer_profit  || 0), 0);
+  const gananciaEstimada = kpiOrders.reduce((s, o) => s + parseFloat(o.buyer_profit  || 0), 0);
+  const ticketPromedio   = kpiOrders.length > 0 ? totalRecaudo / kpiOrders.length : 0;
   const tasaConversion   = totalOrders > 0 ? ((completadas / totalOrders) * 100).toFixed(1) : 0;
 
   // ── Ganancias EasyPy agrupadas por período ────────────────────────────────
@@ -313,6 +320,23 @@ const Analytics = () => {
           </div>
         </div>
 
+        {/* Toggle completadas / pendientes */}
+        <div style={{ display: 'flex', gap: '6px', marginBottom: '12px' }}>
+          {[
+            { id: 'completed', label: '✓ Completadas' },
+            { id: 'pending',   label: '⏳ En curso'   },
+            { id: 'all',       label: 'Todas'          },
+          ].map(v => (
+            <button key={v.id} onClick={() => setKpiView(v.id)}
+              style={{ padding: '6px 14px', fontSize: '12px', fontWeight: '700', borderRadius: '100px', border: '1.5px solid', cursor: 'pointer',
+                background: kpiView === v.id ? '#056EB7' : 'white',
+                color:      kpiView === v.id ? 'white'   : '#6b7280',
+                borderColor: kpiView === v.id ? '#056EB7' : '#e5e7eb' }}>
+              {v.label}
+            </button>
+          ))}
+        </div>
+
         {showCalendar && (
           <div ref={calendarRef} style={{ background: 'white', border: '1.5px solid #e5e7eb', borderRadius: '12px', padding: '16px', display: 'flex', gap: '12px', alignItems: 'flex-end', marginBottom: '16px', flexWrap: 'wrap', boxShadow: '0 4px 16px rgba(0,0,0,0.08)' }}>
             <div>
@@ -352,7 +376,12 @@ const Analytics = () => {
                     </div>
                   ))}
                 </div>
-                <div className="an-kpis" style={{ marginTop: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '16px', marginBottom: '4px' }}>
+                  <p style={{ fontSize: '11px', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    {kpiView === 'completed' ? '✓ Solo órdenes completadas' : kpiView === 'pending' ? '⏳ Solo órdenes en curso' : 'Todas las órdenes'}
+                  </p>
+                </div>
+                <div className="an-kpis" style={{ marginTop: '4px' }}>
                   {[
                     { label: 'Ingreso total',       value: totalRecaudo,      highlight: false },
                     { label: 'Costo logística',     value: totalLogistics,    highlight: false },
