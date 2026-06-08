@@ -323,8 +323,8 @@ const Analytics = () => {
         {/* Toggle completadas / pendientes */}
         <div style={{ display: 'flex', gap: '6px', marginBottom: '12px' }}>
           {[
-            { id: 'completed', label: '✓ Completadas' },
-            { id: 'pending',   label: '⏳ En curso'   },
+            { id: 'completed', label: 'Completadas' },
+            { id: 'pending',   label: 'En curso'   },
             { id: 'all',       label: 'Todas'          },
           ].map(v => (
             <button key={v.id} onClick={() => setKpiView(v.id)}
@@ -378,7 +378,7 @@ const Analytics = () => {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '16px', marginBottom: '4px' }}>
                   <p style={{ fontSize: '11px', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    {kpiView === 'completed' ? '✓ Solo órdenes completadas' : kpiView === 'pending' ? '⏳ Solo órdenes en curso' : 'Todas las órdenes'}
+                    {kpiView === 'completed' ? '✓ Solo órdenes completadas' : kpiView === 'pending' ? 'Solo órdenes en curso' : 'Todas las órdenes'}
                   </p>
                 </div>
                 <div className="an-kpis" style={{ marginTop: '4px' }}>
