@@ -58,7 +58,7 @@ const EditProductForm = () => {
   useEffect(() => {
     const fetchAll = async () => {
       try {
-        const [product, images, assigns, sellers] = await Promise.all([
+        const [product, images, assigns, variantsData] = await Promise.all([
           getProduct(id),
           getProductImages(id),
           getProductAssignments(id).catch(() => []),
@@ -463,7 +463,7 @@ const EditProductForm = () => {
                     </p>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       {assignments.map(a => {
-                        const seller = allSellers.find(s => s.user_id === a.buyer_id);
+                        const seller = sellerResults.find(s => s.user_id === a.buyer_id);
                         return (
                           <div key={a.assignment_id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#f0fdf4', border: '1.5px solid #bbf7d0', borderRadius: '9px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
