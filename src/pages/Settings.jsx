@@ -30,6 +30,25 @@ const Settings = () => {
   const [error, setError]             = useState('');
   const fileInputRef                  = useRef(null);
 
+  // Sincronizar form cuando user cambia (llega después del mount)
+  useEffect(() => {
+    if (!user) return;
+    setForm({
+      user_nickname:    user.user_nickname    || '',
+      email:            user.email            || '',
+      user_description: user.user_description || '',
+      phone:            user.phone            || '',
+      city:             user.city             || '',
+      region:           user.region           || '',
+      address:          user.address          || '',
+      address_height:   user.address_height   || '',
+      doc_type:         user.doc_type         || '',
+      doc_number:       user.doc_number       || '',
+      contact_name:     user.contact_name     || '',
+      razon_social:     user.razon_social     || '',
+    });
+  }, [user?.user_id]);
+
   useEffect(() => {
     getCities().then(d => setCities(d || [])).catch(() => {});
   }, []);
