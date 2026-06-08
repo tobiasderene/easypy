@@ -26,6 +26,7 @@ const Settings = () => {
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [avatarFile, setAvatarFile]   = useState(null);
   const [saving, setSaving]           = useState(false);
+  const [fieldErrors, setFieldErrors]  = useState({});
   const [success, setSuccess]         = useState(false);
   const [error, setError]             = useState('');
   const fileInputRef                  = useRef(null);
@@ -57,7 +58,9 @@ const Settings = () => {
     (name || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
 
   const handleChange = (e) => {
-    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    setForm(prev => ({ ...prev, [name]: value }));
+    if (fieldErrors[name]) setFieldErrors(prev => ({ ...prev, [name]: '' }));
     setSuccess(false);
     setError('');
   };
@@ -80,27 +83,28 @@ const Settings = () => {
     setAvatarPreview(URL.createObjectURL(file));
   };
 
-  const validateProvider = () => {
-    if (!isProvider) return null;
-    const required = [
-      ['phone',          'Teléfono'],
-      ['city',           'Ciudad'],
-      ['region',         'Departamento'],
-      ['address',        'Dirección'],
-      ['address_height', 'Altura / N° de casa'],
-      ['doc_type',       'Tipo de documento'],
-      ['doc_number',     'Número de documento'],
-      ['contact_name',   'Nombre de contacto'],
-      ['razon_social',   'Razón social'],
-    ];
-    const missing = required.filter(([key]) => !form[key]?.trim()).map(([, label]) => label);
-    return missing.length > 0 ? `Campos obligatorios: ${missing.join(', ')}` : null;
+  const validateForm = () => {
+    const errs = {};
+    if (!form.user_nickname?.trim()) errs.user_nickname = 'Requerido';
+    if (isProvider) {
+      if (!form.phone?.trim())          errs.phone          = 'Requerido';
+      if (!form.city?.trim())           errs.city           = 'Requerido';
+      if (!form.region?.trim())         errs.region         = 'Requerido';
+      if (!form.address?.trim())        errs.address        = 'Requerido';
+      if (!form.address_height?.trim()) errs.address_height = 'Requerido';
+      if (!form.doc_type?.trim())       errs.doc_type       = 'Requerido';
+      if (!form.doc_number?.trim())     errs.doc_number     = 'Requerido';
+      if (!form.contact_name?.trim())   errs.contact_name   = 'Requerido';
+      if (!form.razon_social?.trim())   errs.razon_social   = 'Requerido';
+    }
+    return errs;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const validationError = validateProvider();
-    if (validationError) { setError(validationError); return; }
+    const errs = validateForm();
+    if (Object.keys(errs).length > 0) { setFieldErrors(errs); return; }
+    setFieldErrors({});
     setSaving(true);
     setError('');
     setSuccess(false);
@@ -249,17 +253,19 @@ const Settings = () => {
                   value={form['region']} onChange={handleChange}
                   placeholder="Central" />
               </div>
-              <div className="settings-field">
-                <label htmlFor="address"></label>
+              <div className="settings-field settings-field--full">
+                <label htmlFor="address">Dirección{req}</label>
                 <input type="text" id="address" name="address"
                   value={form['address']} onChange={handleChange}
-                  placeholder="Av. España 1234" />
+                  placeholder="Av. España 1234" style={fieldErrors.address ? {borderColor:'#dc2626'} : {}} />
+                {fieldErrors.address && <span style={{fontSize:'11px',color:'#dc2626'}}>{fieldErrors.address}</span>}
               </div>
               <div className="settings-field">
                 <label htmlFor="address_height">Altura / N° de casa{req}</label>
                 <input type="text" id="address_height" name="address_height"
                   value={form['address_height']} onChange={handleChange}
-                  placeholder="Nro 1234" />
+                  placeholder="Nro 1234" style={fieldErrors.address_height ? {borderColor:'#dc2626'} : {}} />
+                {fieldErrors.address_height && <span style={{fontSize:'11px',color:'#dc2626'}}>{fieldErrors.address_height}</span>}
               </div>
             </div>
           </div>
