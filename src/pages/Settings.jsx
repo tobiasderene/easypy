@@ -26,9 +26,29 @@ const Settings = () => {
   const [avatarPreview, setAvatarPreview] = useState(null);
   const [avatarFile, setAvatarFile]   = useState(null);
   const [saving, setSaving]           = useState(false);
+  const [fieldErrors, setFieldErrors]  = useState({});
   const [success, setSuccess]         = useState(false);
   const [error, setError]             = useState('');
   const fileInputRef                  = useRef(null);
+
+  // Sincronizar form cuando user cambia (llega después del mount)
+  useEffect(() => {
+    if (!user) return;
+    setForm({
+      user_nickname:    user.user_nickname    || '',
+      email:            user.email            || '',
+      user_description: user.user_description || '',
+      phone:            user.phone            || '',
+      city:             user.city             || '',
+      region:           user.region           || '',
+      address:          user.address          || '',
+      address_height:   user.address_height   || '',
+      doc_type:         user.doc_type         || '',
+      doc_number:       user.doc_number       || '',
+      contact_name:     user.contact_name     || '',
+      razon_social:     user.razon_social     || '',
+    });
+  }, [user?.user_id]);
 
   useEffect(() => {
     getCities().then(d => setCities(d || [])).catch(() => {});
@@ -38,7 +58,9 @@ const Settings = () => {
     (name || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
 
   const handleChange = (e) => {
-    setForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    setForm(prev => ({ ...prev, [name]: value }));
+    if (fieldErrors[name]) setFieldErrors(prev => ({ ...prev, [name]: '' }));
     setSuccess(false);
     setError('');
   };
@@ -61,27 +83,28 @@ const Settings = () => {
     setAvatarPreview(URL.createObjectURL(file));
   };
 
-  const validateProvider = () => {
-    if (!isProvider) return null;
-    const required = [
-      ['phone',          'Teléfono'],
-      ['city',           'Ciudad'],
-      ['region',         'Departamento'],
-      ['address',        'Dirección'],
-      ['address_height', 'Altura / N° de casa'],
-      ['doc_type',       'Tipo de documento'],
-      ['doc_number',     'Número de documento'],
-      ['contact_name',   'Nombre de contacto'],
-      ['razon_social',   'Razón social'],
-    ];
-    const missing = required.filter(([key]) => !form[key]?.trim()).map(([, label]) => label);
-    return missing.length > 0 ? `Campos obligatorios: ${missing.join(', ')}` : null;
+  const validateForm = () => {
+    const errs = {};
+    if (!form.user_nickname?.trim()) errs.user_nickname = 'Requerido';
+    if (isProvider) {
+      if (!form.phone?.trim())          errs.phone          = 'Requerido';
+      if (!form.city?.trim())           errs.city           = 'Requerido';
+      if (!form.region?.trim())         errs.region         = 'Requerido';
+      if (!form.address?.trim())        errs.address        = 'Requerido';
+      if (!form.address_height?.trim()) errs.address_height = 'Requerido';
+      if (!form.doc_type?.trim())       errs.doc_type       = 'Requerido';
+      if (!form.doc_number?.trim())     errs.doc_number     = 'Requerido';
+      if (!form.contact_name?.trim())   errs.contact_name   = 'Requerido';
+      if (!form.razon_social?.trim())   errs.razon_social   = 'Requerido';
+    }
+    return errs;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const validationError = validateProvider();
-    if (validationError) { setError(validationError); return; }
+    const errs = validateForm();
+    if (Object.keys(errs).length > 0) { setFieldErrors(errs); return; }
+    setFieldErrors({});
     setSaving(true);
     setError('');
     setSuccess(false);
@@ -118,16 +141,7 @@ const Settings = () => {
 
   const req = isProvider ? ' *' : '';
 
-  const Field = ({ label, name, type = 'text', placeholder, disabled, required, children }) => (
-    <div className="settings-field">
-      <label htmlFor={name}>{label}</label>
-      {children || (
-        <input type={type} id={name} name={name}
-          value={form[name]} onChange={handleChange}
-          placeholder={placeholder} disabled={disabled} />
-      )}
-    </div>
-  );
+
 
   return (
     <div className="settings-page">
@@ -170,9 +184,24 @@ const Settings = () => {
           <div className="settings-card">
             <h2 className="settings-section-title">Datos personales</h2>
             <div className="settings-form-grid">
-              <Field label="Nombre de usuario" name="user_nickname" placeholder="Tu nombre" />
-              <Field label="Correo electrónico" name="email" type="email" placeholder="tu@email.com" />
-              <Field label={`Teléfono${req}`} name="phone" placeholder="+595981000000" />
+              <div className="settings-field">
+                <label htmlFor="user_nickname">Nombre de usuario</label>
+                <input type="text" id="user_nickname" name="user_nickname"
+                  value={form['user_nickname']} onChange={handleChange}
+                  placeholder="Tu nombre" />
+              </div>
+              <div className="settings-field">
+                <label htmlFor="email">Correo electrónico</label>
+                <input type="email" id="email" name="email"
+                  value={form['email']} onChange={handleChange}
+                  placeholder="tu@email.com" />
+              </div>
+              <div className="settings-field">
+                <label htmlFor="phone"></label>
+                <input type="text" id="phone" name="phone"
+                  value={form['phone']} onChange={handleChange}
+                  placeholder="+595981000000" />
+              </div>
 
               <div className="settings-field settings-field--full">
                 <label htmlFor="user_description">Descripción</label>
@@ -188,16 +217,22 @@ const Settings = () => {
             <h2 className="settings-section-title">Documento</h2>
             <div className="settings-form-grid">
               <div className="settings-field">
-                <label>Tipo de documento</label>
+                <label>Tipo de documento{req}</label>
                 <select name="doc_type" value={form.doc_type} onChange={handleChange}
-                  style={{ width: '100%', padding: '9px 12px', border: '1.5px solid #e5e7eb', borderRadius: '8px', fontSize: '13px', background: 'white' }}>
+                  style={{ width: '100%', padding: '9px 12px', border: `1.5px solid ${fieldErrors.doc_type ? '#dc2626' : '#e5e7eb'}`, borderRadius: '8px', fontSize: '13px', background: 'white' }}>
                   <option value="">Sin documento</option>
                   <option value="cedula">Cédula</option>
                   <option value="ruc">RUC</option>
                   <option value="pasaporte">Pasaporte</option>
                 </select>
+                {fieldErrors.doc_type && <span style={{fontSize:'11px',color:'#dc2626'}}>{fieldErrors.doc_type}</span>}
               </div>
-              <Field label={`Número de documento${req}`} name="doc_number" placeholder="12345678" />
+              <div className="settings-field">
+                <label htmlFor="doc_number">Número de documento{req}</label>
+                <input type="text" id="doc_number" name="doc_number"
+                  value={form['doc_number']} onChange={handleChange}
+                  placeholder="12345678" />
+              </div>
             </div>
           </div>
 
@@ -213,9 +248,26 @@ const Settings = () => {
                   {cities.map(c => <option key={c.city_id} value={c.name}>{c.name}</option>)}
                 </select>
               </div>
-              <Field label={`Departamento / Región${req}`} name="region" placeholder="Central" />
-              <Field label={`Dirección${req}`} name="address" placeholder="Av. España 1234" />
-              <Field label={`Altura / N° de casa${req}`} name="address_height" placeholder="Nro 1234" />
+              <div className="settings-field">
+                <label htmlFor="region">Departamento / Región{req}</label>
+                <input type="text" id="region" name="region"
+                  value={form['region']} onChange={handleChange}
+                  placeholder="Central" />
+              </div>
+              <div className="settings-field settings-field--full">
+                <label htmlFor="address">Dirección{req}</label>
+                <input type="text" id="address" name="address"
+                  value={form['address']} onChange={handleChange}
+                  placeholder="Av. España 1234" style={fieldErrors.address ? {borderColor:'#dc2626'} : {}} />
+                {fieldErrors.address && <span style={{fontSize:'11px',color:'#dc2626'}}>{fieldErrors.address}</span>}
+              </div>
+              <div className="settings-field">
+                <label htmlFor="address_height">Altura / N° de casa{req}</label>
+                <input type="text" id="address_height" name="address_height"
+                  value={form['address_height']} onChange={handleChange}
+                  placeholder="Nro 1234" style={fieldErrors.address_height ? {borderColor:'#dc2626'} : {}} />
+                {fieldErrors.address_height && <span style={{fontSize:'11px',color:'#dc2626'}}>{fieldErrors.address_height}</span>}
+              </div>
             </div>
           </div>
 
@@ -224,8 +276,18 @@ const Settings = () => {
             <div className="settings-card">
               <h2 className="settings-section-title">Datos comerciales</h2>
               <div className="settings-form-grid">
-                <Field label="Nombre de contacto *" name="contact_name" placeholder="Juan Pérez" />
-                <Field label="Razón social *" name="razon_social" placeholder="Empresa S.A." />
+                <div className="settings-field">
+                <label htmlFor="contact_name">Nombre de contacto *</label>
+                <input type="text" id="contact_name" name="contact_name"
+                  value={form['contact_name']} onChange={handleChange}
+                  placeholder="Juan Pérez" />
+              </div>
+                <div className="settings-field">
+                <label htmlFor="razon_social">Razón social *</label>
+                <input type="text" id="razon_social" name="razon_social"
+                  value={form['razon_social']} onChange={handleChange}
+                  placeholder="Empresa S.A." />
+              </div>
               </div>
             </div>
           )}

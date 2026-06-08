@@ -42,6 +42,8 @@ const LogisticsPanel = () => {
   const [isFixy, setIsFixy]             = useState(false);
   const [fixyStatuses, setFixyStatuses] = useState({}); // { order_id: { fixy_label, fixy_status, mapped_status } }
   const [loadingFixy, setLoadingFixy]   = useState(null);
+  const [selected, setSelected]         = useState(new Set());
+  const [bulkUpdating, setBulkUpdating] = useState(false);
 
   // Modal reagendamiento
   const [redeliveryModal, setRedeliveryModal] = useState(null);
@@ -82,6 +84,25 @@ const LogisticsPanel = () => {
     } finally {
       setLoadingFixy(null);
     }
+  };
+
+  const toggleSelect = (orderId) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(orderId)) next.delete(orderId);
+      else next.add(orderId);
+      return next;
+    });
+  };
+
+  const handleBulkUpdate = async (fn, newStatus) => {
+    if (selected.size === 0) return;
+    setBulkUpdating(true);
+    const ids = [...selected];
+    await Promise.all(ids.map(id => fn(id).catch(() => {})));
+    setOrders(prev => prev.map(o => selected.has(o.order_id) ? { ...o, status: newStatus } : o));
+    setSelected(new Set());
+    setBulkUpdating(false);
   };
 
   const update = async (orderId, fn, newStatus) => {
@@ -300,6 +321,31 @@ const LogisticsPanel = () => {
         ))}
       </div>
 
+      {/* Barra de selección masiva */}
+      {selected.size > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#056EB7', color: 'white', padding: '12px 16px', borderRadius: '10px', marginBottom: '12px', flexWrap: 'wrap' }}>
+          <span style={{ fontWeight: '700', fontSize: '13px' }}>{selected.size} orden{selected.size > 1 ? 'es' : ''} seleccionada{selected.size > 1 ? 's' : ''}</span>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginLeft: 'auto' }}>
+            <button onClick={() => handleBulkUpdate(pickedUpOrder, 'picked_up')} disabled={bulkUpdating}
+              style={{ padding: '6px 12px', background: 'white', color: '#056EB7', border: 'none', borderRadius: '7px', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}>
+              ✓ Marcar retiradas
+            </button>
+            <button onClick={() => handleBulkUpdate(outForDeliveryOrder, 'out_for_delivery')} disabled={bulkUpdating}
+              style={{ padding: '6px 12px', background: 'white', color: '#d97706', border: 'none', borderRadius: '7px', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}>
+              🚚 Salir a entregar
+            </button>
+            <button onClick={() => handleBulkUpdate(deliverOrder, 'completed')} disabled={bulkUpdating}
+              style={{ padding: '6px 12px', background: '#16a34a', color: 'white', border: 'none', borderRadius: '7px', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}>
+              ✓ Confirmar entregas
+            </button>
+            <button onClick={() => setSelected(new Set())} disabled={bulkUpdating}
+              style={{ padding: '6px 12px', background: 'rgba(255,255,255,0.2)', color: 'white', border: '1px solid rgba(255,255,255,0.4)', borderRadius: '7px', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}>
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
+
       {filtered.length === 0 ? (
         <div className="lp-empty">No hay órdenes en este estado</div>
       ) : (
@@ -309,7 +355,10 @@ const LogisticsPanel = () => {
             const isUpdating = updating === order.order_id;
 
             return (
-              <div key={order.order_id} className="lp-order">
+              <div key={order.order_id} className="lp-order" style={{ position: 'relative' }}>
+                <input type="checkbox" checked={selected.has(order.order_id)} onChange={() => toggleSelect(order.order_id)}
+                  style={{ position: 'absolute', top: '12px', left: '12px', width: '16px', height: '16px', cursor: 'pointer', zIndex: 1 }}
+                  onClick={e => e.stopPropagation()} />
                 <div className="lp-order-info">
                   <div className="lp-order-top">
                     <span className="lp-order-id">Orden #{order.order_id}</span>
