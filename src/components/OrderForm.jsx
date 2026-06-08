@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useUser } from '../App';
-import { getLogistics, createOrder, getProducts, getProductImages, searchCustomers, createCustomer, updateCustomer, getLogisticsQuote, getLogisticsZones, getCities } from '../services/api';
+import { getLogistics, createOrder, getProducts, getProductImages, getProductImagesBulk, searchCustomers, createCustomer, updateCustomer, getLogisticsQuote, getLogisticsZones, getCities } from '../services/api';
 import '../styles/orderform.css';
 
 const COUNTRY_CODES = [
@@ -58,7 +58,7 @@ const OrderForm = () => {
   const [logistics, setLogistics]               = useState([]);
   const [loadingLogistics, setLoadingLogistics] = useState(true);
   const [submitting, setSubmitting]             = useState(false);
-  const [quote, setQuote]                       = useState(null);
+  const [quotes, setQuotes]                      = useState({});  // { logistic_id: { total, error } }
   const [zones, setZones]                         = useState([]);
   const [allZones, setAllZones]                   = useState({});  // { logistic_id: [zones] }
   const [cities, setCities]                       = useState([]);
@@ -151,20 +151,21 @@ const OrderForm = () => {
       } else if (l.api_type === 'fixy') {
         if (quoting) {
           prices[l.logistic_id] = 'quoting';
-        } else if (quote && !quote.error && quote.total) {
-          prices[l.logistic_id] = quote.total;
-        } else if (quote && (quote.error || !quote.total)) {
-          // Solo marcar unavailable si vino respuesta pero sin precio válido
-          prices[l.logistic_id] = 'unavailable';
         } else {
-          // quote es null y no estamos cotizando activamente — mostrar null
-          prices[l.logistic_id] = null;
+          const q = quotes[l.logistic_id];
+          if (q && !q.error && q.total) {
+            prices[l.logistic_id] = q.total;
+          } else if (q && (q.error || !q.total)) {
+            prices[l.logistic_id] = 'unavailable';
+          } else {
+            prices[l.logistic_id] = null;
+          }
         }
       }
     });
 
     setLogisticPrices(prices);
-  }, [form.city, supplierCity, allZones, logistics, quote, quoting, fixyCp]);
+  }, [form.city, supplierCity, allZones, logistics, quotes, quoting, fixyCp]);
 
   // ── Cargar zonas cuando cambia logística ─────────────────────────────────
   useEffect(() => {
@@ -178,30 +179,31 @@ const OrderForm = () => {
       .catch(() => setZones([]));
   }, [form.logisticsId]);
 
-  // ── Auto-cotizar Fixy — SOLO cuando cambia fixyCp (ciudad) ──────────────
+  // ── Auto-cotizar Fixy — cotiza TODAS las logísticas Fixy ──────────────────
   useEffect(() => {
-    if (!fixyCp) { setQuote(null); lastQuotedCp.current = null; return; }
+    if (!fixyCp) { setQuotes({}); lastQuotedCp.current = null; return; }
+    if (lastQuotedCp.current === fixyCp) return;
 
-    // No recotizar si ya tenemos quote para este CP
-    console.log('[fixy-quote] useEffect fired — fixyCp:', fixyCp, '| lastQuotedCp:', lastQuotedCp.current);
-    if (lastQuotedCp.current === fixyCp) {
-      console.log('[fixy-quote] SKIP — same CP, no requote');
-      return;
-    }
+    const fixyLogistics = logistics.filter(l => l.api_type === 'fixy');
+    if (fixyLogistics.length === 0) { setQuotes({}); return; }
 
-    const fixyLogistic = logistics.find(l => l.api_type === 'fixy');
-    if (!fixyLogistic) { setQuote(null); return; }
-
-    console.log('[fixy-quote] QUOTING — CP changed to', fixyCp);
     lastQuotedCp.current = fixyCp;
     const totalBultos = items.reduce((s, i) => s + i.quantity, 0) || 1;
     setQuoting(true);
-    setQuote(null);
-    getLogisticsQuote(fixyLogistic.logistic_id, totalBultos, 1.0, fixyCp)
-      .then(result => setQuote(result))
-      .catch(() => { setQuote(null); lastQuotedCp.current = null; })
-      .finally(() => setQuoting(false));
-  }, [fixyCp]); // ← solo fixyCp, no logistics
+    setQuotes({});
+
+    Promise.all(
+      fixyLogistics.map(l =>
+        getLogisticsQuote(l.logistic_id, totalBultos, 1.0, fixyCp)
+          .then(result => ({ id: l.logistic_id, result }))
+          .catch(() => ({ id: l.logistic_id, result: null }))
+      )
+    ).then(results => {
+      const map = {};
+      results.forEach(({ id, result }) => { map[id] = result; });
+      setQuotes(map);
+    }).finally(() => setQuoting(false));
+  }, [fixyCp]);
 
   useEffect(() => {
     if (!supplierId) return;
@@ -209,18 +211,22 @@ const OrderForm = () => {
     getProducts()
       .then(async (data) => {
         const fromSupplier = (data || []).filter(p => p.user_id === supplierId && p.product_status === 'active');
-        const withImages = await Promise.all(
-          fromSupplier.map(async (p) => {
-            try {
-              const imgs    = await getProductImages(p.product_id);
-              const primary = imgs.find(i => i.is_primary) || imgs[0];
-              return { id: p.product_id, name: p.product_name, price: parseFloat(p.product_base_cost), image: primary?.image_url || null };
-            } catch {
-              return { id: p.product_id, name: p.product_name, price: parseFloat(p.product_base_cost), image: null };
-            }
-          })
-        );
-        setSupplierProducts(withImages);
+        if (fromSupplier.length === 0) { setSupplierProducts([]); return; }
+        // Bulk images — un solo request para todos
+        try {
+          const ids        = fromSupplier.map(p => p.product_id);
+          const bulkImages = await getProductImagesBulk(ids);
+          setSupplierProducts(fromSupplier.map(p => ({
+            id:    p.product_id,
+            name:  p.product_name,
+            price: parseFloat(p.product_base_cost),
+            image: bulkImages[p.product_id] || null,
+          })));
+        } catch {
+          setSupplierProducts(fromSupplier.map(p => ({
+            id: p.product_id, name: p.product_name, price: parseFloat(p.product_base_cost), image: null,
+          })));
+        }
       })
       .catch(() => setSupplierProducts([]))
       .finally(() => setLoadingProducts(false));
@@ -419,7 +425,8 @@ const OrderForm = () => {
   const rawShipping = (() => {
     if (!selectedLogistic) return 0;
     if (selectedLogistic.api_type === 'manual') return zonePrice;
-    if (quote && !quote.error && quote.total) return quote.total;
+    const q = quotes[selectedLogistic.logistic_id];
+    if (q && !q.error && q.total) return q.total;
     return 0;
   })();
 
