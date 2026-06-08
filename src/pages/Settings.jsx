@@ -137,16 +137,7 @@ const Settings = () => {
 
   const req = isProvider ? ' *' : '';
 
-  const Field = ({ label, name, type = 'text', placeholder, disabled, required, children }) => (
-    <div className="settings-field">
-      <label htmlFor={name}>{label}</label>
-      {children || (
-        <input type={type} id={name} name={name}
-          value={form[name]} onChange={handleChange}
-          placeholder={placeholder} disabled={disabled} />
-      )}
-    </div>
-  );
+
 
   return (
     <div className="settings-page">
@@ -189,9 +180,24 @@ const Settings = () => {
           <div className="settings-card">
             <h2 className="settings-section-title">Datos personales</h2>
             <div className="settings-form-grid">
-              <Field label="Nombre de usuario" name="user_nickname" placeholder="Tu nombre" />
-              <Field label="Correo electrónico" name="email" type="email" placeholder="tu@email.com" />
-              <Field label={`Teléfono${req}`} name="phone" placeholder="+595981000000" />
+              <div className="settings-field">
+                <label htmlFor="user_nickname">Nombre de usuario</label>
+                <input type="text" id="user_nickname" name="user_nickname"
+                  value={form['user_nickname']} onChange={handleChange}
+                  placeholder="Tu nombre" />
+              </div>
+              <div className="settings-field">
+                <label htmlFor="email">Correo electrónico</label>
+                <input type="email" id="email" name="email"
+                  value={form['email']} onChange={handleChange}
+                  placeholder="tu@email.com" />
+              </div>
+              <div className="settings-field">
+                <label htmlFor="phone"></label>
+                <input type="text" id="phone" name="phone"
+                  value={form['phone']} onChange={handleChange}
+                  placeholder="+595981000000" />
+              </div>
 
               <div className="settings-field settings-field--full">
                 <label htmlFor="user_description">Descripción</label>
@@ -216,7 +222,12 @@ const Settings = () => {
                   <option value="pasaporte">Pasaporte</option>
                 </select>
               </div>
-              <Field label={`Número de documento${req}`} name="doc_number" placeholder="12345678" />
+              <div className="settings-field">
+                <label htmlFor="doc_number"></label>
+                <input type="text" id="doc_number" name="doc_number"
+                  value={form['doc_number']} onChange={handleChange}
+                  placeholder="12345678" />
+              </div>
             </div>
           </div>
 
@@ -232,9 +243,24 @@ const Settings = () => {
                   {cities.map(c => <option key={c.city_id} value={c.name}>{c.name}</option>)}
                 </select>
               </div>
-              <Field label={`Departamento / Región${req}`} name="region" placeholder="Central" />
-              <Field label={`Dirección${req}`} name="address" placeholder="Av. España 1234" />
-              <Field label={`Altura / N° de casa${req}`} name="address_height" placeholder="Nro 1234" />
+              <div className="settings-field">
+                <label htmlFor="region">Departamento / Región{req}</label>
+                <input type="text" id="region" name="region"
+                  value={form['region']} onChange={handleChange}
+                  placeholder="Central" />
+              </div>
+              <div className="settings-field">
+                <label htmlFor="address"></label>
+                <input type="text" id="address" name="address"
+                  value={form['address']} onChange={handleChange}
+                  placeholder="Av. España 1234" />
+              </div>
+              <div className="settings-field">
+                <label htmlFor="address_height">Altura / N° de casa{req}</label>
+                <input type="text" id="address_height" name="address_height"
+                  value={form['address_height']} onChange={handleChange}
+                  placeholder="Nro 1234" />
+              </div>
             </div>
           </div>
 
@@ -243,8 +269,18 @@ const Settings = () => {
             <div className="settings-card">
               <h2 className="settings-section-title">Datos comerciales</h2>
               <div className="settings-form-grid">
-                <Field label="Nombre de contacto *" name="contact_name" placeholder="Juan Pérez" />
-                <Field label="Razón social *" name="razon_social" placeholder="Empresa S.A." />
+                <div className="settings-field">
+                <label htmlFor="contact_name">Nombre de contacto *</label>
+                <input type="text" id="contact_name" name="contact_name"
+                  value={form['contact_name']} onChange={handleChange}
+                  placeholder="Juan Pérez" />
+              </div>
+                <div className="settings-field">
+                <label htmlFor="razon_social">Razón social *</label>
+                <input type="text" id="razon_social" name="razon_social"
+                  value={form['razon_social']} onChange={handleChange}
+                  placeholder="Empresa S.A." />
+              </div>
               </div>
             </div>
           )}
