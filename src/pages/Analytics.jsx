@@ -183,8 +183,8 @@ const Analytics = () => {
   // Logística y comisión incluyen cancelaciones donde la logística ya fue movilizada
   const cancelledLogistics  = cancelledMovilized.reduce((s, o) => s + parseFloat(o.logistic_cost || 0), 0);
   const cancelledCommission = cancelledMovilized.reduce((s, o) => s + parseFloat(o.platform_fee  || 0), 0);
-  const totalLogistics   = kpiOrders.reduce((s, o) => s + parseFloat(o.logistic_cost || 0), 0) + (kpiView === 'all' ? cancelledLogistics : 0);
-  const totalCommission  = kpiOrders.reduce((s, o) => s + parseFloat(o.platform_fee  || 0), 0) + (kpiView === 'all' ? cancelledCommission : 0);
+  const totalLogistics   = kpiOrders.reduce((s, o) => s + parseFloat(o.logistic_cost || 0), 0) + (kpiView === 'completed' ? cancelledLogistics : 0);
+  const totalCommission  = kpiOrders.reduce((s, o) => s + parseFloat(o.platform_fee  || 0), 0) + (kpiView === 'completed' ? cancelledCommission : 0);
   const totalBuyerProfit = kpiOrders.reduce((s, o) => s + parseFloat(o.buyer_profit  || 0), 0);
   const gananciaEstimada = kpiOrders.reduce((s, o) => s + parseFloat(o.buyer_profit  || 0), 0);
   const ticketPromedio   = kpiOrders.length > 0 ? totalRecaudo / kpiOrders.length : 0;
