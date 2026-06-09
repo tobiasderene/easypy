@@ -457,6 +457,13 @@ const ProviderOrders = () => {
                           <span className="meta-value">{order.recipient_city || '—'}</span>
                         </div>
                         <div className="meta-item">
+                          <span className="meta-label">Logística:</span>
+                          <span className="meta-value" style={{ color: '#056EB7', fontWeight: '700' }}>
+                            {order.logistic_name || '—'}
+                            {order.tracking_number && <span style={{ marginLeft: '6px', fontSize: '11px', color: '#6b7280', fontWeight: '400' }}>· {order.tracking_number}</span>}
+                          </span>
+                        </div>
+                        <div className="meta-item">
                           <span className="meta-label">A cobrar:</span>
                           <span className="meta-value amount">
                             {formatCurrency(
