@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useUser } from '../App';
-import { getReturns, updateReturn, getClaims, updateClaim } from '../services/api';
+import { getReturns, updateReturn, getClaims, updateClaim, getOrdersByBuyer, submitRedeliveryNote } from '../services/api';
 
 const STATUS_RETURN = {
   pending:               { label: 'Pendiente retiro',     color: '#d97706', bg: '#fef3c7' },
@@ -22,7 +22,11 @@ const ReturnsPanel = () => {
   const isProvider = user?.user_role === 'provider';
   const isAdmin    = user?.user_role === 'admin';
 
-  const [tab, setTab]           = useState(isProvider ? 0 : 0);
+  const [tab, setTab]           = useState(0);
+  const [sellerTabState, setSellerTabState] = useState(0);
+  const [redeliveryOrders, setRedeliveryOrders] = useState([]);
+  const [redeliveryNotes, setRedeliveryNotes]   = useState({});
+  const [submittingNote, setSubmittingNote]     = useState(null);
   const [returns, setReturns]   = useState([]);
   const [claims, setClaims]     = useState([]);
   const [loading, setLoading]   = useState(true);
@@ -43,9 +47,13 @@ const ReturnsPanel = () => {
     Promise.all([
       isProvider || isAdmin ? getReturns().catch(() => []) : Promise.resolve([]),
       getClaims().catch(() => []),
-    ]).then(([r, c]) => {
+      !isProvider && !isAdmin ? getOrdersByBuyer(user?.user_id).catch(() => []) : Promise.resolve([]),
+    ]).then(([r, c, buyerOrders]) => {
       setReturns(r || []);
       setClaims(c || []);
+      if (!isProvider && !isAdmin) {
+        setRedeliveryOrders((buyerOrders || []).filter(o => o.status === 'redelivery'));
+      }
     }).finally(() => setLoading(false));
   }, [user]);
 
@@ -72,21 +80,44 @@ const ReturnsPanel = () => {
 
   if (loading) return <div style={{ padding: '40px', textAlign: 'center', color: '#9ca3af' }}>Cargando...</div>;
 
-  // ── Vista vendedor — solo sus reclamos ──────────────────────────────────────
+  // ── Vista vendedor — garantías + reenvíos ────────────────────────────────────
   if (!isProvider && !isAdmin) {
+    const sellerTab = sellerTabState;
     return (
       <div style={{ maxWidth: '800px', margin: '0 auto', padding: '24px 16px' }}>
-        <h1 style={{ fontSize: '22px', fontWeight: '800', color: '#111827', marginBottom: '4px' }}>Mis Reclamos</h1>
+        <h1 style={{ fontSize: '22px', fontWeight: '800', color: '#111827', marginBottom: '4px' }}>Mis Problemas</h1>
         <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '20px' }}>
-          Reclamos de garantía sobre tus órdenes entregadas. Tenés 7 días desde la entrega para reclamar.
+          Gestioná tus reclamos de garantía y los envíos que necesitan tu atención.
         </p>
 
-        {claims.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '60px', color: '#9ca3af' }}>
-            <p style={{ fontSize: '16px', fontWeight: '700', marginBottom: '8px' }}>Sin reclamos</p>
-            <p style={{ fontSize: '13px' }}>Podés abrir un reclamo desde el detalle de una orden entregada en Transacciones.</p>
-          </div>
-        ) : claims.map(c => {
+        {/* Tabs vendedor */}
+        <div style={{ display: 'flex', gap: '4px', marginBottom: '20px', background: '#f3f4f6', borderRadius: '10px', padding: '4px' }}>
+          {[
+            { label: 'Garantías', count: claims.length },
+            { label: 'Reenvíos pendientes', count: redeliveryOrders.length, alert: redeliveryOrders.filter(o => !o.redelivery_requested).length },
+          ].map((t, i) => (
+            <button key={i} onClick={() => setSellerTabState(i)}
+              style={{ flex: 1, padding: '8px', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '13px', cursor: 'pointer', position: 'relative',
+                background: sellerTab === i ? 'white' : 'transparent',
+                color:      sellerTab === i ? '#111827' : '#6b7280',
+                boxShadow:  sellerTab === i ? '0 1px 4px rgba(0,0,0,0.1)' : 'none' }}>
+              {t.label} ({t.count})
+              {t.alert > 0 && (
+                <span style={{ position: 'absolute', top: '4px', right: '4px', width: '8px', height: '8px', borderRadius: '50%', background: '#dc2626' }} />
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* ── Tab Garantías ── */}
+        {sellerTab === 0 && (
+          <>
+            {claims.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '60px', color: '#9ca3af' }}>
+                <p style={{ fontSize: '16px', fontWeight: '700', marginBottom: '8px' }}>Sin reclamos</p>
+                <p style={{ fontSize: '13px' }}>Podés abrir un reclamo desde el detalle de una orden entregada en Transacciones.</p>
+              </div>
+            ) : claims.map(c => {
           const st  = STATUS_CLAIM[c.status] || { label: c.status, color: '#6b7280', bg: '#f3f4f6' };
           const exp = expanded === c.claim_id;
           const expired = new Date(c.expires_at) < new Date();
@@ -135,6 +166,118 @@ const ReturnsPanel = () => {
             </div>
           );
         })}
+          </>
+        )}
+
+        {/* ── Tab Reenvíos ── */}
+        {sellerTab === 1 && (
+          <>
+            {redeliveryOrders.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '60px', color: '#9ca3af' }}>
+                <p style={{ fontSize: '16px', fontWeight: '700', marginBottom: '8px' }}>Sin reenvíos pendientes</p>
+                <p style={{ fontSize: '13px' }}>Cuando un envío no pueda entregarse aparecerá acá para que puedas decidir qué hacer.</p>
+              </div>
+            ) : redeliveryOrders.map(order => (
+              <div key={order.order_id} style={{ border: '1.5px solid #fed7aa', borderRadius: '12px', overflow: 'hidden', background: 'white', marginBottom: '12px' }}>
+                <div style={{ padding: '16px', background: '#fff7ed' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '8px' }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                        <span style={{ fontWeight: '800', color: '#111827' }}>Orden #{order.order_id}</span>
+                        <span style={{ padding: '2px 10px', borderRadius: '100px', fontSize: '11px', fontWeight: '700', background: '#fff7ed', color: '#f97316', border: '1px solid #fed7aa' }}>
+                          ⚠️ No entregado
+                        </span>
+                        {order.redelivery_requested && (
+                          <span style={{ padding: '2px 10px', borderRadius: '100px', fontSize: '11px', fontWeight: '700', background: '#dcfce7', color: '#16a34a' }}>
+                            ✓ Reenvío solicitado
+                          </span>
+                        )}
+                      </div>
+                      <p style={{ fontSize: '13px', color: '#374151' }}>
+                        <strong>Cliente:</strong> {order.recipient_name} · {order.recipient_city}
+                      </p>
+                      {order.recipient_phone && (
+                        <p style={{ fontSize: '12px', color: '#6b7280' }}>
+                          {order.recipient_phone}
+                          <a href={`https://wa.me/${order.recipient_phone.replace(/\D/g,'')}`} target="_blank" rel="noopener noreferrer"
+                            style={{ marginLeft: '8px', color: '#16a34a', fontWeight: '700' }}>💬 WhatsApp</a>
+                        </p>
+                      )}
+                      {order.redelivery_reason && (
+                        <p style={{ fontSize: '12px', color: '#f97316', fontWeight: '600', marginTop: '4px' }}>
+                          Motivo logística: {order.redelivery_reason}
+                        </p>
+                      )}
+                      {order.redelivery_note && (
+                        <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>
+                          Tu nota: {order.redelivery_note}
+                        </p>
+                      )}
+                    </div>
+                    <p style={{ fontWeight: '800', color: '#056EB7', fontSize: '15px' }}>
+                      {new Intl.NumberFormat('es-PY',{style:'currency',currency:'PYG',minimumFractionDigits:0}).format(order.final_price || 0)}
+                    </p>
+                  </div>
+                </div>
+
+                {!order.redelivery_requested && (
+                  <div style={{ padding: '16px', borderTop: '1px solid #fed7aa' }}>
+                    <p style={{ fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '8px' }}>
+                      Escribí una observación para la reentrega:
+                    </p>
+                    <textarea
+                      value={redeliveryNotes[order.order_id] || ''}
+                      onChange={e => setRedeliveryNotes(prev => ({ ...prev, [order.order_id]: e.target.value }))}
+                      placeholder="Ej: El cliente estará disponible después de las 15hs en la misma dirección..."
+                      rows={3}
+                      style={{ width: '100%', padding: '9px 12px', border: '1.5px solid #fed7aa', borderRadius: '8px', fontSize: '13px', marginBottom: '10px', boxSizing: 'border-box', resize: 'vertical' }}
+                    />
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        disabled={submittingNote === order.order_id || !redeliveryNotes[order.order_id]?.trim()}
+                        onClick={async () => {
+                          setSubmittingNote(order.order_id);
+                          try {
+                            await submitRedeliveryNote(order.order_id, redeliveryNotes[order.order_id], 'retry');
+                            setRedeliveryOrders(prev => prev.map(o => o.order_id === order.order_id ? { ...o, redelivery_requested: true, redelivery_note: redeliveryNotes[order.order_id] } : o));
+                          } catch (e) { alert(e.message || 'Error'); }
+                          finally { setSubmittingNote(null); }
+                        }}
+                        style={{ flex: 2, padding: '10px', background: '#056EB7', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '13px', cursor: 'pointer', opacity: (!redeliveryNotes[order.order_id]?.trim() || submittingNote === order.order_id) ? 0.5 : 1 }}>
+                        {submittingNote === order.order_id ? 'Procesando...' : '🔄 Solicitar reenvío'}
+                      </button>
+                      <button
+                        disabled={submittingNote === order.order_id || !redeliveryNotes[order.order_id]?.trim()}
+                        onClick={async () => {
+                          if (!window.confirm('¿Cancelás el pedido? Se descontarán los costos logísticos de tu wallet.')) return;
+                          setSubmittingNote(order.order_id);
+                          try {
+                            await submitRedeliveryNote(order.order_id, redeliveryNotes[order.order_id], 'cancel');
+                            setRedeliveryOrders(prev => prev.filter(o => o.order_id !== order.order_id));
+                          } catch (e) { alert(e.message || 'Error'); }
+                          finally { setSubmittingNote(null); }
+                        }}
+                        style={{ flex: 1, padding: '10px', background: '#fef2f2', color: '#dc2626', border: '1.5px solid #fecaca', borderRadius: '8px', fontWeight: '700', fontSize: '13px', cursor: 'pointer', opacity: (!redeliveryNotes[order.order_id]?.trim() || submittingNote === order.order_id) ? 0.5 : 1 }}>
+                        Cancelar
+                      </button>
+                    </div>
+                    <p style={{ fontSize: '10px', color: '#9ca3af', marginTop: '6px' }}>
+                      Al cancelar se descontará el costo logístico de tu wallet.
+                    </p>
+                  </div>
+                )}
+
+                {order.redelivery_requested && (
+                  <div style={{ padding: '12px 16px', background: '#f0fdf4', borderTop: '1px solid #bbf7d0' }}>
+                    <p style={{ fontSize: '12px', color: '#16a34a', fontWeight: '700' }}>
+                      ✓ Reenvío solicitado — la logística lo procesará próximamente
+                    </p>
+                  </div>
+                )}
+              </div>
+            ))}
+          </>
+        )}
       </div>
     );
   }
@@ -174,6 +317,11 @@ const ReturnsPanel = () => {
                       <span style={{ padding: '2px 10px', borderRadius: '100px', fontSize: '11px', fontWeight: '700', background: st.bg, color: st.color }}>{st.label}</span>
                     </div>
                     <p style={{ fontSize: '13px', color: '#6b7280' }}>Motivo: {r.reason}</p>
+                    {r.logistic_name && (
+                      <p style={{ fontSize: '12px', color: '#056EB7', fontWeight: '700', marginBottom: '2px' }}>
+                        🚚 {r.logistic_name}{r.tracking_number ? ` · Guía: ${r.tracking_number}` : ''}
+                      </p>
+                    )}
                     {r.recipient_name && <p style={{ fontSize: '12px', color: '#6b7280' }}>Cliente: {r.recipient_name} · {r.recipient_phone}</p>}
                     {r.recipient_address && (
                       <p style={{ fontSize: '12px', color: '#6b7280' }}>
