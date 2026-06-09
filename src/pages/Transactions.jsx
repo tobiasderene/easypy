@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Package, Truck, CheckCircle, Clock, AlertCircle, Search, Filter, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
 import { useUser } from '../App';
-import { getOrdersByBuyer, getOrderHistory, getClaims, getLogistics, submitRedeliveryNote } from '../services/api';
+import { getOrdersByBuyer, getOrderHistory, getClaims, getLogistics } from '../services/api';
 import '../styles/transactions.css';
 
 const STATUS_CONFIG = {
@@ -11,7 +11,7 @@ const STATUS_CONFIG = {
   ready_for_pickup: { label: 'Listo para retiro',             detail: 'Esperando que la logística retire el paquete',                icon: Package,      bg: '#fefce8', color: '#ca8a04' },
   picked_up:        { label: 'Retirado por logística',        detail: 'La logística ya retiró el paquete',                          icon: Truck,        bg: '#eff6ff', color: '#2563eb' },
   out_for_delivery: { label: 'En camino',                     detail: 'El paquete está siendo entregado al destinatario',           icon: Truck,        bg: '#fff7ed', color: '#d97706' },
-  redelivery:       { label: 'Reagendado',                    detail: 'No se pudo entregar',                   icon: AlertCircle,  bg: '#fff7ed', color: '#f97316' },
+  redelivery:       { label: 'Reagendado',                    detail: 'No se pudo entregar — se va a reintentar',                   icon: AlertCircle,  bg: '#fff7ed', color: '#f97316' },
   completed:        { label: 'Entregado ✓',                   detail: 'El pedido fue entregado exitosamente',                       icon: CheckCircle,  bg: '#f0fdf4', color: '#16a34a' },
   cancelled:        { label: 'Cancelado',                     detail: 'Esta orden fue cancelada',                                   icon: AlertCircle,  bg: '#fef2f2', color: '#dc2626' },
   return_in_progress:{ label: 'Devolución en curso',          detail: 'El producto está siendo devuelto al proveedor',              icon: AlertCircle,  bg: '#fef2f2', color: '#dc2626' },
@@ -30,8 +30,7 @@ const Transactions = () => {
   const [histories, setHistories]       = useState({});
   const [claims, setClaims]             = useState([]);
   const [logisticsMap, setLogisticsMap] = useState({});
-  const [redeliveryNotes, setRedeliveryNotes] = useState({}); // { order_id: note text }
-  const [submittingNote, setSubmittingNote]   = useState(null);
+
 
   useEffect(() => {
     if (!user?.user_id) return;
@@ -211,7 +210,7 @@ const Transactions = () => {
                     {/* Transportadora y guía */}
                     {logistic && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px', flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: '12px', color: '#6b7280' }}>{logistic.name}</span>
+                        <span style={{ fontSize: '12px', color: '#6b7280' }}>🚚 {logistic.name}</span>
                         {order.tracking_number && (
                           <span style={{ fontSize: '12px', fontWeight: '700', color: '#056EB7', background: '#eff6ff', padding: '2px 8px', borderRadius: '6px' }}>
                             Guía: {order.tracking_number}
@@ -323,69 +322,22 @@ const Transactions = () => {
                       </div>
                     )}
 
-                    {/* Si está reagendado — panel de respuesta del vendedor */}
+                    {/* Si está reagendado — redirigir a la página de problemas */}
                     {order.status === 'redelivery' && (
-                      <div style={{ background: '#fff7ed', border: '1.5px solid #fed7aa', borderRadius: '10px', padding: '14px' }}>
-                        <p style={{ fontSize: '13px', fontWeight: '800', color: '#d97706', marginBottom: '4px' }}>Envío no entregado</p>
-                        <p style={{ fontSize: '12px', color: '#374151', marginBottom: '2px' }}>
-                          Motivo logística: <strong>{order.redelivery_reason || '—'}</strong>
-                        </p>
-                        <p style={{ fontSize: '12px', color: '#374151', marginBottom: '10px' }}>
-                          Cliente: {order.recipient_name} · {order.recipient_phone}
-                          {order.recipient_phone && (
-                            <a href={`https://wa.me/${order.recipient_phone.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer"
-                              style={{ marginLeft: '8px', color: '#16a34a', fontWeight: '700' }}>WhatsApp</a>
-                          )}
-                        </p>
-
-                        {order.redelivery_requested ? (
-                          <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', padding: '10px' }}>
-                            <p style={{ fontSize: '12px', color: '#16a34a', fontWeight: '700' }}>✓ Reenvío solicitado — esperando que la logística lo procese</p>
-                            {order.redelivery_note && <p style={{ fontSize: '12px', color: '#374151', marginTop: '4px' }}>Tu nota: {order.redelivery_note}</p>}
-                          </div>
-                        ) : (
-                          <>
-                            <p style={{ fontSize: '12px', fontWeight: '700', color: '#374151', marginBottom: '6px' }}>
-                              Escribí una observación para la reentrega:
-                            </p>
-                            <textarea
-                              value={redeliveryNotes[order.order_id] || ''}
-                              onChange={e => setRedeliveryNotes(prev => ({ ...prev, [order.order_id]: e.target.value }))}
-                              placeholder="Ej: El cliente estará disponible después de las 15hs en la misma dirección..."
-                              rows={3}
-                              style={{ width: '100%', padding: '8px 10px', border: '1.5px solid #fed7aa', borderRadius: '8px', fontSize: '12px', marginBottom: '10px', boxSizing: 'border-box', resize: 'vertical' }}
-                            />
-                            <div style={{ display: 'flex', gap: '8px' }}>
-                              <button
-                                disabled={submittingNote === order.order_id || !redeliveryNotes[order.order_id]?.trim()}
-                                onClick={async () => {
-                                  setSubmittingNote(order.order_id);
-                                  try {
-                                    await submitRedeliveryNote(order.order_id, redeliveryNotes[order.order_id], 'retry');
-                                    setOrders(prev => prev.map(o => o.order_id === order.order_id ? { ...o, redelivery_requested: true, redelivery_note: redeliveryNotes[order.order_id] } : o));
-                                  } catch (e) { alert(e.message || 'Error'); }
-                                  finally { setSubmittingNote(null); }
-                                }}
-                                style={{ flex: 2, padding: '9px', background: '#056EB7', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}>
-                                {submittingNote === order.order_id ? 'Procesando...' : '🔄 Solicitar reenvío'}
-                              </button>
-                              <button
-                                disabled={submittingNote === order.order_id || !redeliveryNotes[order.order_id]?.trim()}
-                                onClick={async () => {
-                                  if (!window.confirm('¿Cancelás el pedido? Se descontarán los costos logísticos de tu wallet.')) return;
-                                  setSubmittingNote(order.order_id);
-                                  try {
-                                    await submitRedeliveryNote(order.order_id, redeliveryNotes[order.order_id], 'cancel');
-                                    setOrders(prev => prev.map(o => o.order_id === order.order_id ? { ...o, status: 'cancelled' } : o));
-                                  } catch (e) { alert(e.message || 'Error'); }
-                                  finally { setSubmittingNote(null); }
-                                }}
-                                style={{ flex: 1, padding: '9px', background: '#fef2f2', color: '#dc2626', border: '1.5px solid #fecaca', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}>
-                                Cancelar pedido
-                              </button>
-                            </div>
-                            <p style={{ fontSize: '10px', color: '#9ca3af', marginTop: '6px' }}>Al cancelar se descontarán los costos logísticos (${order.logistic_cost ? new Intl.NumberFormat('es-PY',{style:'currency',currency:'PYG',minimumFractionDigits:0}).format(order.logistic_cost) : '—'}) de tu wallet.</p>
-                          </>
+                      <div style={{ background: '#fff7ed', border: '1.5px solid #fed7aa', borderRadius: '10px', padding: '14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                        <div>
+                          <p style={{ fontSize: '13px', fontWeight: '800', color: '#d97706', marginBottom: '2px' }}>⚠️ Envío no entregado</p>
+                          <p style={{ fontSize: '12px', color: '#374151' }}>
+                            {order.redelivery_requested
+                              ? '✓ Reenvío solicitado — esperando a la logística'
+                              : 'Requiere tu acción — entrá a Mis Problemas para resolverlo'}
+                          </p>
+                        </div>
+                        {!order.redelivery_requested && (
+                          <a href="/devoluciones"
+                            style={{ padding: '8px 14px', background: '#f97316', color: 'white', borderRadius: '8px', fontWeight: '700', fontSize: '12px', textDecoration: 'none', whiteSpace: 'nowrap' }}>
+                            Resolver →
+                          </a>
                         )}
                       </div>
                     )}
