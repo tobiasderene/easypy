@@ -163,6 +163,12 @@ const Analytics = () => {
   const inProgress = ['confirmed','processing','ready_for_pickup','picked_up','out_for_delivery','redelivery'];
 
   // Filtrar según kpiView para los KPIs financieros
+  // Las órdenes canceladas con logística movilizada también generan ingreso (logistic_cost + platform_fee)
+  const cancelledMovilized = filteredOrders.filter(o =>
+    o.status === 'cancelled' &&
+    ['picked_up','out_for_delivery','redelivery'].includes(o.pre_cancel_status || '')
+  );
+
   const kpiOrders = filteredOrders.filter(o => {
     if (kpiView === 'completed') return o.status === 'completed';
     if (kpiView === 'pending')   return inProgress.includes(o.status);
@@ -174,8 +180,11 @@ const Analytics = () => {
   const canceladas       = filteredOrders.filter(o => o.status === 'cancelled').length;
   const activeOrders     = filteredOrders.filter(o => inProgress.includes(o.status)).length;
   const totalRecaudo     = kpiOrders.reduce((s, o) => s + parseFloat(o.final_price   || 0), 0);
-  const totalLogistics   = kpiOrders.reduce((s, o) => s + parseFloat(o.logistic_cost || 0), 0);
-  const totalCommission  = kpiOrders.reduce((s, o) => s + parseFloat(o.platform_fee  || 0), 0);
+  // Logística y comisión incluyen cancelaciones donde la logística ya fue movilizada
+  const cancelledLogistics  = cancelledMovilized.reduce((s, o) => s + parseFloat(o.logistic_cost || 0), 0);
+  const cancelledCommission = cancelledMovilized.reduce((s, o) => s + parseFloat(o.platform_fee  || 0), 0);
+  const totalLogistics   = kpiOrders.reduce((s, o) => s + parseFloat(o.logistic_cost || 0), 0) + (kpiView === 'all' ? cancelledLogistics : 0);
+  const totalCommission  = kpiOrders.reduce((s, o) => s + parseFloat(o.platform_fee  || 0), 0) + (kpiView === 'all' ? cancelledCommission : 0);
   const totalBuyerProfit = kpiOrders.reduce((s, o) => s + parseFloat(o.buyer_profit  || 0), 0);
   const gananciaEstimada = kpiOrders.reduce((s, o) => s + parseFloat(o.buyer_profit  || 0), 0);
   const ticketPromedio   = kpiOrders.length > 0 ? totalRecaudo / kpiOrders.length : 0;
@@ -323,8 +332,8 @@ const Analytics = () => {
         {/* Toggle completadas / pendientes */}
         <div style={{ display: 'flex', gap: '6px', marginBottom: '12px' }}>
           {[
-            { id: 'completed', label: 'Completadas' },
-            { id: 'pending',   label: 'En curso'   },
+            { id: 'completed', label: '✓ Completadas' },
+            { id: 'pending',   label: '⏳ En curso'   },
             { id: 'all',       label: 'Todas'          },
           ].map(v => (
             <button key={v.id} onClick={() => setKpiView(v.id)}
@@ -378,7 +387,7 @@ const Analytics = () => {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '16px', marginBottom: '4px' }}>
                   <p style={{ fontSize: '11px', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    {kpiView === 'completed' ? '✓ Solo órdenes completadas' : kpiView === 'pending' ? 'Solo órdenes en curso' : 'Todas las órdenes'}
+                    {kpiView === 'completed' ? '✓ Solo órdenes completadas' : kpiView === 'pending' ? '⏳ Solo órdenes en curso' : 'Todas las órdenes'}
                   </p>
                 </div>
                 <div className="an-kpis" style={{ marginTop: '4px' }}>
