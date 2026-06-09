@@ -70,7 +70,7 @@ const Analytics = () => {
   const [wallet, setWallet]             = useState(null);
   const [topProducts, setTopProducts]   = useState([]);
   const [loading, setLoading]           = useState(true);
-  const [kpiView, setKpiView]           = useState('completed'); // 'completed' | 'pending'
+  const [kpiViews, setKpiViews]         = useState(new Set(['completed'])); // multi-select
   const calendarRef = useRef(null);
 
   // Para admin: refetch cuando cambia el período o rango
@@ -162,17 +162,12 @@ const Analytics = () => {
   // ── KPIs ──────────────────────────────────────────────────────────────────
   const inProgress = ['confirmed','processing','ready_for_pickup','picked_up','out_for_delivery','redelivery'];
 
-  // Filtrar según kpiView para los KPIs financieros
-  // Las órdenes canceladas con logística movilizada también generan ingreso (logistic_cost + platform_fee)
-  const cancelledMovilized = filteredOrders.filter(o =>
-    o.status === 'cancelled' &&
-    ['picked_up','out_for_delivery','redelivery'].includes(o.pre_cancel_status || '')
-  );
-
+  // Filtrar según kpiViews (multi-select) para los KPIs financieros
   const kpiOrders = filteredOrders.filter(o => {
-    if (kpiView === 'completed') return o.status === 'completed';
-    if (kpiView === 'pending')   return inProgress.includes(o.status);
-    return true; // 'all'
+    if (kpiViews.has('completed') && o.status === 'completed')           return true;
+    if (kpiViews.has('pending')   && inProgress.includes(o.status))      return true;
+    if (kpiViews.has('cancelled') && o.status === 'cancelled')           return true;
+    return false;
   });
 
   const totalOrders      = filteredOrders.length;
@@ -180,11 +175,8 @@ const Analytics = () => {
   const canceladas       = filteredOrders.filter(o => o.status === 'cancelled').length;
   const activeOrders     = filteredOrders.filter(o => inProgress.includes(o.status)).length;
   const totalRecaudo     = kpiOrders.reduce((s, o) => s + parseFloat(o.final_price   || 0), 0);
-  // Logística y comisión incluyen cancelaciones donde la logística ya fue movilizada
-  const cancelledLogistics  = cancelledMovilized.reduce((s, o) => s + parseFloat(o.logistic_cost || 0), 0);
-  const cancelledCommission = cancelledMovilized.reduce((s, o) => s + parseFloat(o.platform_fee  || 0), 0);
-  const totalLogistics   = kpiOrders.reduce((s, o) => s + parseFloat(o.logistic_cost || 0), 0) + (kpiView === 'completed' ? cancelledLogistics : 0);
-  const totalCommission  = kpiOrders.reduce((s, o) => s + parseFloat(o.platform_fee  || 0), 0) + (kpiView === 'completed' ? cancelledCommission : 0);
+  const totalLogistics   = kpiOrders.reduce((s, o) => s + parseFloat(o.logistic_cost || 0), 0);
+  const totalCommission  = kpiOrders.reduce((s, o) => s + parseFloat(o.platform_fee  || 0), 0);
   const totalBuyerProfit = kpiOrders.reduce((s, o) => s + parseFloat(o.buyer_profit  || 0), 0);
   const gananciaEstimada = kpiOrders.reduce((s, o) => s + parseFloat(o.buyer_profit  || 0), 0);
   const ticketPromedio   = kpiOrders.length > 0 ? totalRecaudo / kpiOrders.length : 0;
@@ -329,21 +321,29 @@ const Analytics = () => {
           </div>
         </div>
 
-        {/* Toggle completadas / pendientes */}
-        <div style={{ display: 'flex', gap: '6px', marginBottom: '12px' }}>
+        {/* Toggle multi-select */}
+        <div style={{ display: 'flex', gap: '6px', marginBottom: '12px', flexWrap: 'wrap' }}>
           {[
-            { id: 'completed', label: '✓ Completadas' },
-            { id: 'pending',   label: '⏳ En curso'   },
-            { id: 'all',       label: 'Todas'          },
-          ].map(v => (
-            <button key={v.id} onClick={() => setKpiView(v.id)}
-              style={{ padding: '6px 14px', fontSize: '12px', fontWeight: '700', borderRadius: '100px', border: '1.5px solid', cursor: 'pointer',
-                background: kpiView === v.id ? '#056EB7' : 'white',
-                color:      kpiView === v.id ? 'white'   : '#6b7280',
-                borderColor: kpiView === v.id ? '#056EB7' : '#e5e7eb' }}>
-              {v.label}
-            </button>
-          ))}
+            { id: 'completed',  label: '✓ Completadas' },
+            { id: 'pending',    label: '⏳ En curso'    },
+            { id: 'cancelled',  label: '✗ Cancelados'  },
+          ].map(v => {
+            const active = kpiViews.has(v.id);
+            return (
+              <button key={v.id} onClick={() => setKpiViews(prev => {
+                const next = new Set(prev);
+                if (next.has(v.id)) { next.delete(v.id); if (next.size === 0) next.add('completed'); }
+                else next.add(v.id);
+                return next;
+              })}
+                style={{ padding: '6px 14px', fontSize: '12px', fontWeight: '700', borderRadius: '100px', border: '1.5px solid', cursor: 'pointer',
+                  background:  active ? '#056EB7' : 'white',
+                  color:       active ? 'white'   : '#6b7280',
+                  borderColor: active ? '#056EB7' : '#e5e7eb' }}>
+                {v.label}
+              </button>
+            );
+          })}
         </div>
 
         {showCalendar && (
@@ -387,7 +387,7 @@ const Analytics = () => {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '16px', marginBottom: '4px' }}>
                   <p style={{ fontSize: '11px', fontWeight: '700', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    {kpiView === 'completed' ? '✓ Solo órdenes completadas' : kpiView === 'pending' ? '⏳ Solo órdenes en curso' : 'Todas las órdenes'}
+                    {[...kpiViews].map(v => v === 'completed' ? 'Completadas' : v === 'pending' ? 'En curso' : 'Canceladas').join(' + ')}
                   </p>
                 </div>
                 <div className="an-kpis" style={{ marginTop: '4px' }}>
