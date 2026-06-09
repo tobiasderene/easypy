@@ -114,7 +114,12 @@ export const updateReturn    = (id, data) => api(`/returns/${id}`, { method: 'PA
 
 // ── Claims ────────────────────────────────────────────────────────────────────
 export const getClaims       = ()       => api('/claims');
-export const createClaim     = (data)   => api('/claims', { method: 'POST', body: JSON.stringify(data) });
+export const createClaim         = (data)           => api('/claims', { method: 'POST', body: JSON.stringify(data) });
+export const uploadClaimEvidence = (claimId, file) => {
+  const form = new FormData();
+  form.append('file', file);
+  return api(`/claims/${claimId}/evidence`, { method: 'POST', body: form, headers: {} });
+};
 export const updateClaim     = (id, data) => api(`/claims/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
 
 export const getProductAssignments  = (productId)           => api(`/products/${productId}/assignments`);
