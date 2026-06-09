@@ -4,7 +4,7 @@ import { getProducts, getProductImagesBulk, getProviders, getFavorites, toggleFa
 import { useUser } from '../App';
 import '../styles/catalog.css';
 
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 24;
 
 const Catalog = () => {
   const navigate = useNavigate();
