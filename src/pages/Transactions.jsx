@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Package, Truck, CheckCircle, Clock, AlertCircle, Search, Filter, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
 import { useUser } from '../App';
-import { getOrdersByBuyer, getOrderHistory, getClaims, getLogistics } from '../services/api';
+import { getOrdersByBuyer, getOrderHistory, getClaims, getLogistics, createClaim } from '../services/api';
 import '../styles/transactions.css';
 
 const STATUS_CONFIG = {
@@ -30,6 +30,9 @@ const Transactions = () => {
   const [histories, setHistories]       = useState({});
   const [claims, setClaims]             = useState([]);
   const [logisticsMap, setLogisticsMap] = useState({});
+  const [claimForms, setClaimForms]     = useState({}); // { order_id: { reason, description, open } }
+  const [submittingClaim, setSubmittingClaim] = useState(null);
+  const [claimedOrders, setClaimedOrders]     = useState(new Set()); // orders with open claim
 
 
   useEffect(() => {
@@ -45,6 +48,7 @@ const Transactions = () => {
         const map = {};
         (logs || []).forEach(l => { map[l.logistic_id] = l; });
         setLogisticsMap(map);
+        setClaimedOrders(new Set((cls || []).map(c => c.order_id)));
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -342,7 +346,81 @@ const Transactions = () => {
                       </div>
                     )}
                   </div>
-                )}
+
+                    {/* Garantía — solo para órdenes completadas */}
+                    {order.status === 'completed' && (
+                      <div style={{ marginTop: '12px' }}>
+                        {claimedOrders.has(order.order_id) ? (
+                          <div style={{ background: '#fef2f2', border: '1.5px solid #fecaca', borderRadius: '8px', padding: '10px 14px' }}>
+                            <p style={{ fontSize: '12px', fontWeight: '700', color: '#dc2626' }}>⚠️ Reclamo de garantía abierto</p>
+                            <p style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>Podés ver el estado en Mis Problemas → Garantías.</p>
+                          </div>
+                        ) : claimForms[order.order_id]?.open ? (
+                          <div style={{ background: '#f9fafb', border: '1.5px solid #e5e7eb', borderRadius: '10px', padding: '14px' }}>
+                            <p style={{ fontSize: '13px', fontWeight: '700', color: '#111827', marginBottom: '10px' }}>Abrir reclamo de garantía</p>
+                            <div style={{ marginBottom: '8px' }}>
+                              <label style={{ fontSize: '11px', fontWeight: '700', color: '#6b7280', display: 'block', marginBottom: '4px' }}>MOTIVO *</label>
+                              <select
+                                value={claimForms[order.order_id]?.reason || ''}
+                                onChange={e => setClaimForms(prev => ({ ...prev, [order.order_id]: { ...prev[order.order_id], reason: e.target.value } }))}
+                                style={{ width: '100%', padding: '8px 10px', border: '1.5px solid #e5e7eb', borderRadius: '8px', fontSize: '13px', background: 'white' }}>
+                                <option value="">Seleccioná un motivo...</option>
+                                <option value="Producto dañado">Producto dañado</option>
+                                <option value="Producto incorrecto">Producto incorrecto</option>
+                                <option value="Producto no coincide con la descripción">No coincide con la descripción</option>
+                                <option value="Falta de piezas o accesorios">Falta de piezas o accesorios</option>
+                                <option value="Defecto de fabricación">Defecto de fabricación</option>
+                                <option value="Otro">Otro</option>
+                              </select>
+                            </div>
+                            <div style={{ marginBottom: '10px' }}>
+                              <label style={{ fontSize: '11px', fontWeight: '700', color: '#6b7280', display: 'block', marginBottom: '4px' }}>DESCRIPCIÓN (opcional)</label>
+                              <textarea
+                                value={claimForms[order.order_id]?.description || ''}
+                                onChange={e => setClaimForms(prev => ({ ...prev, [order.order_id]: { ...prev[order.order_id], description: e.target.value } }))}
+                                placeholder="Describí el problema con más detalle..."
+                                rows={3}
+                                style={{ width: '100%', padding: '8px 10px', border: '1.5px solid #e5e7eb', borderRadius: '8px', fontSize: '13px', boxSizing: 'border-box', resize: 'vertical' }}
+                              />
+                            </div>
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                              <button
+                                onClick={() => setClaimForms(prev => ({ ...prev, [order.order_id]: { ...prev[order.order_id], open: false } }))}
+                                style={{ flex: 1, padding: '9px', background: 'white', border: '1.5px solid #e5e7eb', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer', color: '#6b7280' }}>
+                                Cancelar
+                              </button>
+                              <button
+                                disabled={!claimForms[order.order_id]?.reason || submittingClaim === order.order_id}
+                                onClick={async () => {
+                                  setSubmittingClaim(order.order_id);
+                                  try {
+                                    await createClaim({
+                                      order_id:    order.order_id,
+                                      reason:      claimForms[order.order_id].reason,
+                                      description: claimForms[order.order_id].description || null,
+                                    });
+                                    setClaimedOrders(prev => new Set([...prev, order.order_id]));
+                                    setClaimForms(prev => ({ ...prev, [order.order_id]: { open: false } }));
+                                  } catch (e) { alert(e.message || 'Error al abrir el reclamo'); }
+                                  finally { setSubmittingClaim(null); }
+                                }}
+                                style={{ flex: 2, padding: '9px', background: '#dc2626', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer',
+                                  opacity: (!claimForms[order.order_id]?.reason || submittingClaim === order.order_id) ? 0.5 : 1 }}>
+                                {submittingClaim === order.order_id ? 'Enviando...' : 'Enviar reclamo'}
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setClaimForms(prev => ({ ...prev, [order.order_id]: { open: true, reason: '', description: '' } }))}
+                            style={{ width: '100%', padding: '9px', background: '#fef2f2', border: '1.5px solid #fecaca', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer', color: '#dc2626' }}>
+                            Abrir reclamo de garantía
+                          </button>
+                        )}
+                      </div>
+                    )}
+                </div>
+              )}
               </div>
             );
           })}
