@@ -210,6 +210,7 @@ const LogisticsPanel = () => {
             <select style={{ width: '100%', padding: '9px 12px', border: '1.5px solid #e5e7eb', borderRadius: '8px', fontSize: '13px', marginBottom: '10px', background: 'white' }}
               value={redeliveryReason} onChange={e => setRedeliveryReason(e.target.value)}>
               <option value="">Seleccioná un motivo...</option>
+              <option value="Cliente no contesta">Cliente no contesta</option>
               <option value="Cliente no estaba en casa">Cliente no estaba en casa</option>
               <option value="Dirección incorrecta">Dirección incorrecta</option>
               <option value="Cliente solicitó cambiar horario">Cliente solicitó cambiar horario</option>
@@ -218,7 +219,9 @@ const LogisticsPanel = () => {
             </select>
             {redeliveryReason === 'Otro' && (
               <input style={{ width: '100%', padding: '9px 12px', border: '1.5px solid #e5e7eb', borderRadius: '8px', fontSize: '13px', marginBottom: '10px' }}
-                placeholder="Describí el motivo..." onChange={e => setRedeliveryReason(e.target.value)} />
+                placeholder="Describí el motivo..."
+                onChange={e => setRedeliveryReason(e.target.value === 'Otro' ? '' : e.target.value)}
+                onInput={e => setRedeliveryReason(e.target.value)} />
             )}
             <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
               <button onClick={() => { setRedeliveryModal(null); setRedeliveryReason(''); }}
@@ -243,6 +246,7 @@ const LogisticsPanel = () => {
             <select style={{ width: '100%', padding: '9px 12px', border: '1.5px solid #e5e7eb', borderRadius: '8px', fontSize: '13px', marginBottom: '10px', background: 'white' }}
               value={returnReason} onChange={e => setReturnReason(e.target.value)}>
               <option value="">Seleccioná un motivo...</option>
+              <option value="Cliente no contesta">Cliente no contesta</option>
               <option value="Cliente rechazó el producto">Cliente rechazó el producto</option>
               <option value="Producto dañado">Producto dañado</option>
               <option value="Producto incorrecto">Producto incorrecto</option>
@@ -251,7 +255,8 @@ const LogisticsPanel = () => {
             </select>
             {returnReason === 'Otro' && (
               <input style={{ width: '100%', padding: '9px 12px', border: '1.5px solid #e5e7eb', borderRadius: '8px', fontSize: '13px', marginBottom: '10px' }}
-                placeholder="Describí el motivo..." onChange={e => setReturnReason(e.target.value)} />
+                placeholder="Describí el motivo..."
+                onInput={e => setReturnReason(e.target.value)} />
             )}
             <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
               <button onClick={() => { setReturnModal(null); setReturnReason(''); }}
