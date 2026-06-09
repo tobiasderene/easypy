@@ -432,7 +432,7 @@ const Transactions = () => {
                           <button
                             onClick={() => setClaimForms(prev => ({ ...prev, [order.order_id]: { open: true, reason: '', description: '' } }))}
                             style={{ width: '100%', padding: '9px', background: '#fef2f2', border: '1.5px solid #fecaca', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer', color: '#dc2626' }}>
-                            ⚠️ Abrir reclamo de garantía
+                            Abrir reclamo de garantía
                           </button>
                         )}
                       </div>
