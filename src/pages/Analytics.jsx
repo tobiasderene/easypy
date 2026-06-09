@@ -198,11 +198,9 @@ const Analytics = () => {
       } else {
         key = d.toLocaleDateString('es-PY', { month: 'short', year: 'numeric' });
       }
-      if (!map[key]) map[key] = { periodo: key, ingreso: 0, comision: 0, logistica: 0, ganancia_vendedor: 0 };
-      map[key].ingreso           += parseFloat(o.final_price   || 0);
-      map[key].comision          += parseFloat(o.platform_fee  || 0);
-      map[key].logistica         += parseFloat(o.logistic_cost || 0);
-      map[key].ganancia_vendedor += parseFloat(o.buyer_profit  || 0);
+      if (!map[key]) map[key] = { periodo: key, comision: 0, logistica: 0 };
+      map[key].comision  += parseFloat(o.platform_fee  || 0);
+      map[key].logistica += parseFloat(o.logistic_cost || 0);
     });
     return Object.values(map);
   })();
@@ -252,9 +250,9 @@ const Analytics = () => {
   ).map(([status, cantidad]) => ({ status, cantidad, label: STATUS_LABELS[status] || status }));
 
   const costPieData = isAdmin ? [
-    { name: 'Comisión EasyPy',  value: Math.round(totalCommission),  color: '#056EB7' },
-    { name: 'Costo logística',  value: Math.round(totalLogistics),   color: '#0ea5e9' },
-    { name: 'Ganancia vendors', value: Math.round(totalBuyerProfit), color: '#16a34a' },
+    { name: 'Comisión EasyPy',        value: Math.round(totalCommission),              color: '#056EB7' },
+    { name: 'Costo logística a pagar', value: Math.round(totalLogistics),              color: '#0ea5e9' },
+    { name: 'Ganancia neta EasyPy',    value: Math.round(totalCommission - totalLogistics), color: '#16a34a' },
   ].filter(d => d.value > 0) : [];
 
   const salesByDay = (() => {
@@ -392,14 +390,15 @@ const Analytics = () => {
                 </div>
                 <div className="an-kpis" style={{ marginTop: '4px' }}>
                   {[
-                    { label: 'Ingreso total',       value: totalRecaudo,      highlight: false },
-                    { label: 'Costo logística',     value: totalLogistics,    highlight: false },
-                    { label: 'Comisión EasyPy',     value: totalCommission,   highlight: true  },
-                    { label: 'Ganancia vendedores', value: totalBuyerProfit,  highlight: false },
+                    { label: 'Ingreso EasyPy (comisión)', value: totalCommission,  highlight: true  },
+                    { label: 'Costo logística a pagar',   value: totalLogistics,   highlight: false },
+                    { label: 'Ganancia neta EasyPy',      value: totalCommission - totalLogistics, highlight: false },
                   ].map((kpi, i) => (
                     <div key={i} className={`an-kpi ${kpi.highlight ? 'highlight' : ''}`}>
                       <span className="an-kpi-label">{kpi.label}</span>
-                      <span className="an-kpi-value">{formatCurrency(kpi.value)}</span>
+                      <span className="an-kpi-value" style={{ color: kpi.value < 0 ? '#dc2626' : undefined }}>
+                        {formatCurrency(kpi.value)}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -445,9 +444,8 @@ const Analytics = () => {
                       <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
                       <Tooltip content={<CustomTooltip />} />
                       <Legend />
-                      <Bar dataKey="ingreso"          name="Ingreso"         fill="#e0f2fe" radius={[3,3,0,0]} />
-                      <Bar dataKey="comision"         name="Comisión EasyPy" fill="#056EB7" radius={[3,3,0,0]} />
-                      <Bar dataKey="ganancia_vendedor" name="Ganancia vendors" fill="#16a34a" radius={[3,3,0,0]} />
+                      <Bar dataKey="comision"  name="Comisión EasyPy"       fill="#056EB7" radius={[3,3,0,0]} />
+                      <Bar dataKey="logistica" name="Costo logística"        fill="#0ea5e9" radius={[3,3,0,0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 )}
