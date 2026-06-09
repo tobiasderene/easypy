@@ -11,7 +11,7 @@ const STATUS_CONFIG = {
   ready_for_pickup: { label: 'Listo para retiro',             detail: 'Esperando que la logística retire el paquete',                icon: Package,      bg: '#fefce8', color: '#ca8a04' },
   picked_up:        { label: 'Retirado por logística',        detail: 'La logística ya retiró el paquete',                          icon: Truck,        bg: '#eff6ff', color: '#2563eb' },
   out_for_delivery: { label: 'En camino',                     detail: 'El paquete está siendo entregado al destinatario',           icon: Truck,        bg: '#fff7ed', color: '#d97706' },
-  redelivery:       { label: 'Reagendado',                    detail: 'No se pudo entregar — se va a reintentar',                   icon: AlertCircle,  bg: '#fff7ed', color: '#f97316' },
+  redelivery:       { label: 'Reagendado',                    detail: 'No se pudo entregar',                   icon: AlertCircle,  bg: '#fff7ed', color: '#f97316' },
   completed:        { label: 'Entregado ✓',                   detail: 'El pedido fue entregado exitosamente',                       icon: CheckCircle,  bg: '#f0fdf4', color: '#16a34a' },
   cancelled:        { label: 'Cancelado',                     detail: 'Esta orden fue cancelada',                                   icon: AlertCircle,  bg: '#fef2f2', color: '#dc2626' },
   return_in_progress:{ label: 'Devolución en curso',          detail: 'El producto está siendo devuelto al proveedor',              icon: AlertCircle,  bg: '#fef2f2', color: '#dc2626' },
@@ -211,7 +211,7 @@ const Transactions = () => {
                     {/* Transportadora y guía */}
                     {logistic && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px', flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: '12px', color: '#6b7280' }}>🚚 {logistic.name}</span>
+                        <span style={{ fontSize: '12px', color: '#6b7280' }}>{logistic.name}</span>
                         {order.tracking_number && (
                           <span style={{ fontSize: '12px', fontWeight: '700', color: '#056EB7', background: '#eff6ff', padding: '2px 8px', borderRadius: '6px' }}>
                             Guía: {order.tracking_number}
@@ -326,7 +326,7 @@ const Transactions = () => {
                     {/* Si está reagendado — panel de respuesta del vendedor */}
                     {order.status === 'redelivery' && (
                       <div style={{ background: '#fff7ed', border: '1.5px solid #fed7aa', borderRadius: '10px', padding: '14px' }}>
-                        <p style={{ fontSize: '13px', fontWeight: '800', color: '#d97706', marginBottom: '4px' }}>⚠️ Envío no entregado</p>
+                        <p style={{ fontSize: '13px', fontWeight: '800', color: '#d97706', marginBottom: '4px' }}>Envío no entregado</p>
                         <p style={{ fontSize: '12px', color: '#374151', marginBottom: '2px' }}>
                           Motivo logística: <strong>{order.redelivery_reason || '—'}</strong>
                         </p>
@@ -334,7 +334,7 @@ const Transactions = () => {
                           Cliente: {order.recipient_name} · {order.recipient_phone}
                           {order.recipient_phone && (
                             <a href={`https://wa.me/${order.recipient_phone.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer"
-                              style={{ marginLeft: '8px', color: '#16a34a', fontWeight: '700' }}>💬 WhatsApp</a>
+                              style={{ marginLeft: '8px', color: '#16a34a', fontWeight: '700' }}>WhatsApp</a>
                           )}
                         </p>
 
