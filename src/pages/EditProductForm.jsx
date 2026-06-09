@@ -53,7 +53,6 @@ const EditProductForm = () => {
     { value: 'beauty', label: 'Belleza' },
     { value: 'clothing', label: 'Ropa' },
     { value: 'toys', label: 'Juguetes' },
-    { value: 'pets', label: 'Mascotas' }
   ];
 
   useEffect(() => {
@@ -464,16 +463,16 @@ const EditProductForm = () => {
                     </p>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       {assignments.map(a => {
-                        const seller = sellerResults.find(s => s.user_id === a.buyer_id);
+                        const name = a.buyer_nickname || `Vendedor #${a.buyer_id}`;
                         return (
                           <div key={a.assignment_id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#f0fdf4', border: '1.5px solid #bbf7d0', borderRadius: '9px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                               <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#16a34a20', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', color: '#16a34a', fontSize: '14px' }}>
-                                {(seller?.user_nickname || `#${a.buyer_id}`)[0].toUpperCase()}
+                                {name[0].toUpperCase()}
                               </div>
                               <div>
-                                <p style={{ fontSize: '13px', fontWeight: '700', color: '#111827' }}>{seller?.user_nickname || `Vendedor #${a.buyer_id}`}</p>
-                                {seller?.email && <p style={{ fontSize: '11px', color: '#6b7280' }}>{seller.email}</p>}
+                                <p style={{ fontSize: '13px', fontWeight: '700', color: '#111827' }}>{name}</p>
+                                {a.buyer_email && <p style={{ fontSize: '11px', color: '#6b7280' }}>{a.buyer_email}</p>}
                               </div>
                             </div>
                             <button type="button" onClick={() => handleRemoveSeller(a.buyer_id)} disabled={removingId === a.buyer_id}
