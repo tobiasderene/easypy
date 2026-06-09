@@ -85,7 +85,7 @@ const ReturnsPanel = () => {
     const sellerTab = sellerTabState;
     return (
       <div style={{ maxWidth: '800px', margin: '0 auto', padding: '24px 16px' }}>
-        <h1 style={{ fontSize: '22px', fontWeight: '800', color: '#111827', marginBottom: '4px' }}>Mis Problemas</h1>
+        <h1 style={{ fontSize: '22px', fontWeight: '800', color: '#111827', marginBottom: '4px' }}>Incidencias</h1>
         <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '20px' }}>
           Gestioná tus reclamos de garantía y los envíos que necesitan tu atención.
         </p>
