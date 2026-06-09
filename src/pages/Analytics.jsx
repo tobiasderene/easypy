@@ -174,11 +174,25 @@ const Analytics = () => {
   const completadas      = filteredOrders.filter(o => o.status === 'completed').length;
   const canceladas       = filteredOrders.filter(o => o.status === 'cancelled').length;
   const activeOrders     = filteredOrders.filter(o => inProgress.includes(o.status)).length;
-  const totalRecaudo     = kpiOrders.reduce((s, o) => s + parseFloat(o.final_price   || 0), 0);
+  const isCancelledView = kpiViews.size === 1 && kpiViews.has('cancelled');
+
+  // Para cancelados: ingreso = logistic_cost + platform_fee (lo que EasyPy cobró)
+  // Para completados/en curso: ingreso = final_price
+  const totalRecaudo = kpiOrders.reduce((s, o) => {
+    if (o.status === 'cancelled') return s + parseFloat(o.logistic_cost || 0) + parseFloat(o.platform_fee || 0);
+    return s + parseFloat(o.final_price || 0);
+  }, 0);
+  const totalSupplierCost = kpiOrders.reduce((s, o) => {
+    if (o.status === 'cancelled') return s; // proveedor = 0 en cancelados
+    return s + (o.items || []).reduce((si, i) => si + parseFloat(i.supplier_cost || 0) * (i.quantity || 1), 0);
+  }, 0);
   const totalLogistics   = kpiOrders.reduce((s, o) => s + parseFloat(o.logistic_cost || 0), 0);
   const totalCommission  = kpiOrders.reduce((s, o) => s + parseFloat(o.platform_fee  || 0), 0);
-  const totalBuyerProfit = kpiOrders.reduce((s, o) => s + parseFloat(o.buyer_profit  || 0), 0);
-  const gananciaEstimada = kpiOrders.reduce((s, o) => s + parseFloat(o.buyer_profit  || 0), 0);
+  const totalBuyerProfit = kpiOrders.reduce((s, o) => {
+    if (o.status === 'cancelled') return s; // vendedor = 0 en cancelados
+    return s + parseFloat(o.buyer_profit || 0);
+  }, 0);
+  const gananciaEstimada = totalBuyerProfit;
   const ticketPromedio   = kpiOrders.length > 0 ? totalRecaudo / kpiOrders.length : 0;
   const tasaConversion   = totalOrders > 0 ? ((completadas / totalOrders) * 100).toFixed(1) : 0;
 
@@ -198,7 +212,8 @@ const Analytics = () => {
       } else {
         key = d.toLocaleDateString('es-PY', { month: 'short', year: 'numeric' });
       }
-      if (!map[key]) map[key] = { periodo: key, comision: 0, logistica: 0 };
+      if (!map[key]) map[key] = { periodo: key, ingreso: 0, comision: 0, logistica: 0 };
+      map[key].ingreso   += parseFloat(o.final_price   || 0);
       map[key].comision  += parseFloat(o.platform_fee  || 0);
       map[key].logistica += parseFloat(o.logistic_cost || 0);
     });
@@ -238,6 +253,7 @@ const Analytics = () => {
       if (breakdown === 'logistics') key = o.logistic_id ? `Logística #${o.logistic_id}` : 'Sin logística';
       if (!map[key]) map[key] = { name: key, ingreso: 0, comision: 0, logistica: 0, ordenes: 0 };
       map[key].ingreso   += parseFloat(o.final_price   || 0);
+      map[key].ingreso   += parseFloat(o.final_price   || 0);
       map[key].comision  += parseFloat(o.platform_fee  || 0);
       map[key].logistica += parseFloat(o.logistic_cost || 0);
       map[key].ordenes++;
@@ -250,9 +266,10 @@ const Analytics = () => {
   ).map(([status, cantidad]) => ({ status, cantidad, label: STATUS_LABELS[status] || status }));
 
   const costPieData = isAdmin ? [
-    { name: 'Comisión EasyPy',        value: Math.round(totalCommission),              color: '#056EB7' },
-    { name: 'Costo logística a pagar', value: Math.round(totalLogistics),              color: '#0ea5e9' },
-    { name: 'Ganancia neta EasyPy',    value: Math.round(totalCommission - totalLogistics), color: '#16a34a' },
+    { name: 'Comisión EasyPy',  value: Math.round(totalCommission),  color: '#056EB7' },
+    { name: 'Costo logística',  value: Math.round(totalLogistics),   color: '#0ea5e9' },
+    { name: 'Costo vendedor',   value: Math.round(totalBuyerProfit), color: '#16a34a' },
+    { name: 'Costo proveedor',  value: Math.round(totalSupplierCost), color: '#8b5cf6' },
   ].filter(d => d.value > 0) : [];
 
   const salesByDay = (() => {
@@ -390,15 +407,15 @@ const Analytics = () => {
                 </div>
                 <div className="an-kpis" style={{ marginTop: '4px' }}>
                   {[
-                    { label: 'Ingreso EasyPy (comisión)', value: totalCommission,  highlight: true  },
-                    { label: 'Costo logística a pagar',   value: totalLogistics,   highlight: false },
-                    { label: 'Ganancia neta EasyPy',      value: totalCommission - totalLogistics, highlight: false },
+                    { label: 'Ingreso total',      value: totalRecaudo,      highlight: false },
+                    { label: 'Costo proveedor',    value: totalSupplierCost, highlight: false },
+                    { label: 'Costo logística',    value: totalLogistics,    highlight: false },
+                    { label: 'Costo vendedor',     value: totalBuyerProfit,  highlight: false },
+                    { label: 'Comisión EasyPy',    value: totalCommission,   highlight: true  },
                   ].map((kpi, i) => (
                     <div key={i} className={`an-kpi ${kpi.highlight ? 'highlight' : ''}`}>
                       <span className="an-kpi-label">{kpi.label}</span>
-                      <span className="an-kpi-value" style={{ color: kpi.value < 0 ? '#dc2626' : undefined }}>
-                        {formatCurrency(kpi.value)}
-                      </span>
+                      <span className="an-kpi-value">{formatCurrency(kpi.value)}</span>
                     </div>
                   ))}
                 </div>
@@ -444,8 +461,9 @@ const Analytics = () => {
                       <YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} tickFormatter={v => `${(v/1000).toFixed(0)}k`} />
                       <Tooltip content={<CustomTooltip />} />
                       <Legend />
-                      <Bar dataKey="comision"  name="Comisión EasyPy"       fill="#056EB7" radius={[3,3,0,0]} />
-                      <Bar dataKey="logistica" name="Costo logística"        fill="#0ea5e9" radius={[3,3,0,0]} />
+                      <Bar dataKey="ingreso"  name="Ingreso total"   fill="#e0f2fe" radius={[3,3,0,0]} />
+                      <Bar dataKey="comision" name="Comisión EasyPy" fill="#056EB7" radius={[3,3,0,0]} />
+                      <Bar dataKey="logistica" name="Costo logística" fill="#0ea5e9" radius={[3,3,0,0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 )}
