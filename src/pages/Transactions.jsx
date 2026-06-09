@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Package, Truck, CheckCircle, Clock, AlertCircle, Search, Filter, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
 import { useUser } from '../App';
-import { getOrdersByBuyer, getOrderHistory, getClaims, getLogistics, createClaim } from '../services/api';
+import { getOrdersByBuyer, getOrderHistory, getClaims, getLogistics, createClaim, uploadClaimEvidence } from '../services/api';
 import '../styles/transactions.css';
 
 const STATUS_CONFIG = {
@@ -383,6 +383,20 @@ const Transactions = () => {
                                 style={{ width: '100%', padding: '8px 10px', border: '1.5px solid #e5e7eb', borderRadius: '8px', fontSize: '13px', boxSizing: 'border-box', resize: 'vertical' }}
                               />
                             </div>
+                            <div style={{ marginBottom: '10px' }}>
+                              <label style={{ fontSize: '11px', fontWeight: '700', color: '#6b7280', display: 'block', marginBottom: '4px' }}>EVIDENCIA (opcional — foto o captura)</label>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', border: '1.5px dashed #e5e7eb', borderRadius: '8px', cursor: 'pointer', background: 'white' }}>
+                                <svg width="16" height="16" fill="none" stroke="#9ca3af" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                <span style={{ fontSize: '12px', color: '#6b7280' }}>
+                                  {claimForms[order.order_id]?.file ? claimForms[order.order_id].file.name : 'Adjuntar imagen...'}
+                                </span>
+                                <input type="file" accept="image/jpeg,image/png,image/webp" style={{ display: 'none' }}
+                                  onChange={e => {
+                                    const f = e.target.files[0];
+                                    if (f) setClaimForms(prev => ({ ...prev, [order.order_id]: { ...prev[order.order_id], file: f } }));
+                                  }} />
+                              </label>
+                            </div>
                             <div style={{ display: 'flex', gap: '8px' }}>
                               <button
                                 onClick={() => setClaimForms(prev => ({ ...prev, [order.order_id]: { ...prev[order.order_id], open: false } }))}
@@ -394,11 +408,15 @@ const Transactions = () => {
                                 onClick={async () => {
                                   setSubmittingClaim(order.order_id);
                                   try {
-                                    await createClaim({
+                                    const newClaim = await createClaim({
                                       order_id:    order.order_id,
                                       reason:      claimForms[order.order_id].reason,
                                       description: claimForms[order.order_id].description || null,
                                     });
+                                    // Subir evidencia si hay archivo
+                                    if (claimForms[order.order_id]?.file && newClaim?.claim_id) {
+                                      await uploadClaimEvidence(newClaim.claim_id, claimForms[order.order_id].file);
+                                    }
                                     setClaimedOrders(prev => new Set([...prev, order.order_id]));
                                     setClaimForms(prev => ({ ...prev, [order.order_id]: { open: false } }));
                                   } catch (e) { alert(e.message || 'Error al abrir el reclamo'); }
@@ -414,7 +432,7 @@ const Transactions = () => {
                           <button
                             onClick={() => setClaimForms(prev => ({ ...prev, [order.order_id]: { open: true, reason: '', description: '' } }))}
                             style={{ width: '100%', padding: '9px', background: '#fef2f2', border: '1.5px solid #fecaca', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer', color: '#dc2626' }}>
-                            Abrir reclamo de garantía
+                            ⚠️ Abrir reclamo de garantía
                           </button>
                         )}
                       </div>
