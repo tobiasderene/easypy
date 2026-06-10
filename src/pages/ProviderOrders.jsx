@@ -58,7 +58,7 @@ const ProviderOrders = () => {
     if (!dateString) return '—';
     const date = new Date(dateString);
     if (isNaN(date.getTime())) return '—';
-    return new Intl.DateTimeFormat('es-PY', { year: 'numeric', month: 'short', day: 'numeric' }).format(date);
+    return new Intl.DateTimeFormat('es-PY', { year: 'numeric', month: 'short', day: 'numeric', timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone }).format(date);
   };
 
   // ── Acciones individuales ─────────────────────────
