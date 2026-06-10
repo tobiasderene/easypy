@@ -164,10 +164,12 @@ export const uploadProfileImage = (file) => {
 
 // ─── Orders ───────────────────────────────────────────
 export const getOrders           = (skip = 0, limit = 50)  => api(`/orders?skip=${skip}&limit=${limit}`);
-export const getAllOrdersAdmin = (dateFrom = null, dateTo = null) => {
-  const params = new URLSearchParams({ limit: 200 });
-  if (dateFrom) params.append('date_from', dateFrom);
-  if (dateTo)   params.append('date_to',   dateTo);
+export const getAllOrdersAdmin = (dateFrom = null, dateTo = null, skip = 0, limit = 50, logisticId = null, status = null) => {
+  const params = new URLSearchParams({ skip, limit });
+  if (dateFrom)   params.append('date_from',   dateFrom);
+  if (dateTo)     params.append('date_to',     dateTo);
+  if (logisticId) params.append('logistic_id', logisticId);
+  if (status)     params.append('status',      status);
   return api(`/orders/admin/all?${params.toString()}`);
 };
 export const getOrder            = (orderId)       => api(`/orders/${orderId}`);
