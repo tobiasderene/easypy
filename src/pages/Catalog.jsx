@@ -18,7 +18,6 @@ const Catalog = () => {
   const [providerMap, setProviderMap]     = useState({});
   const [favorites, setFavorites]         = useState(new Set()); // Set de product_ids favoritos
   const loaderRef                         = useRef(null);
-  const searchTimeoutRef                  = useRef(null);
 
   const fetchProducts = useCallback(async (currentSkip = 0, append = false, searchTerm = '') => {
     if (currentSkip === 0) setLoading(true);
@@ -119,7 +118,7 @@ const Catalog = () => {
   const categories = ['all', 'exclusive', 'favorites', ...new Set(products.map(p => p.category))];
   const filters    = categories.map(cat => ({
     id:    cat,
-    label: cat === 'all' ? 'Todos' : cat === 'exclusive' ? 'Exclusivos' : cat === 'favorites' ? 'Favoritos' : cat.charAt(0).toUpperCase() + cat.slice(1),
+    label: cat === 'all' ? 'Todos' : cat === 'exclusive' ? 'Exclusivos' : cat === 'favorites' ? '❤️ Favoritos' : cat.charAt(0).toUpperCase() + cat.slice(1),
   }));
 
   const toggleFilter = (catId) => {
@@ -142,19 +141,8 @@ const Catalog = () => {
         (activeFilters.includes('favorites') && favorites.has(p.id))
       );
 
-  // La búsqueda se hace en el backend — aquí solo aplicamos filtros de categoría/favoritos
+  // La búsqueda se hace desde el Header — el catálogo no filtra por searchQuery
   const filtered = categoryFiltered;
-
-  // Cuando cambia searchQuery, llamar al backend con debounce
-  useEffect(() => {
-    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
-    searchTimeoutRef.current = setTimeout(() => {
-      setSkip(0);
-      setHasMore(true);
-      fetchProducts(0, false, searchQuery?.trim() || '');
-    }, 350);
-    return () => clearTimeout(searchTimeoutRef.current);
-  }, [searchQuery]);
 
   const formatPrice = (price) =>
     new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', minimumFractionDigits: 0 }).format(price);
