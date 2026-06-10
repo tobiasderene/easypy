@@ -134,7 +134,7 @@ export default function LandingPage() {
                 EasyPy es la plataforma que conecta vendedores con proveedores locales. Sin inventario, sin complicaciones. Solo ventas.
               </span>
               <div className={`hero-cta fade-up d3 ${heroVisible ? "visible" : ""}`} style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
-                <button className="btn-primary" style={{ padding: "14px 32px", fontSize: 16 }} onClick={() => window.location.href="/signup"}>
+                <button className="btn-primary" style={{ padding: "14px 32px", fontSize: 16 , marginTop: "20px"}} onClick={() => window.location.href="/signup"}>
                   Empezar gratis
                 </button>
               </div>
@@ -216,7 +216,7 @@ export default function LandingPage() {
               <span style={{ fontSize: 16, color: "#475569", lineHeight: 1.8, marginBottom: 32 }}>
                 Integramos logísticas reales, procesamos pagos con recaudo o sin recaudo, y te damos las herramientas para escalar tu negocio con datos claros.
               </span>
-              <button className="btn-primary" style={{ padding: "13px 28px", fontSize: 15 }} onClick={() => window.location.href="/signup"}>
+              <button className="btn-primary" style={{ padding: "13px 28px", fontSize: 15 , marginTop: "20px"}} onClick={() => window.location.href="/signup"}>
                 Unirme a EasyPy
               </button>
             </div>
