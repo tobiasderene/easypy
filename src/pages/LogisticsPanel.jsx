@@ -183,7 +183,7 @@ const LogisticsPanel = () => {
 
   const formatDate = (d) => {
     if (!d) return '—';
-    try { return new Date(d).toLocaleDateString('es-PY', { day: '2-digit', month: 'short', year: 'numeric' }); }
+    try { return new Intl.DateTimeFormat('es-PY', { day: '2-digit', month: 'short', year: 'numeric', timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone }).format(new Date(d)); }
     catch { return '—'; }
   };
 
