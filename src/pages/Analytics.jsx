@@ -95,7 +95,7 @@ const Analytics = () => {
     }
 
     const fetchOrders = isAdmin
-      ? getAllOrdersAdmin(dateFrom, dateTo)
+      ? getAllOrdersAdmin(dateFrom, dateTo).then(d => d?.orders || d || [])
       : isProvider
         ? getOrdersBySupplier(user.user_id)
         : getOrdersByBuyer(user.user_id);
