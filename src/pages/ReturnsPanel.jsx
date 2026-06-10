@@ -85,7 +85,7 @@ const ReturnsPanel = () => {
     const sellerTab = sellerTabState;
     return (
       <div style={{ maxWidth: '800px', margin: '0 auto', padding: '24px 16px' }}>
-        <h1 style={{ fontSize: '22px', fontWeight: '800', color: '#111827', marginBottom: '4px' }}>Incidencias</h1>
+        <h1 style={{ fontSize: '22px', fontWeight: '800', color: '#111827', marginBottom: '4px' }}>Mis Problemas</h1>
         <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '20px' }}>
           Gestioná tus reclamos de garantía y los envíos que necesitan tu atención.
         </p>
@@ -316,7 +316,13 @@ const ReturnsPanel = () => {
                       <span style={{ fontWeight: '700', color: '#111827' }}>Orden #{r.order_id}</span>
                       <span style={{ padding: '2px 10px', borderRadius: '100px', fontSize: '11px', fontWeight: '700', background: st.bg, color: st.color }}>{st.label}</span>
                     </div>
-                    <p style={{ fontSize: '13px', color: '#6b7280' }}>Motivo: {r.reason}</p>
+                    <p style={{ fontSize: '13px', color: '#6b7280' }}>Motivo logística: {r.reason}</p>
+                    {r.redelivery_reason && (
+                      <p style={{ fontSize: '12px', color: '#f97316', fontWeight: '600' }}>Motivo redelivery: {r.redelivery_reason}</p>
+                    )}
+                    {r.redelivery_note && (
+                      <p style={{ fontSize: '12px', color: '#374151' }}>Observación vendedor: {r.redelivery_note}</p>
+                    )}
                     {r.logistic_name && (
                       <p style={{ fontSize: '12px', color: '#056EB7', fontWeight: '700', marginBottom: '2px' }}>
                         🚚 {r.logistic_name}{r.tracking_number ? ` · Guía: ${r.tracking_number}` : ''}
