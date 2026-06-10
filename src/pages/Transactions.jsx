@@ -215,14 +215,13 @@ const Transactions = () => {
                     </div>
                     {order.recipient_name && (
                       <div className="provider-info">
-                        <Truck size={14} />
-                        <span>{order.recipient_name} — {order.recipient_city}</span>
+                        <span>{order.recipient_name} {order.recipient_city}</span>
                       </div>
                     )}
                     {/* Transportadora y guía */}
                     {logistic && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px', flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: '12px', color: '#6b7280' }}>🚚 {logistic.name}</span>
+                        <span style={{ fontSize: '12px', color: '#6b7280' }}>{logistic.name}</span>
                         {order.tracking_number && (
                           <span style={{ fontSize: '12px', fontWeight: '700', color: '#056EB7', background: '#eff6ff', padding: '2px 8px', borderRadius: '6px' }}>
                             Guía: {order.tracking_number}
