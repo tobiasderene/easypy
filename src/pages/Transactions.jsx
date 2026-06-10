@@ -72,14 +72,22 @@ const Transactions = () => {
     if (!d) return '—';
     const date = new Date(d);
     if (isNaN(date.getTime())) return '—';
-    return new Intl.DateTimeFormat('es-PY', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(date);
+    return new Intl.DateTimeFormat('es-PY', {
+      year: 'numeric', month: 'short', day: 'numeric',
+      hour: '2-digit', minute: '2-digit',
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    }).format(date);
   };
 
   const formatDateShort = (d) => {
     if (!d) return '—';
     const date = new Date(d);
     if (isNaN(date.getTime())) return '—';
-    return new Intl.DateTimeFormat('es-PY', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).format(date);
+    return new Intl.DateTimeFormat('es-PY', {
+      day: '2-digit', month: 'short',
+      hour: '2-digit', minute: '2-digit',
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    }).format(date);
   };
 
   const filteredOrders = orders.filter(order => {
