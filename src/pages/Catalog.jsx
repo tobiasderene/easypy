@@ -4,7 +4,7 @@ import { getProducts, getProductImagesBulk, getProviders, getFavorites, toggleFa
 import { useUser } from '../App';
 import '../styles/catalog.css';
 
-const PAGE_SIZE = 24;
+const PAGE_SIZE = 50;
 
 const Catalog = () => {
   const navigate = useNavigate();
@@ -18,13 +18,14 @@ const Catalog = () => {
   const [providerMap, setProviderMap]     = useState({});
   const [favorites, setFavorites]         = useState(new Set()); // Set de product_ids favoritos
   const loaderRef                         = useRef(null);
+  const searchTimeoutRef                  = useRef(null);
 
-  const fetchProducts = useCallback(async (currentSkip = 0, append = false) => {
+  const fetchProducts = useCallback(async (currentSkip = 0, append = false, searchTerm = '') => {
     if (currentSkip === 0) setLoading(true);
     else setLoadingMore(true);
     try {
         const [data, providers] = await Promise.all([
-          getProducts(currentSkip, PAGE_SIZE),
+          getProducts(currentSkip, PAGE_SIZE, searchTerm),
           currentSkip === 0 ? getProviders() : Promise.resolve(null)
         ]);
 
@@ -85,7 +86,7 @@ const Catalog = () => {
     }).catch(() => {});
   }, [user]);
 
-  useEffect(() => { fetchProducts(0, false); }, []);
+  useEffect(() => { fetchProducts(0, false, ''); }, []);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -93,7 +94,7 @@ const Catalog = () => {
         if (entries[0].isIntersecting && hasMore && !loadingMore && !loading) {
           const nextSkip = skip + PAGE_SIZE;
           setSkip(nextSkip);
-          fetchProducts(nextSkip, true);
+          fetchProducts(nextSkip, true, searchQuery?.trim() || '');
         }
       },
       { threshold: 0.1 }
@@ -118,7 +119,7 @@ const Catalog = () => {
   const categories = ['all', 'exclusive', 'favorites', ...new Set(products.map(p => p.category))];
   const filters    = categories.map(cat => ({
     id:    cat,
-    label: cat === 'all' ? 'Todos' : cat === 'exclusive' ? 'Exclusivos' : cat === 'favorites' ? 'Favoritos' : cat.charAt(0).toUpperCase() + cat.slice(1),
+    label: cat === 'all' ? 'Todos' : cat === 'exclusive' ? 'Exclusivos' : cat === 'favorites' ? '❤️ Favoritos' : cat.charAt(0).toUpperCase() + cat.slice(1),
   }));
 
   const toggleFilter = (catId) => {
@@ -141,12 +142,19 @@ const Catalog = () => {
         (activeFilters.includes('favorites') && favorites.has(p.id))
       );
 
-  const filtered = searchQuery?.trim()
-    ? categoryFiltered.filter(p =>
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (p.sku && p.sku.toLowerCase().includes(searchQuery.toLowerCase()))
-      )
-    : categoryFiltered;
+  // La búsqueda se hace en el backend — aquí solo aplicamos filtros de categoría/favoritos
+  const filtered = categoryFiltered;
+
+  // Cuando cambia searchQuery, llamar al backend con debounce
+  useEffect(() => {
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    searchTimeoutRef.current = setTimeout(() => {
+      setSkip(0);
+      setHasMore(true);
+      fetchProducts(0, false, searchQuery?.trim() || '');
+    }, 350);
+    return () => clearTimeout(searchTimeoutRef.current);
+  }, [searchQuery]);
 
   const formatPrice = (price) =>
     new Intl.NumberFormat('es-PY', { style: 'currency', currency: 'PYG', minimumFractionDigits: 0 }).format(price);
