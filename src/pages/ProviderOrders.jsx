@@ -161,7 +161,7 @@ const ProviderOrders = () => {
   };
 
   // ── Selección etiquetas ──────────────────────────
-  const printableOrders = filteredOrders => filteredOrders.filter(o => o.tracking_number);
+  const printableOrders = filteredOrders => filteredOrders.filter(o => !['pending','cancelled'].includes(o.status));
 
   const toggleEtiqueta = (orderId) => {
     setEtiquetaIds(prev => {
@@ -182,29 +182,35 @@ const ProviderOrders = () => {
   const handleBulkEtiquetas = async () => {
     if (etiquetaIds.size === 0) return;
     setPrintingEtiquetas(true);
-    try {
-      const token = localStorage.getItem('auth_token');
-      const base  = import.meta.env.VITE_API_URL || 'https://easypy-backend-430520813248.us-central1.run.app';
-      const res   = await fetch(`${base}/orders/etiquetas`, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body:    JSON.stringify({ order_ids: [...etiquetaIds] }),
-      });
-      if (!res.ok) throw new Error('Error al obtener etiquetas');
-      const blob     = await res.blob();
-      const url      = URL.createObjectURL(blob);
-      const a        = document.createElement('a');
-      a.href         = url;
-      a.download     = 'etiquetas.pdf';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 5000);
-    } catch (err) {
-      alert(err.message || 'Error al imprimir etiquetas');
-    } finally {
-      setPrintingEtiquetas(false);
+    const token = localStorage.getItem('auth_token');
+    const base  = import.meta.env.VITE_API_URL || 'https://easypy-backend-430520813248.us-central1.run.app';
+    const ordersToprint = orders.filter(o => etiquetaIds.has(o.order_id));
+    let downloaded = 0;
+    let failed = 0;
+    for (const order of ordersToprint) {
+      try {
+        const endpoint = order.tracking_number
+          ? `/orders/${order.order_id}/etiqueta?token=${token}`
+          : `/orders/${order.order_id}/etiqueta-manual?token=${token}`;
+        const res = await fetch(`${base}${endpoint}`);
+        if (!res.ok) throw new Error();
+        const blob = await res.blob();
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href     = url;
+        const ext  = res.headers.get('content-type')?.includes('pdf') ? 'pdf' : 'jpg';
+        a.download = `etiqueta-${order.order_id}.${ext}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+        downloaded++;
+        await new Promise(r => setTimeout(r, 300));
+      } catch { failed++; }
     }
+    setPrintingEtiquetas(false);
+    setEtiquetaIds(new Set());
+    if (failed > 0) alert(`${downloaded} etiquetas descargadas. ${failed} fallaron.`);
   };
 
   const filteredOrders = orders.filter(order => {
@@ -215,7 +221,7 @@ const ProviderOrders = () => {
     return matchesSearch && matchesStatus;
   });
 
-  const printable        = filteredOrders.filter(o => o.tracking_number);
+  const printable        = filteredOrders.filter(o => !['pending','cancelled'].includes(o.status));
   const allEtiquetas     = printable.length > 0 && etiquetaIds.size === printable.length;
   const someEtiquetas    = etiquetaIds.size > 0;
   const readyable        = filteredOrders.filter(o => o.status === 'processing');
@@ -420,7 +426,7 @@ const ProviderOrders = () => {
                     )}
 
                     {/* Checkbox — etiquetas */}
-                    {order.tracking_number && (
+                    {!['pending','cancelled'].includes(order.status) && (
                       <div className="order-checkbox" onClick={(e) => { e.stopPropagation(); toggleEtiqueta(order.order_id); }}>
                         {etiquetaIds.has(order.order_id)
                           ? <CheckSquare size={20} color="#16a34a" />
