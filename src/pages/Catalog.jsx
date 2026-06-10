@@ -119,7 +119,7 @@ const Catalog = () => {
   const categories = ['all', 'exclusive', 'favorites', ...new Set(products.map(p => p.category))];
   const filters    = categories.map(cat => ({
     id:    cat,
-    label: cat === 'all' ? 'Todos' : cat === 'exclusive' ? 'Exclusivos' : cat === 'favorites' ? '❤️ Favoritos' : cat.charAt(0).toUpperCase() + cat.slice(1),
+    label: cat === 'all' ? 'Todos' : cat === 'exclusive' ? 'Exclusivos' : cat === 'favorites' ? 'Favoritos' : cat.charAt(0).toUpperCase() + cat.slice(1),
   }));
 
   const toggleFilter = (catId) => {
