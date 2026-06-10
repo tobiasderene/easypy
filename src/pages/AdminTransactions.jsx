@@ -37,7 +37,7 @@ const AdminTransactions = () => {
 
   const fmtDate = (d) => {
     if (!d) return '—';
-    try { return new Date(d).toLocaleDateString('es-PY', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }); }
+    try { return new Intl.DateTimeFormat('es-PY', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone }).format(new Date(d)); }
     catch { return '—'; }
   };
 
