@@ -20,6 +20,7 @@ import ProviderCatalog from './pages/ProviderCatalog';
 import AddProductForm from './pages/AddProductForm';
 import EditProductForm from './pages/EditProductForm';
 import AdminPage from './pages/AdminPage';
+import AdminTransactions from './pages/AdminTransactions';
 import CreateLogisticsUser from './pages/CreateLogisticsUser';
 import LogisticsPanel from './pages/LogisticsPanel';
 import ProviderProfile from './pages/ProviderProfile';
@@ -161,6 +162,7 @@ function App() {
           <Route element={<RoleGuard roles={['admin']} />}>
             <Route path="/admin"                    element={<AdminPage />} />
             <Route path="/admin/create-logistics"   element={<CreateLogisticsUser />} />
+            <Route path="/admin/transacciones"        element={<AdminTransactions />} />
           </Route>
 
           {/* Cualquier usuario autenticado */}
