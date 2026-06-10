@@ -246,7 +246,7 @@ export default function LandingPage() {
             <span style={{ fontSize: 18, color: "rgba(255,255,255,0.85)", marginBottom: 40, lineHeight: 1.6 }}>
               Registrate gratis, elegí productos del catálogo y empezá a generar ingresos desde el primer día.
             </span>
-            <div className="cta-btns" style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap" }}>
+            <div className="cta-btns" style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap", marginTop: "20px"}}>
               <button onClick={() => window.location.href="/signup"}
                 style={{ background: "white", color: BRAND, border: "none", borderRadius: 12, padding: "15px 36px", fontSize: 16, fontWeight: 800, cursor: "pointer", transition: "all 0.2s", fontFamily: "'Inter', sans-serif" }}
                 onMouseEnter={e => { e.target.style.transform = "translateY(-2px)"; e.target.style.boxShadow = "0 8px 28px rgba(0,0,0,0.2)"; }}
