@@ -198,7 +198,7 @@ const OrderForm = () => {
 
     Promise.all(
       fixyLogistics.map(l =>
-        getLogisticsQuote(l.logistic_id, totalBultos, 1.0, fixyCp)
+        getLogisticsQuote(l.logistic_id, totalBultos, 1.0, fixyCp, supplierId)
           .then(result => ({ id: l.logistic_id, result }))
           .catch(() => ({ id: l.logistic_id, result: null }))
       )
