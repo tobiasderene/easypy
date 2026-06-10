@@ -42,6 +42,8 @@ const LogisticsPanel = () => {
   const [isFixy, setIsFixy]             = useState(false);
   const [fixyStatuses, setFixyStatuses] = useState({}); // { order_id: { fixy_label, fixy_status, mapped_status } }
   const [loadingFixy, setLoadingFixy]   = useState(null);
+  const [etiquetaIds, setEtiquetaIds]   = useState(new Set());
+  const [printingBulk, setPrintingBulk] = useState(false);
   const [selected, setSelected]         = useState(new Set());
   const [bulkUpdating, setBulkUpdating] = useState(false);
 
@@ -84,6 +86,52 @@ const LogisticsPanel = () => {
     } finally {
       setLoadingFixy(null);
     }
+  };
+
+  const toggleEtiqueta = (orderId) => {
+    setEtiquetaIds(prev => {
+      const next = new Set(prev);
+      next.has(orderId) ? next.delete(orderId) : next.add(orderId);
+      return next;
+    });
+  };
+
+  const handleBulkEtiquetas = async () => {
+    if (etiquetaIds.size === 0) return;
+    setPrintingBulk(true);
+    const token = localStorage.getItem('auth_token');
+    const base  = import.meta.env.VITE_API_URL || 'https://easypy-backend-430520813248.us-central1.run.app';
+    const ordersToprint = orders.filter(o => etiquetaIds.has(o.order_id));
+
+    let downloaded = 0;
+    let failed = 0;
+    for (const order of ordersToprint) {
+      try {
+        const endpoint = order.tracking_number
+          ? `/orders/${order.order_id}/etiqueta?token=${token}`
+          : `/orders/${order.order_id}/etiqueta-manual?token=${token}`;
+        const res  = await fetch(`${base}${endpoint}`);
+        if (!res.ok) throw new Error();
+        const blob = await res.blob();
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href     = url;
+        const ext  = res.headers.get('content-type')?.includes('pdf') ? 'pdf' : 'jpg';
+        a.download = `etiqueta-${order.order_id}.${ext}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
+        downloaded++;
+        // Pequeña pausa entre descargas para no saturar el browser
+        await new Promise(r => setTimeout(r, 300));
+      } catch {
+        failed++;
+      }
+    }
+    setPrintingBulk(false);
+    setEtiquetaIds(new Set());
+    if (failed > 0) alert(`${downloaded} etiquetas descargadas. ${failed} fallaron.`);
   };
 
   const toggleSelect = (orderId) => {
@@ -326,6 +374,32 @@ const LogisticsPanel = () => {
         ))}
       </div>
 
+      {/* Barra de etiquetas — órdenes activas que no están en pending/cancelled */}
+      {(() => {
+        const printable = filtered.filter(o => !['pending','cancelled'].includes(o.status));
+        const allEtiq = printable.length > 0 && etiquetaIds.size === printable.length;
+        return printable.length > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: '10px', padding: '10px 14px', marginBottom: '10px', flexWrap: 'wrap' }}>
+            <button onClick={() => {
+              if (allEtiq) setEtiquetaIds(new Set());
+              else setEtiquetaIds(new Set(printable.map(o => o.order_id)));
+            }} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', cursor: 'pointer', fontWeight: '700', fontSize: '13px', color: '#16a34a' }}>
+              <svg width="16" height="16" fill={allEtiq ? '#16a34a' : 'none'} stroke="#16a34a" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3" strokeWidth="2"/>{allEtiq && <path d="M7 12l4 4 6-6" strokeWidth="2.5" stroke="white"/>}</svg>
+              {allEtiq ? 'Deseleccionar todo' : `Seleccionar ${printable.length} etiqueta${printable.length !== 1 ? 's' : ''}`}
+            </button>
+            {etiquetaIds.size > 0 && (
+              <>
+                <span style={{ fontSize: '12px', color: '#16a34a', fontWeight: '700' }}>{etiquetaIds.size} seleccionada{etiquetaIds.size !== 1 ? 's' : ''}</span>
+                <button onClick={handleBulkEtiquetas} disabled={printingBulk}
+                  style={{ marginLeft: 'auto', padding: '7px 14px', background: '#16a34a', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}>
+                  {printingBulk ? 'Descargando...' : `Descargar ${etiquetaIds.size} etiqueta${etiquetaIds.size !== 1 ? 's' : ''}`}
+                </button>
+              </>
+            )}
+          </div>
+        );
+      })()}
+
       {/* Barra de selección masiva */}
       {selected.size > 0 && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#056EB7', color: 'white', padding: '12px 16px', borderRadius: '10px', marginBottom: '12px', flexWrap: 'wrap' }}>
@@ -364,6 +438,11 @@ const LogisticsPanel = () => {
                 <input type="checkbox" checked={selected.has(order.order_id)} onChange={() => toggleSelect(order.order_id)}
                   style={{ position: 'absolute', top: '12px', left: '12px', width: '16px', height: '16px', cursor: 'pointer', zIndex: 1 }}
                   onClick={e => e.stopPropagation()} />
+                {!['pending','cancelled'].includes(order.status) && (
+                  <input type="checkbox" checked={etiquetaIds.has(order.order_id)} onChange={() => toggleEtiqueta(order.order_id)}
+                    style={{ position: 'absolute', top: '12px', left: '34px', width: '16px', height: '16px', cursor: 'pointer', zIndex: 1, accentColor: '#16a34a' }}
+                    onClick={e => e.stopPropagation()} />
+                )}
                 <div className="lp-order-info">
                   <div className="lp-order-top">
                     <span className="lp-order-id">Orden #{order.order_id}</span>
