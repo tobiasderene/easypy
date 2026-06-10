@@ -99,39 +99,30 @@ const LogisticsPanel = () => {
   const handleBulkEtiquetas = async () => {
     if (etiquetaIds.size === 0) return;
     setPrintingBulk(true);
-    const token = localStorage.getItem('auth_token');
-    const base  = import.meta.env.VITE_API_URL || 'https://easypy-backend-430520813248.us-central1.run.app';
-    const ordersToprint = orders.filter(o => etiquetaIds.has(o.order_id));
-
-    let downloaded = 0;
-    let failed = 0;
-    for (const order of ordersToprint) {
-      try {
-        const endpoint = order.tracking_number
-          ? `/orders/${order.order_id}/etiqueta?token=${token}`
-          : `/orders/${order.order_id}/etiqueta-manual?token=${token}`;
-        const res  = await fetch(`${base}${endpoint}`);
-        if (!res.ok) throw new Error();
-        const blob = await res.blob();
-        const url  = URL.createObjectURL(blob);
-        const a    = document.createElement('a');
-        a.href     = url;
-        const ext  = res.headers.get('content-type')?.includes('pdf') ? 'pdf' : 'jpg';
-        a.download = `etiqueta-${order.order_id}.${ext}`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(url), 5000);
-        downloaded++;
-        // Pequeña pausa entre descargas para no saturar el browser
-        await new Promise(r => setTimeout(r, 300));
-      } catch {
-        failed++;
-      }
+    try {
+      const token = localStorage.getItem('auth_token');
+      const base  = import.meta.env.VITE_API_URL || 'https://easypy-backend-430520813248.us-central1.run.app';
+      const res   = await fetch(`${base}/orders/etiquetas`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body:    JSON.stringify({ order_ids: [...etiquetaIds] }),
+      });
+      if (!res.ok) throw new Error('Error al obtener etiquetas');
+      const blob = await res.blob();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = 'etiquetas.pdf';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      setEtiquetaIds(new Set());
+    } catch (err) {
+      alert(err.message || 'Error al imprimir etiquetas');
+    } finally {
+      setPrintingBulk(false);
     }
-    setPrintingBulk(false);
-    setEtiquetaIds(new Set());
-    if (failed > 0) alert(`${downloaded} etiquetas descargadas. ${failed} fallaron.`);
   };
 
   const toggleSelect = (orderId) => {
