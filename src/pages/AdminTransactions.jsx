@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, Filter, Calendar, ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
-import { getAllOrdersAdmin, getLogistics, getUsers } from '../services/api';
+import { getAllOrdersAdmin, getLogistics, getUsers, cancelOrderAdmin } from '../services/api';
 
 const STATUS_CONFIG = {
   pending:           { label: 'Pendiente',          color: '#9ca3af', bg: '#f3f4f6' },
@@ -23,6 +23,7 @@ const AdminTransactions = () => {
   const [loading, setLoading]       = useState(true);
   const [page, setPage]             = useState(0);
   const [expanded, setExpanded]     = useState(null);
+  const [cancelling, setCancelling]   = useState(null);
 
   // Filtros
   const [search, setSearch]         = useState('');
@@ -221,6 +222,36 @@ const AdminTransactions = () => {
                             </div>
                           ))}
                         </div>
+                      </div>
+                    )}
+
+                    {/* Cancelar — solo si no llegó a ready_for_pickup */}
+                    {!['ready_for_pickup','picked_up','out_for_delivery','redelivery','completed','cancelled','return_in_progress'].includes(order.status) && (
+                      <div style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #f3f4f6' }}>
+                        <button
+                          disabled={cancelling === order.order_id}
+                          onClick={async () => {
+                            if (!window.confirm(`¿Cancelás la orden #${order.order_id}? Esta acción no se puede deshacer.`)) return;
+                            setCancelling(order.order_id);
+                            try {
+                              await cancelOrderAdmin(order.order_id);
+                              setOrders(prev => prev.map(o =>
+                                o.order_id === order.order_id ? { ...o, status: 'cancelled' } : o
+                              ));
+                              setExpanded(null);
+                            } catch (e) {
+                              alert(e.message || 'Error al cancelar la orden');
+                            } finally {
+                              setCancelling(null);
+                            }
+                          }}
+                          style={{ padding: '8px 16px', background: '#fef2f2', color: '#dc2626', border: '1.5px solid #fecaca', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer',
+                            opacity: cancelling === order.order_id ? 0.6 : 1 }}>
+                          {cancelling === order.order_id ? 'Cancelando...' : '✕ Cancelar orden'}
+                        </button>
+                        <p style={{ fontSize: '11px', color: '#9ca3af', marginTop: '4px' }}>
+                          Solo disponible antes de que la logística retire el paquete.
+                        </p>
                       </div>
                     )}
                   </div>
