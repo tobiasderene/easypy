@@ -42,9 +42,8 @@ const LogisticsPanel = () => {
   const [isFixy, setIsFixy]             = useState(false);
   const [fixyStatuses, setFixyStatuses] = useState({}); // { order_id: { fixy_label, fixy_status, mapped_status } }
   const [loadingFixy, setLoadingFixy]   = useState(null);
-  const [etiquetaIds, setEtiquetaIds]   = useState(new Set());
-  const [printingBulk, setPrintingBulk] = useState(false);
-  const [remitoIds, setRemitoIds]         = useState(new Set());
+  const [printIds, setPrintIds]           = useState(new Set());
+  const [printingBulk, setPrintingBulk]   = useState(false);
   const [printingRemitos, setPrintingRemitos] = useState(false);
   const [selected, setSelected]         = useState(new Set());
   const [bulkUpdating, setBulkUpdating] = useState(false);
@@ -99,7 +98,7 @@ const LogisticsPanel = () => {
   };
 
   const handleBulkRemitos = async () => {
-    if (remitoIds.size === 0) return;
+    if (printIds.size === 0) return;
     setPrintingRemitos(true);
     try {
       const token = localStorage.getItem('auth_token');
@@ -107,7 +106,7 @@ const LogisticsPanel = () => {
       const res   = await fetch(`${base}/orders/remitos`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body:    JSON.stringify({ order_ids: [...remitoIds] }),
+        body:    JSON.stringify({ order_ids: [...printIds] }),
       });
       if (!res.ok) throw new Error('Error al generar remitos');
       const blob = await res.blob();
@@ -119,7 +118,7 @@ const LogisticsPanel = () => {
       a.click();
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 5000);
-      setRemitoIds(new Set());
+      setPrintIds(new Set());
     } catch (err) {
       alert(err.message || 'Error al imprimir remitos');
     } finally {
@@ -136,7 +135,7 @@ const LogisticsPanel = () => {
   };
 
   const handleBulkEtiquetas = async () => {
-    if (etiquetaIds.size === 0) return;
+    if (printIds.size === 0) return;
     setPrintingBulk(true);
     try {
       const token = localStorage.getItem('auth_token');
@@ -144,7 +143,7 @@ const LogisticsPanel = () => {
       const res   = await fetch(`${base}/orders/etiquetas`, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body:    JSON.stringify({ order_ids: [...etiquetaIds] }),
+        body:    JSON.stringify({ order_ids: [...printIds] }),
       });
       if (!res.ok) throw new Error('Error al obtener etiquetas');
       const blob = await res.blob();
@@ -156,7 +155,7 @@ const LogisticsPanel = () => {
       a.click();
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 5000);
-      setEtiquetaIds(new Set());
+      setPrintIds(new Set());
     } catch (err) {
       alert(err.message || 'Error al imprimir etiquetas');
     } finally {
@@ -427,22 +426,22 @@ const LogisticsPanel = () => {
       {/* Barra de etiquetas — órdenes activas que no están en pending/cancelled */}
       {(() => {
         const printable = filtered.filter(o => !['pending','cancelled'].includes(o.status));
-        const allEtiq = printable.length > 0 && etiquetaIds.size === printable.length;
+        const allEtiq = printable.length > 0 && printIds.size === printable.length;
         return printable.length > 0 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: '10px', padding: '10px 14px', marginBottom: '10px', flexWrap: 'wrap' }}>
             <button onClick={() => {
-              if (allEtiq) setEtiquetaIds(new Set());
-              else setEtiquetaIds(new Set(printable.map(o => o.order_id)));
+              if (allEtiq) setPrintIds(new Set());
+              else setPrintIds(new Set(printable.map(o => o.order_id)));
             }} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', cursor: 'pointer', fontWeight: '700', fontSize: '13px', color: '#16a34a' }}>
               <svg width="16" height="16" fill={allEtiq ? '#16a34a' : 'none'} stroke="#16a34a" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3" strokeWidth="2"/>{allEtiq && <path d="M7 12l4 4 6-6" strokeWidth="2.5" stroke="white"/>}</svg>
               {allEtiq ? 'Deseleccionar todo' : `Seleccionar ${printable.length} etiqueta${printable.length !== 1 ? 's' : ''}`}
             </button>
-            {etiquetaIds.size > 0 && (
+            {printIds.size > 0 && (
               <>
-                <span style={{ fontSize: '12px', color: '#16a34a', fontWeight: '700' }}>{etiquetaIds.size} seleccionada{etiquetaIds.size !== 1 ? 's' : ''}</span>
+                <span style={{ fontSize: '12px', color: '#16a34a', fontWeight: '700' }}>{printIds.size} seleccionada{printIds.size !== 1 ? 's' : ''}</span>
                 <button onClick={handleBulkEtiquetas} disabled={printingBulk}
                   style={{ marginLeft: 'auto', padding: '7px 14px', background: '#16a34a', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}>
-                  {printingBulk ? 'Descargando...' : `Descargar ${etiquetaIds.size} etiqueta${etiquetaIds.size !== 1 ? 's' : ''}`}
+                  {printingBulk ? 'Descargando...' : `Descargar ${printIds.size} etiqueta${printIds.size !== 1 ? 's' : ''}`}
                 </button>
               </>
             )}
@@ -453,22 +452,22 @@ const LogisticsPanel = () => {
       {/* Barra de remitos */}
       {(() => {
         const remitoable = filtered.filter(o => !['pending','cancelled'].includes(o.status));
-        const allRem = remitoable.length > 0 && remitoIds.size === remitoable.length;
+        const allRem = remitoable.length > 0 && printIds.size === remitoable.length;
         return remitoable.length > 0 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#f5f3ff', border: '1.5px solid #c4b5fd', borderRadius: '10px', padding: '10px 14px', marginBottom: '10px', flexWrap: 'wrap' }}>
             <button onClick={() => {
-              if (allRem) setRemitoIds(new Set());
-              else setRemitoIds(new Set(remitoable.map(o => o.order_id)));
+              if (allRem) setPrintIds(new Set());
+              else setPrintIds(new Set(remitoable.map(o => o.order_id)));
             }} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', cursor: 'pointer', fontWeight: '700', fontSize: '13px', color: '#7c3aed' }}>
               <svg width="16" height="16" fill={allRem ? '#7c3aed' : 'none'} stroke="#7c3aed" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3" strokeWidth="2"/>{allRem && <path d="M7 12l4 4 6-6" strokeWidth="2.5" stroke="white"/>}</svg>
               {allRem ? 'Deseleccionar remitos' : `Seleccionar ${remitoable.length} remito${remitoable.length !== 1 ? 's' : ''}`}
             </button>
-            {remitoIds.size > 0 && (
+            {printIds.size > 0 && (
               <>
-                <span style={{ fontSize: '12px', color: '#7c3aed', fontWeight: '700' }}>{remitoIds.size} seleccionado{remitoIds.size !== 1 ? 's' : ''}</span>
+                <span style={{ fontSize: '12px', color: '#7c3aed', fontWeight: '700' }}>{printIds.size} seleccionado{printIds.size !== 1 ? 's' : ''}</span>
                 <button onClick={handleBulkRemitos} disabled={printingRemitos}
                   style={{ marginLeft: 'auto', padding: '7px 14px', background: '#7c3aed', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}>
-                  {printingRemitos ? 'Generando...' : `Imprimir ${remitoIds.size} remito${remitoIds.size !== 1 ? 's' : ''}`}
+                  {printingRemitos ? 'Generando...' : `Imprimir ${printIds.size} remito${printIds.size !== 1 ? 's' : ''}`}
                 </button>
               </>
             )}
@@ -515,7 +514,7 @@ const LogisticsPanel = () => {
                   style={{ position: 'absolute', top: '12px', left: '12px', width: '16px', height: '16px', cursor: 'pointer', zIndex: 1 }}
                   onClick={e => e.stopPropagation()} />
                 {!['pending','cancelled'].includes(order.status) && (
-                  <input type="checkbox" checked={etiquetaIds.has(order.order_id)} onChange={() => toggleEtiqueta(order.order_id)}
+                  <input type="checkbox" checked={printIds.has(order.order_id)} onChange={() => togglePrint(order.order_id)}
                     style={{ position: 'absolute', top: '12px', left: '34px', width: '16px', height: '16px', cursor: 'pointer', zIndex: 1, accentColor: '#16a34a' }}
                     onClick={e => e.stopPropagation()} />
                 )}
@@ -611,7 +610,7 @@ const LogisticsPanel = () => {
                   {/* Remito */}
                   {!['pending','cancelled'].includes(order.status) && (
                     <>
-                      <input type="checkbox" checked={remitoIds.has(order.order_id)} onChange={() => toggleRemito(order.order_id)}
+                      <input type="checkbox" checked={printIds.has(order.order_id)} onChange={() => togglePrint(order.order_id)}
                         style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#7c3aed' }}
                         onClick={e => e.stopPropagation()} />
                       <button className="lp-btn" onClick={() => downloadRemito(order.order_id)} disabled={isUpdating}
@@ -663,6 +662,29 @@ const LogisticsPanel = () => {
               </div>
             );
           })}
+        </div>
+      )}
+    </div>
+
+      {/* Barra flotante de impresión */}
+      {printIds.size > 0 && (
+        <div style={{ position: 'fixed', bottom: '24px', left: '50%', transform: 'translateX(-50%)', display: 'flex', alignItems: 'center', gap: '10px', background: '#111827', borderRadius: '16px', padding: '12px 20px', boxShadow: '0 8px 32px rgba(0,0,0,0.3)', zIndex: 100 }}>
+          <span style={{ fontSize: '13px', fontWeight: '700', color: 'white' }}>{printIds.size} orden{printIds.size !== 1 ? 'es' : ''} seleccionada{printIds.size !== 1 ? 's' : ''}</span>
+          <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.2)' }} />
+          <button onClick={handleBulkEtiquetas} disabled={printingBulk}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: '#16a34a', color: 'white', border: 'none', borderRadius: '9px', fontWeight: '700', fontSize: '12px', cursor: 'pointer', opacity: printingBulk ? 0.6 : 1 }}>
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+            {printingBulk ? 'Generando...' : 'Etiquetas'}
+          </button>
+          <button onClick={handleBulkRemitos} disabled={printingRemitos}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: '#7c3aed', color: 'white', border: 'none', borderRadius: '9px', fontWeight: '700', fontSize: '12px', cursor: 'pointer', opacity: printingRemitos ? 0.6 : 1 }}>
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+            {printingRemitos ? 'Generando...' : 'Remitos'}
+          </button>
+          <button onClick={() => setPrintIds(new Set())}
+            style={{ padding: '8px 10px', background: 'rgba(255,255,255,0.1)', color: 'white', border: 'none', borderRadius: '9px', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}>
+            ✕
+          </button>
         </div>
       )}
     </div>
