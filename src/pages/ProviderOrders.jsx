@@ -31,10 +31,9 @@ const ProviderOrders = () => {
   // ── Selección múltiple ───────────────────────────
   const [selectedIds, setSelectedIds]         = useState(new Set());
   const [bulkProcessing, setBulkProcessing]   = useState(false);
-  const [etiquetaIds, setEtiquetaIds]         = useState(new Set());
+  const [printIds, setPrintIds]               = useState(new Set());
   const [printingEtiquetas, setPrintingEtiquetas] = useState(false);
-  const [remitoIds, setRemitoIds]         = useState(new Set());
-  const [printingRemitos, setPrintingRemitos] = useState(false);
+  const [printingRemitos, setPrintingRemitos]     = useState(false);
   const [readyIds, setReadyIds]               = useState(new Set());
   const [bulkReady, setBulkReady]             = useState(false);
 
@@ -194,10 +193,10 @@ const ProviderOrders = () => {
   };
 
   const toggleSelectAllEtiquetas = (printable) => {
-    if (etiquetaIds.size === printable.length && printable.length > 0) {
-      setEtiquetaIds(new Set());
+    if (printIds.size === printable.length && printable.length > 0) {
+      setPrintIds(new Set());
     } else {
-      setEtiquetaIds(new Set(printable.map(o => o.order_id)));
+      setPrintIds(new Set(printable.map(o => o.order_id)));
     }
   };
 
@@ -210,7 +209,7 @@ const ProviderOrders = () => {
   };
 
   const handleBulkRemitos = async () => {
-    if (remitoIds.size === 0) return;
+    if (printIds.size === 0) return;
     setPrintingRemitos(true);
     try {
       const token = localStorage.getItem('auth_token');
@@ -230,7 +229,7 @@ const ProviderOrders = () => {
       a.click();
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 5000);
-      setRemitoIds(new Set());
+      setPrintIds(new Set());
     } catch (err) {
       alert(err.message || 'Error al imprimir remitos');
     } finally {
@@ -239,7 +238,7 @@ const ProviderOrders = () => {
   };
 
     const handleBulkEtiquetas = async () => {
-    if (etiquetaIds.size === 0) return;
+    if (printIds.size === 0) return;
     setPrintingEtiquetas(true);
     try {
       const token = localStorage.getItem('auth_token');
@@ -259,7 +258,7 @@ const ProviderOrders = () => {
       a.click();
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 5000);
-      setEtiquetaIds(new Set());
+      setPrintIds(new Set());
     } catch (err) {
       alert(err.message || 'Error al imprimir etiquetas');
     } finally {
@@ -276,8 +275,8 @@ const ProviderOrders = () => {
   });
 
   const printable        = filteredOrders.filter(o => !['pending','cancelled'].includes(o.status));
-  const allEtiquetas     = printable.length > 0 && etiquetaIds.size === printable.length;
-  const someEtiquetas    = etiquetaIds.size > 0;
+  const allEtiquetas     = printable.length > 0 && printIds.size === printable.length;
+  const someEtiquetas    = printIds.size > 0;
   const readyable        = filteredOrders.filter(o => o.status === 'processing');
   const allReady         = readyable.length > 0 && readyIds.size === readyable.length;
   const someReady        = readyIds.size > 0;
@@ -419,56 +418,48 @@ const ProviderOrders = () => {
         {/* Barra de remitos */}
         {(() => {
           const remitoable = filteredOrders.filter(o => !['pending','cancelled'].includes(o.status));
-          const allRem = remitoable.length > 0 && remitoIds.size === remitoable.length;
+          const allRem = remitoable.length > 0 && printIds.size === remitoable.length;
           return remitoable.length > 0 && (
             <div className="bulk-bar" style={{ background: '#f5f3ff', borderColor: '#c4b5fd' }}>
               <div className="bulk-bar-left">
                 <button className="bulk-select-all" onClick={() => {
-                  if (allRem) setRemitoIds(new Set());
-                  else setRemitoIds(new Set(remitoable.map(o => o.order_id)));
+                  if (allRem) setPrintIds(new Set());
+                  else setPrintIds(new Set(remitoable.map(o => o.order_id)));
                 }}>
                   {allRem ? <CheckSquare size={18} color="#7c3aed" /> : <Square size={18} color="#7c3aed" />}
                   <span style={{ color: '#7c3aed' }}>{allRem ? 'Deseleccionar remitos' : `Seleccionar ${remitoable.length} remito${remitoable.length !== 1 ? 's' : ''}`}</span>
                 </button>
-                {remitoIds.size > 0 && <span className="bulk-count" style={{ color: '#7c3aed' }}>{remitoIds.size} seleccionado{remitoIds.size !== 1 ? 's' : ''}</span>}
+                {printIds.size > 0 && <span className="bulk-count" style={{ color: '#7c3aed' }}>{printIds.size} seleccionado{printIds.size !== 1 ? 's' : ''}</span>}
               </div>
-              {remitoIds.size > 0 && (
+              {printIds.size > 0 && (
                 <button className="bulk-confirm-btn" style={{ background: '#7c3aed' }} onClick={handleBulkRemitos} disabled={printingRemitos}>
                   <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ marginRight: '6px' }}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                  {printingRemitos ? 'Generando...' : `Imprimir ${remitoIds.size} remito${remitoIds.size !== 1 ? 's' : ''}`}
+                  {printingRemitos ? 'Generando...' : `Imprimir ${printIds.size} remito${printIds.size !== 1 ? 's' : ''}`}
                 </button>
               )}
             </div>
           );
         })()}
 
-        {/* Barra de etiquetas — aparece si hay órdenes con tracking */}
-        {printable.length > 0 && (
-          <div className="bulk-bar" style={{ background: '#f0fdf4', borderColor: '#86efac' }}>
-            <div className="bulk-bar-left">
-              <button className="bulk-select-all" onClick={() => toggleSelectAllEtiquetas(printable)}>
-                {allEtiquetas ? <CheckSquare size={18} color="#16a34a" /> : <Square size={18} color="#16a34a" />}
-                <span style={{ color: '#16a34a' }}>{allEtiquetas ? 'Deseleccionar etiquetas' : `Seleccionar ${printable.length} etiqueta${printable.length !== 1 ? 's' : ''}`}</span>
-              </button>
-              {someEtiquetas && (
-                <span className="bulk-count" style={{ color: '#16a34a' }}>{etiquetaIds.size} seleccionada{etiquetaIds.size !== 1 ? 's' : ''}</span>
-              )}
+        {/* Barra de selección de impresión unificada */}
+        {(() => {
+          const printable = filteredOrders.filter(o => !['pending','cancelled'].includes(o.status));
+          const allPrint  = printable.length > 0 && printIds.size === printable.length;
+          return printable.length > 0 && (
+            <div className="bulk-bar" style={{ background: '#f9fafb', borderColor: '#e5e7eb' }}>
+              <div className="bulk-bar-left">
+                <button className="bulk-select-all" onClick={() => {
+                  if (allPrint) setPrintIds(new Set());
+                  else setPrintIds(new Set(printable.map(o => o.order_id)));
+                }}>
+                  {allPrint ? <CheckSquare size={18} /> : <Square size={18} />}
+                  <span>{allPrint ? 'Deseleccionar todo' : `Seleccionar ${printable.length} para imprimir`}</span>
+                </button>
+                {printIds.size > 0 && <span className="bulk-count">{printIds.size} seleccionada{printIds.size !== 1 ? 's' : ''}</span>}
+              </div>
             </div>
-            {someEtiquetas && (
-              <button
-                className="bulk-confirm-btn"
-                style={{ background: '#16a34a' }}
-                onClick={handleBulkEtiquetas}
-                disabled={printingEtiquetas}
-              >
-                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ marginRight: '6px' }}>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                </svg>
-                {printingEtiquetas ? 'Generando...' : `Imprimir ${etiquetaIds.size} etiqueta${etiquetaIds.size !== 1 ? 's' : ''}`}
-              </button>
-            )}
-          </div>
-        )}
+          );
+        })()}
 
         {/* Orders List */}
         <div className="orders-list">
@@ -507,8 +498,8 @@ const ProviderOrders = () => {
 
                     {/* Checkbox — etiquetas */}
                     {!['pending','cancelled'].includes(order.status) && (
-                      <div className="order-checkbox" onClick={(e) => { e.stopPropagation(); toggleEtiqueta(order.order_id); }}>
-                        {etiquetaIds.has(order.order_id)
+                      <div className="order-checkbox" onClick={(e) => { e.stopPropagation(); togglePrint(order.order_id); }}>
+                        {printIds.has(order.order_id)
                           ? <CheckSquare size={20} color="#16a34a" />
                           : <Square size={20} color="#86efac" />
                         }
@@ -578,14 +569,17 @@ const ProviderOrders = () => {
                         </button>
                       )}
 
-                      {/* Remito checkbox bulk + botón individual */}
-                      {['confirmed','processing','ready_for_pickup','picked_up','out_for_delivery','redelivery','completed'].includes(order.status) && (
-                        <>
-                        <div className="order-checkbox" onClick={e => { e.stopPropagation(); toggleRemito(order.order_id); }}>
-                          {remitoIds.has(order.order_id)
-                            ? <CheckSquare size={20} color="#7c3aed" />
-                            : <Square size={20} color="#c4b5fd" />}
+                      {/* Checkbox de impresión unificado */}
+                      {!['pending','cancelled'].includes(order.status) && (
+                        <div className="order-checkbox" onClick={e => { e.stopPropagation(); togglePrint(order.order_id); }}>
+                          {printIds.has(order.order_id)
+                            ? <CheckSquare size={20} color="#056EB7" />
+                            : <Square size={20} color="#d1d5db" />}
                         </div>
+                      )}
+
+                      {/* Botones individuales */}
+                      {['confirmed','processing','ready_for_pickup','picked_up','out_for_delivery','redelivery','completed'].includes(order.status) && (
                         <button
                           className="btn-view-details"
                           style={{ background: '#f5f3ff', border: '1.5px solid #c4b5fd', color: '#7c3aed' }}
@@ -594,7 +588,6 @@ const ProviderOrders = () => {
                           <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                           <span>Remito</span>
                         </button>
-                        </>
                       )}
 
                       <button
@@ -691,6 +684,28 @@ const ProviderOrders = () => {
           )}
         </div>
       </div>
+
+      {/* Barra flotante de impresión */}
+      {printIds.size > 0 && (
+        <div style={{ position: 'fixed', bottom: '24px', left: '50%', transform: 'translateX(-50%)', display: 'flex', alignItems: 'center', gap: '10px', background: '#111827', borderRadius: '16px', padding: '12px 20px', boxShadow: '0 8px 32px rgba(0,0,0,0.3)', zIndex: 100 }}>
+          <span style={{ fontSize: '13px', fontWeight: '700', color: 'white' }}>{printIds.size} orden{printIds.size !== 1 ? 'es' : ''} seleccionada{printIds.size !== 1 ? 's' : ''}</span>
+          <div style={{ width: '1px', height: '20px', background: 'rgba(255,255,255,0.2)' }} />
+          <button onClick={handleBulkEtiquetas} disabled={printingEtiquetas}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: '#16a34a', color: 'white', border: 'none', borderRadius: '9px', fontWeight: '700', fontSize: '12px', cursor: 'pointer', opacity: printingEtiquetas ? 0.6 : 1 }}>
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" /></svg>
+            {printingEtiquetas ? 'Generando...' : 'Etiquetas'}
+          </button>
+          <button onClick={handleBulkRemitos} disabled={printingRemitos}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', background: '#7c3aed', color: 'white', border: 'none', borderRadius: '9px', fontWeight: '700', fontSize: '12px', cursor: 'pointer', opacity: printingRemitos ? 0.6 : 1 }}>
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+            {printingRemitos ? 'Generando...' : 'Remitos'}
+          </button>
+          <button onClick={() => setPrintIds(new Set())}
+            style={{ padding: '8px 10px', background: 'rgba(255,255,255,0.1)', color: 'white', border: 'none', borderRadius: '9px', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}>
+            ✕
+          </button>
+        </div>
+      )}
 
       {showModal && selectedOrder && (
         <OrderDetailsModal
