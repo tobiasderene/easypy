@@ -142,7 +142,7 @@
 /* Parallax solo en no-touch/desktop */
 @media (hover: hover) and (pointer: fine) {
   .lp-benefits {
-    background-image: url('/logistics-bg.jpg');
+    background-image: url('/logistics-bg.jpg.jpg');
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
