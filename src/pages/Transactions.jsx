@@ -282,7 +282,7 @@ const Transactions = () => {
                                     {done ? <CheckCircle size={14} color="white" /> : <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#d1d5db' }} />}
                                   </div>
                                   <span style={{ fontSize: '9px', color: done ? '#056EB7' : '#9ca3af', fontWeight: done ? '700' : '400', textAlign: 'center', marginTop: '3px', maxWidth: '56px' }}>
-                                    {cfg2?.label?.split(' ')[0]}
+                                    {cfg2?.label}
                                   </span>
                                 </div>
                                 {i < STATUS_STEP_ORDER.length - 1 && (
