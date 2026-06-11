@@ -33,6 +33,8 @@ const ProviderOrders = () => {
   const [bulkProcessing, setBulkProcessing]   = useState(false);
   const [etiquetaIds, setEtiquetaIds]         = useState(new Set());
   const [printingEtiquetas, setPrintingEtiquetas] = useState(false);
+  const [remitoIds, setRemitoIds]         = useState(new Set());
+  const [printingRemitos, setPrintingRemitos] = useState(false);
   const [readyIds, setReadyIds]               = useState(new Set());
   const [bulkReady, setBulkReady]             = useState(false);
 
@@ -48,6 +50,26 @@ const ProviderOrders = () => {
       setOrders([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const downloadRemito = async (orderId) => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      const base  = import.meta.env.VITE_API_URL || 'https://easypy-backend-430520813248.us-central1.run.app';
+      const res   = await fetch(`${base}/orders/${orderId}/remito?token=${token}`);
+      if (!res.ok) throw new Error('Error al generar remito');
+      const blob  = await res.blob();
+      const url   = URL.createObjectURL(blob);
+      const a     = document.createElement('a');
+      a.href      = url;
+      a.download  = `remito-${orderId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    } catch {
+      alert('No se pudo generar el remito');
     }
   };
 
@@ -179,7 +201,44 @@ const ProviderOrders = () => {
     }
   };
 
-  const handleBulkEtiquetas = async () => {
+  const toggleRemito = (orderId) => {
+    setRemitoIds(prev => {
+      const next = new Set(prev);
+      next.has(orderId) ? next.delete(orderId) : next.add(orderId);
+      return next;
+    });
+  };
+
+  const handleBulkRemitos = async () => {
+    if (remitoIds.size === 0) return;
+    setPrintingRemitos(true);
+    try {
+      const token = localStorage.getItem('auth_token');
+      const base  = import.meta.env.VITE_API_URL || 'https://easypy-backend-430520813248.us-central1.run.app';
+      const res   = await fetch(`${base}/orders/remitos`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body:    JSON.stringify({ order_ids: [...remitoIds] }),
+      });
+      if (!res.ok) throw new Error('Error al generar remitos');
+      const blob = await res.blob();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = 'remitos.pdf';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      setRemitoIds(new Set());
+    } catch (err) {
+      alert(err.message || 'Error al imprimir remitos');
+    } finally {
+      setPrintingRemitos(false);
+    }
+  };
+
+    const handleBulkEtiquetas = async () => {
     if (etiquetaIds.size === 0) return;
     setPrintingEtiquetas(true);
     try {
@@ -357,6 +416,32 @@ const ProviderOrders = () => {
           </div>
         )}
 
+        {/* Barra de remitos */}
+        {(() => {
+          const remitoable = filteredOrders.filter(o => !['pending','cancelled'].includes(o.status));
+          const allRem = remitoable.length > 0 && remitoIds.size === remitoable.length;
+          return remitoable.length > 0 && (
+            <div className="bulk-bar" style={{ background: '#f5f3ff', borderColor: '#c4b5fd' }}>
+              <div className="bulk-bar-left">
+                <button className="bulk-select-all" onClick={() => {
+                  if (allRem) setRemitoIds(new Set());
+                  else setRemitoIds(new Set(remitoable.map(o => o.order_id)));
+                }}>
+                  {allRem ? <CheckSquare size={18} color="#7c3aed" /> : <Square size={18} color="#7c3aed" />}
+                  <span style={{ color: '#7c3aed' }}>{allRem ? 'Deseleccionar remitos' : `Seleccionar ${remitoable.length} remito${remitoable.length !== 1 ? 's' : ''}`}</span>
+                </button>
+                {remitoIds.size > 0 && <span className="bulk-count" style={{ color: '#7c3aed' }}>{remitoIds.size} seleccionado{remitoIds.size !== 1 ? 's' : ''}</span>}
+              </div>
+              {remitoIds.size > 0 && (
+                <button className="bulk-confirm-btn" style={{ background: '#7c3aed' }} onClick={handleBulkRemitos} disabled={printingRemitos}>
+                  <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ marginRight: '6px' }}><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                  {printingRemitos ? 'Generando...' : `Imprimir ${remitoIds.size} remito${remitoIds.size !== 1 ? 's' : ''}`}
+                </button>
+              )}
+            </div>
+          );
+        })()}
+
         {/* Barra de etiquetas — aparece si hay órdenes con tracking */}
         {printable.length > 0 && (
           <div className="bulk-bar" style={{ background: '#f0fdf4', borderColor: '#86efac' }}>
@@ -491,6 +576,25 @@ const ProviderOrders = () => {
                           <Truck size={16} />
                           <span>{isReady ? 'Procesando...' : 'Listo para entrega'}</span>
                         </button>
+                      )}
+
+                      {/* Remito checkbox bulk + botón individual */}
+                      {['confirmed','processing','ready_for_pickup','picked_up','out_for_delivery','redelivery','completed'].includes(order.status) && (
+                        <>
+                        <div className="order-checkbox" onClick={e => { e.stopPropagation(); toggleRemito(order.order_id); }}>
+                          {remitoIds.has(order.order_id)
+                            ? <CheckSquare size={20} color="#7c3aed" />
+                            : <Square size={20} color="#c4b5fd" />}
+                        </div>
+                        <button
+                          className="btn-view-details"
+                          style={{ background: '#f5f3ff', border: '1.5px solid #c4b5fd', color: '#7c3aed' }}
+                          onClick={e => { e.stopPropagation(); downloadRemito(order.order_id); }}
+                        >
+                          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                          <span>Remito</span>
+                        </button>
+                        </>
                       )}
 
                       <button
