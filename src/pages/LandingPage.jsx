@@ -27,10 +27,7 @@ const BenefitIcons = [
 const benefits = [
   { title: "Sin Stock Propio",         desc: "Vendé productos sin necesidad de tener inventario. El proveedor se encarga de todo." },
   { title: "Logística Integrada",      desc: "Fixy, Legex y más transportadoras disponibles. Tu pedido sale sin que muevas un dedo." },
-  { title: "Ganancias Claras",         desc: "Fijás tu precio de venta, nosotros mostramos tu ganancia estimada en tiempo real." },
   { title: "Analytics en Tiempo Real", desc: "Seguí tus ventas, unidades y rentabilidad desde un panel centralizado." },
-  { title: "Pagos Seguros",            desc: "Wallet propio con recaudo o sin recaudo. Tu dinero siempre claro y disponible." },
-  { title: "Alta en Minutos",          desc: "Registrate, elegí productos y empezá a vender el mismo día. Sin burocracia." },
 ];
 
 const stats = [
