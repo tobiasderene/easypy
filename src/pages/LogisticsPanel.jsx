@@ -44,19 +44,19 @@ const LogisticsPanel = () => {
   const [loadingFixy, setLoadingFixy] = useState(null);
 
   // Selección de estado (azul)
-  const [selected, setSelected]       = useState(new Set());
+  const [selected, setSelected]         = useState(new Set());
   const [bulkUpdating, setBulkUpdating] = useState(false);
 
-  // Selección de impresión (verde/violeta)
-  const [printIds, setPrintIds]             = useState(new Set());
-  const [printingBulk, setPrintingBulk]     = useState(false);
+  // Selección de impresión (verde/violeta) — igual que ProviderOrders
+  const [printIds, setPrintIds]               = useState(new Set());
+  const [printingBulk, setPrintingBulk]       = useState(false);
   const [printingRemitos, setPrintingRemitos] = useState(false);
 
   // Modales
-  const [redeliveryModal, setRedeliveryModal] = useState(null);
+  const [redeliveryModal, setRedeliveryModal]   = useState(null);
   const [redeliveryReason, setRedeliveryReason] = useState('');
-  const [returnModal, setReturnModal]   = useState(null);
-  const [returnReason, setReturnReason] = useState('');
+  const [returnModal, setReturnModal]           = useState(null);
+  const [returnReason, setReturnReason]         = useState('');
 
   useEffect(() => {
     if (!user || user.user_role !== 'logistics') { navigate('/'); return; }
@@ -259,7 +259,10 @@ const LogisticsPanel = () => {
     catch { return '—'; }
   };
 
-  const filtered = filter === 'all' ? orders : orders.filter(o => o.status === filter);
+  const filtered   = filter === 'all' ? orders : orders.filter(o => o.status === filter);
+  const printable  = filtered.filter(o => !['pending','cancelled'].includes(o.status));
+  const allPrint   = printable.length > 0 && printIds.size === printable.length;
+
   const stats = {
     ready_for_pickup: orders.filter(o => o.status === 'ready_for_pickup').length,
     picked_up:        orders.filter(o => o.status === 'picked_up').length,
@@ -268,9 +271,6 @@ const LogisticsPanel = () => {
   };
 
   if (loading) return <div className="lp-loading">Cargando panel...</div>;
-
-  const printable = filtered.filter(o => !['pending','cancelled'].includes(o.status));
-  const allPrint  = printable.length > 0 && printIds.size === printable.length;
 
   return (
     <div className="lp-page">
@@ -593,7 +593,7 @@ const LogisticsPanel = () => {
         </div>
       )}
 
-      {/* Barra flotante de impresión */}
+      {/* Barra flotante de impresión — idéntica a ProviderOrders */}
       {printIds.size > 0 && (
         <div style={{ position: 'fixed', bottom: '24px', left: '50%', transform: 'translateX(-50%)', display: 'flex', alignItems: 'center', gap: '10px', background: '#111827', borderRadius: '16px', padding: '12px 20px', boxShadow: '0 8px 32px rgba(0,0,0,0.3)', zIndex: 100 }}>
           <span style={{ fontSize: '13px', fontWeight: '700', color: 'white' }}>{printIds.size} orden{printIds.size !== 1 ? 'es' : ''} seleccionada{printIds.size !== 1 ? 's' : ''}</span>
