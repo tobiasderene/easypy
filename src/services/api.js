@@ -106,7 +106,7 @@ export const adminDeleteUser   = (userId) =>
   api(`/users/${userId}`, { method: "DELETE" });
 
 // ─── Products ─────────────────────────────────────────
-export const getProducts   = (skip = 0, limit = 50, search = '') => api(`/products?skip=${skip}&limit=${limit}${search ? '&search=' + encodeURIComponent(search) : ''}`);
+export const getProducts   = (skip = 0, limit = 200, search = '') => api(`/products?skip=${skip}&limit=${limit}${search ? '&search=' + encodeURIComponent(search) : ''}`);
 // ── Returns ──────────────────────────────────────────────────────────────────
 export const getReturns      = ()       => api('/returns');
 export const createReturn    = (data)   => api('/returns', { method: 'POST', body: JSON.stringify(data) });
