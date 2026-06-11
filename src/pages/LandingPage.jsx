@@ -27,7 +27,10 @@ const BenefitIcons = [
 const benefits = [
   { title: "Sin Stock Propio",       desc: "Vendé productos sin necesidad de tener inventario. El proveedor se encarga de todo." },
   { title: "Logística Integrada",    desc: "Fixy, Legex y más transportadoras disponibles. Tu pedido sale sin que muevas un dedo." },
+  { title: "Ganancias Claras",       desc: "Fijás tu precio de venta, nosotros mostramos tu ganancia estimada en tiempo real." },
   { title: "Analytics en Tiempo Real", desc: "Seguí tus ventas, unidades y rentabilidad desde un panel centralizado." },
+  { title: "Pagos Seguros",          desc: "Wallet propio con recaudo o sin recaudo. Tu dinero siempre claro y disponible." },
+  { title: "Alta en Minutos",        desc: "Registrate, elegí productos y empezá a vender el mismo día. Sin burocracia." },
 ];
 
 const stats = [
@@ -111,8 +114,8 @@ export default function LandingPage() {
                 <div className="hero-card">
                   <div className="hero-card-img">
                     <img
-                      src="/smartwatch.jpeg"
-                       alt="Smart Watch Pro"
+                      src="https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=680&q=80&auto=format&fit=crop"
+                      alt="Paquete listo para envío"
                     />
                   </div>
                   <div className="hero-card-body">
@@ -134,15 +137,16 @@ export default function LandingPage() {
 
       {/* ── BENEFITS ── */}
       <section id="benefits" className="lp-benefits" ref={benefitsRef}>
-        <div className="lp-benefits-inner">
-          <div className={`benefits-header fade-up ${benefitsVisible ? "visible" : ""}`}>
-            <h2 className="benefits-title">
-              Todo lo que necesitás<br />para empezar a vender
-            </h2>
-            <p style={{ fontSize: 17, color: "#64748b", maxWidth: 520, margin: "0 auto" }}>
-              Una plataforma completa diseñada para vendedores que quieren crecer sin complicaciones.
-            </p>
+        {/* Imagen parallax con título encima */}
+        <div className="lp-benefits-parallax">
+          <div className={`benefits-img-title fade-up ${benefitsVisible ? "visible" : ""}`}>
+            <h2>Todo lo que necesitás<br />para empezar a vender</h2>
+            <p>Una plataforma completa diseñada para vendedores que quieren crecer sin complicaciones.</p>
           </div>
+        </div>
+
+        {/* Cards debajo */}
+        <div className="lp-benefits-inner">
           <div className="benefits-grid">
             {benefits.map((b, i) => (
               <div key={i} className={`benefit-card fade-up d${Math.min(i+1,6)} ${benefitsVisible ? "visible" : ""}`}>
