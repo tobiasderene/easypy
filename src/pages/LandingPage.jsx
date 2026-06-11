@@ -86,7 +86,7 @@ export default function LandingPage() {
                 EasyPy conecta vendedores con proveedores locales. Sin inventario, sin complicaciones. Solo ventas.
               </p>
               <div className={`hero-cta fade-up d3 ${heroVisible ? "visible" : ""}`}>
-                <button className="btn-primary btn-lg" onClick={() => window.location.href="/signup"}>
+                <button className="btn-primary btn-lg" onClick={() => window.location.href="/login"}>
                   Empezar gratis
                 </button>
               </div>
@@ -148,7 +148,7 @@ export default function LandingPage() {
               <h2 className="about-title">Nació en Paraguay<br />para Paraguay</h2>
               <p className="about-text">EasyPy es una plataforma local que conecta proveedores con vendedores de todo el país. Creemos que cualquier persona puede construir un negocio online sin necesidad de capital para stock.</p>
               <p className="about-text">Integramos logísticas reales, procesamos pagos con recaudo o sin recaudo, y te damos las herramientas para escalar tu negocio con datos claros.</p>
-              <button className="btn-primary btn-md" onClick={() => window.location.href="/signup"}>
+              <button className="btn-primary btn-md" onClick={() => window.location.href="/login"}>
                 Unirme a EasyPy
               </button>
             </div>
@@ -175,8 +175,7 @@ export default function LandingPage() {
             <h2 className="cta-title">Empezá a vender hoy.<br />Sin stock. Sin excusas.</h2>
             <p className="cta-sub">Registrate gratis, elegí productos del catálogo y empezá a generar ingresos desde el primer día.</p>
             <div className="cta-btns">
-              <button className="cta-btn-white" onClick={() => window.location.href="/signup"}>Crear cuenta gratis</button>
-              <button className="cta-btn-ghost"  onClick={() => window.location.href="/login"}>Ya tengo cuenta</button>
+              <button className="cta-btn-white" onClick={() => window.location.href="/login"}>Crear cuenta gratis</button>
             </div>
           </div>
         </div>
