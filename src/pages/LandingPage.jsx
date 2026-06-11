@@ -91,7 +91,7 @@ export default function LandingPage() {
                 </button>
               </div>
               <div className={`hero-stats fade-up d4 ${heroVisible ? "visible" : ""}`}>
-                {[["500+","Productos"],["3","Logísticas"],["0 stock","Requerido"]].map(([val, label]) => (
+                {[["500+","Productos"],["3+","Logísticas"]].map(([val, label]) => (
                   <div key={label} className="hero-stat">
                     <span className="hero-stat-val">{val}</span>
                     <span className="hero-stat-lbl">{label}</span>
