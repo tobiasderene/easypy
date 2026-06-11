@@ -5,16 +5,16 @@ import { getOrdersByBuyer, getOrderHistory, getClaims, getLogistics, createClaim
 import '../styles/transactions.css';
 
 const STATUS_CONFIG = {
-  pending:          { label: 'Pendiente de aprobación',       detail: 'El administrador está revisando tu orden',                    icon: Clock,        bg: '#eff6ff', color: '#2563eb' },
+  pending:          { label: 'Pendiente',       detail: 'El administrador está revisando tu orden',                    icon: Clock,        bg: '#eff6ff', color: '#2563eb' },
   confirmed:        { label: 'Aprobado',                      detail: 'El proveedor fue notificado y va a preparar tu pedido',       icon: CheckCircle,  bg: '#f0fdf4', color: '#16a34a' },
-  processing:       { label: 'En preparación',                detail: 'El proveedor está preparando tu pedido',                      icon: Package,      bg: '#faf5ff', color: '#7c3aed' },
-  ready_for_pickup: { label: 'Listo para retiro',             detail: 'Esperando que la logística retire el paquete',                icon: Package,      bg: '#fefce8', color: '#ca8a04' },
-  picked_up:        { label: 'Retirado por logística',        detail: 'La logística ya retiró el paquete',                          icon: Truck,        bg: '#eff6ff', color: '#2563eb' },
+  processing:       { label: 'Preparando',                detail: 'El proveedor está preparando tu pedido',                      icon: Package,      bg: '#faf5ff', color: '#7c3aed' },
+  ready_for_pickup: { label: 'Listo',             detail: 'Esperando que la logística retire el paquete',                icon: Package,      bg: '#fefce8', color: '#ca8a04' },
+  picked_up:        { label: 'Retirado',        detail: 'La logística ya retiró el paquete',                          icon: Truck,        bg: '#eff6ff', color: '#2563eb' },
   out_for_delivery: { label: 'En camino',                     detail: 'El paquete está siendo entregado al destinatario',           icon: Truck,        bg: '#fff7ed', color: '#d97706' },
   redelivery:       { label: 'Reagendado',                    detail: 'No se pudo entregar — se va a reintentar',                   icon: AlertCircle,  bg: '#fff7ed', color: '#f97316' },
-  completed:        { label: 'Entregado ✓',                   detail: 'El pedido fue entregado exitosamente',                       icon: CheckCircle,  bg: '#f0fdf4', color: '#16a34a' },
+  completed:        { label: 'Entregado',                   detail: 'El pedido fue entregado exitosamente',                       icon: CheckCircle,  bg: '#f0fdf4', color: '#16a34a' },
   cancelled:        { label: 'Cancelado',                     detail: 'Esta orden fue cancelada',                                   icon: AlertCircle,  bg: '#fef2f2', color: '#dc2626' },
-  return_in_progress:{ label: 'Devolución en curso',          detail: 'El producto está siendo devuelto al proveedor',              icon: AlertCircle,  bg: '#fef2f2', color: '#dc2626' },
+  return_in_progress:{ label: 'Devolución',          detail: 'El producto está siendo devuelto al proveedor',              icon: AlertCircle,  bg: '#fef2f2', color: '#dc2626' },
 };
 
 const STATUS_STEP_ORDER = ['pending','confirmed','processing','ready_for_pickup','picked_up','out_for_delivery','completed'];
