@@ -44,6 +44,8 @@ const LogisticsPanel = () => {
   const [loadingFixy, setLoadingFixy]   = useState(null);
   const [etiquetaIds, setEtiquetaIds]   = useState(new Set());
   const [printingBulk, setPrintingBulk] = useState(false);
+  const [remitoIds, setRemitoIds]         = useState(new Set());
+  const [printingRemitos, setPrintingRemitos] = useState(false);
   const [selected, setSelected]         = useState(new Set());
   const [bulkUpdating, setBulkUpdating] = useState(false);
 
@@ -88,7 +90,44 @@ const LogisticsPanel = () => {
     }
   };
 
-  const toggleEtiqueta = (orderId) => {
+  const toggleRemito = (orderId) => {
+    setRemitoIds(prev => {
+      const next = new Set(prev);
+      next.has(orderId) ? next.delete(orderId) : next.add(orderId);
+      return next;
+    });
+  };
+
+  const handleBulkRemitos = async () => {
+    if (remitoIds.size === 0) return;
+    setPrintingRemitos(true);
+    try {
+      const token = localStorage.getItem('auth_token');
+      const base  = import.meta.env.VITE_API_URL || 'https://easypy-backend-430520813248.us-central1.run.app';
+      const res   = await fetch(`${base}/orders/remitos`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body:    JSON.stringify({ order_ids: [...remitoIds] }),
+      });
+      if (!res.ok) throw new Error('Error al generar remitos');
+      const blob = await res.blob();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href     = url;
+      a.download = 'remitos.pdf';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+      setRemitoIds(new Set());
+    } catch (err) {
+      alert(err.message || 'Error al imprimir remitos');
+    } finally {
+      setPrintingRemitos(false);
+    }
+  };
+
+    const toggleEtiqueta = (orderId) => {
     setEtiquetaIds(prev => {
       const next = new Set(prev);
       next.has(orderId) ? next.delete(orderId) : next.add(orderId);
@@ -214,6 +253,26 @@ const LogisticsPanel = () => {
       setTimeout(() => URL.revokeObjectURL(url), 5000);
     } catch {
       alert('No se pudo descargar la etiqueta');
+    }
+  };
+
+  const downloadRemito = async (orderId) => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      const base  = import.meta.env.VITE_API_URL || 'https://easypy-backend-430520813248.us-central1.run.app';
+      const res   = await fetch(`${base}/orders/${orderId}/remito?token=${token}`);
+      if (!res.ok) throw new Error('Error al generar remito');
+      const blob  = await res.blob();
+      const url   = URL.createObjectURL(blob);
+      const a     = document.createElement('a');
+      a.href      = url;
+      a.download  = `remito-${orderId}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    } catch {
+      alert('No se pudo generar el remito');
     }
   };
 
@@ -391,6 +450,32 @@ const LogisticsPanel = () => {
         );
       })()}
 
+      {/* Barra de remitos */}
+      {(() => {
+        const remitoable = filtered.filter(o => !['pending','cancelled'].includes(o.status));
+        const allRem = remitoable.length > 0 && remitoIds.size === remitoable.length;
+        return remitoable.length > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#f5f3ff', border: '1.5px solid #c4b5fd', borderRadius: '10px', padding: '10px 14px', marginBottom: '10px', flexWrap: 'wrap' }}>
+            <button onClick={() => {
+              if (allRem) setRemitoIds(new Set());
+              else setRemitoIds(new Set(remitoable.map(o => o.order_id)));
+            }} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', cursor: 'pointer', fontWeight: '700', fontSize: '13px', color: '#7c3aed' }}>
+              <svg width="16" height="16" fill={allRem ? '#7c3aed' : 'none'} stroke="#7c3aed" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3" strokeWidth="2"/>{allRem && <path d="M7 12l4 4 6-6" strokeWidth="2.5" stroke="white"/>}</svg>
+              {allRem ? 'Deseleccionar remitos' : `Seleccionar ${remitoable.length} remito${remitoable.length !== 1 ? 's' : ''}`}
+            </button>
+            {remitoIds.size > 0 && (
+              <>
+                <span style={{ fontSize: '12px', color: '#7c3aed', fontWeight: '700' }}>{remitoIds.size} seleccionado{remitoIds.size !== 1 ? 's' : ''}</span>
+                <button onClick={handleBulkRemitos} disabled={printingRemitos}
+                  style={{ marginLeft: 'auto', padding: '7px 14px', background: '#7c3aed', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}>
+                  {printingRemitos ? 'Generando...' : `Imprimir ${remitoIds.size} remito${remitoIds.size !== 1 ? 's' : ''}`}
+                </button>
+              </>
+            )}
+          </div>
+        );
+      })()}
+
       {/* Barra de selección masiva */}
       {selected.size > 0 && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#056EB7', color: 'white', padding: '12px 16px', borderRadius: '10px', marginBottom: '12px', flexWrap: 'wrap' }}>
@@ -522,6 +607,18 @@ const LogisticsPanel = () => {
                       style={{ background: '#f3f4f6', color: '#374151', border: '1.5px solid #e5e7eb', fontSize: '12px' }}>
                       Etiqueta
                     </button>
+                  )}
+                  {/* Remito */}
+                  {!['pending','cancelled'].includes(order.status) && (
+                    <>
+                      <input type="checkbox" checked={remitoIds.has(order.order_id)} onChange={() => toggleRemito(order.order_id)}
+                        style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#7c3aed' }}
+                        onClick={e => e.stopPropagation()} />
+                      <button className="lp-btn" onClick={() => downloadRemito(order.order_id)} disabled={isUpdating}
+                        style={{ background: '#f5f3ff', color: '#7c3aed', border: '1.5px solid #c4b5fd', fontSize: '12px' }}>
+                        Remito
+                      </button>
+                    </>
                   )}
 
                   {/* Flujo de estados */}
