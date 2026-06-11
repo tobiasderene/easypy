@@ -7,52 +7,56 @@ import { getMyLogistics, getOrdersByLogistics, getLogisticsEfectividad, pickedUp
 import '../styles/logisticspanel.css';
 
 const STATUS_LABELS = {
-  pending:          { label: 'Pendiente',            color: '#6b7280', bg: '#f3f4f6' },
-  confirmed:        { label: 'Para retirar',          color: '#16a34a', bg: '#dcfce7' },
-  ready_for_pickup: { label: 'Listo para retirar',    color: '#16a34a', bg: '#dcfce7' },
-  picked_up:        { label: 'Retirado del proveedor', color: '#056EB7', bg: '#eff6ff' },
-  out_for_delivery: { label: 'Yendo a entregar',      color: '#d97706', bg: '#fef3c7' },
-  in_transit:       { label: 'En camino',             color: '#d97706', bg: '#fef3c7' },
-  redelivery:       { label: 'Reagendado',            color: '#f97316', bg: '#fff7ed' },
-  completed:        { label: 'Entregado',             color: '#7c3aed', bg: '#f5f3ff' },
-  cancelled:              { label: 'Cancelado',             color: '#dc2626', bg: '#fef2f2' },
-  return_in_progress:     { label: 'Devolución en curso',    color: '#dc2626', bg: '#fef2f2' },
+  pending:            { label: 'Pendiente',             color: '#6b7280', bg: '#f3f4f6' },
+  confirmed:          { label: 'Para retirar',           color: '#16a34a', bg: '#dcfce7' },
+  ready_for_pickup:   { label: 'Listo para retirar',     color: '#16a34a', bg: '#dcfce7' },
+  picked_up:          { label: 'Retirado del proveedor', color: '#056EB7', bg: '#eff6ff' },
+  out_for_delivery:   { label: 'Yendo a entregar',       color: '#d97706', bg: '#fef3c7' },
+  in_transit:         { label: 'En camino',              color: '#d97706', bg: '#fef3c7' },
+  redelivery:         { label: 'Reagendado',             color: '#f97316', bg: '#fff7ed' },
+  completed:          { label: 'Entregado',              color: '#7c3aed', bg: '#f5f3ff' },
+  cancelled:          { label: 'Cancelado',              color: '#dc2626', bg: '#fef2f2' },
+  return_in_progress: { label: 'Devolución en curso',    color: '#dc2626', bg: '#fef2f2' },
 };
 
 const FILTERS = ['all', 'ready_for_pickup', 'picked_up', 'out_for_delivery', 'in_transit', 'redelivery', 'completed', 'cancelled'];
 
 const STATS_CONFIG = [
-  { key: 'ready_for_pickup', label: 'Para retirar',   color: '#16a34a', bg: '#dcfce7', border: '#16a34a20' },
-  { key: 'picked_up',        label: 'Retirados',      color: '#056EB7', bg: '#eff6ff', border: '#056EB720' },
-  { key: 'out_for_delivery', label: 'En camino',      color: '#d97706', bg: '#fef3c7', border: '#d9770620' },
-  { key: 'completed',        label: 'Entregados',     color: '#7c3aed', bg: '#f5f3ff', border: '#7c3aed20' },
+  { key: 'ready_for_pickup', label: 'Para retirar', color: '#16a34a', bg: '#dcfce7', border: '#16a34a20' },
+  { key: 'picked_up',        label: 'Retirados',    color: '#056EB7', bg: '#eff6ff', border: '#056EB720' },
+  { key: 'out_for_delivery', label: 'En camino',    color: '#d97706', bg: '#fef3c7', border: '#d9770620' },
+  { key: 'completed',        label: 'Entregados',   color: '#7c3aed', bg: '#f5f3ff', border: '#7c3aed20' },
 ];
 
 const LogisticsPanel = () => {
   const { user } = useUser();
   const navigate = useNavigate();
 
-  const [logistic, setLogistic]         = useState(null);
-  const [orders, setOrders]             = useState([]);
-  const [loading, setLoading]           = useState(true);
-  const [filter, setFilter]             = useState('all');
-  const [updating, setUpdating]         = useState(null);
-  const [error, setError]               = useState('');
-  const [efectividad, setEfectividad]   = useState(null);
-  const [isFixy, setIsFixy]             = useState(false);
-  const [fixyStatuses, setFixyStatuses] = useState({}); // { order_id: { fixy_label, fixy_status, mapped_status } }
-  const [loadingFixy, setLoadingFixy]   = useState(null);
-  const [printIds, setPrintIds]           = useState(new Set());
-  const [printingBulk, setPrintingBulk]   = useState(false);
-  const [printingRemitos, setPrintingRemitos] = useState(false);
-  const [selected, setSelected]         = useState(new Set());
+  const [logistic, setLogistic]       = useState(null);
+  const [orders, setOrders]           = useState([]);
+  const [loading, setLoading]         = useState(true);
+  const [filter, setFilter]           = useState('all');
+  const [updating, setUpdating]       = useState(null);
+  const [error, setError]             = useState('');
+  const [efectividad, setEfectividad] = useState(null);
+  const [isFixy, setIsFixy]           = useState(false);
+  const [fixyStatuses, setFixyStatuses] = useState({});
+  const [loadingFixy, setLoadingFixy] = useState(null);
+
+  // Selección de estado (azul)
+  const [selected, setSelected]       = useState(new Set());
   const [bulkUpdating, setBulkUpdating] = useState(false);
 
-  // Modal reagendamiento
+  // Selección de impresión (verde/violeta)
+  const [printIds, setPrintIds]             = useState(new Set());
+  const [printingBulk, setPrintingBulk]     = useState(false);
+  const [printingRemitos, setPrintingRemitos] = useState(false);
+
+  // Modales
   const [redeliveryModal, setRedeliveryModal] = useState(null);
   const [redeliveryReason, setRedeliveryReason] = useState('');
-  const [returnModal, setReturnModal]           = useState(null);
-  const [returnReason, setReturnReason]         = useState('');
+  const [returnModal, setReturnModal]   = useState(null);
+  const [returnReason, setReturnReason] = useState('');
 
   useEffect(() => {
     if (!user || user.user_role !== 'logistics') { navigate('/'); return; }
@@ -77,6 +81,7 @@ const LogisticsPanel = () => {
     }
   };
 
+  // ── Fixy ─────────────────────────────────────────────────────────────────
   const fetchFixyStatus = async (orderId) => {
     setLoadingFixy(orderId);
     try {
@@ -89,45 +94,9 @@ const LogisticsPanel = () => {
     }
   };
 
-  const toggleRemito = (orderId) => {
-    setRemitoIds(prev => {
-      const next = new Set(prev);
-      next.has(orderId) ? next.delete(orderId) : next.add(orderId);
-      return next;
-    });
-  };
-
-  const handleBulkRemitos = async () => {
-    if (printIds.size === 0) return;
-    setPrintingRemitos(true);
-    try {
-      const token = localStorage.getItem('auth_token');
-      const base  = import.meta.env.VITE_API_URL || 'https://easypy-backend-430520813248.us-central1.run.app';
-      const res   = await fetch(`${base}/orders/remitos`, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body:    JSON.stringify({ order_ids: [...printIds] }),
-      });
-      if (!res.ok) throw new Error('Error al generar remitos');
-      const blob = await res.blob();
-      const url  = URL.createObjectURL(blob);
-      const a    = document.createElement('a');
-      a.href     = url;
-      a.download = 'remitos.pdf';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 5000);
-      setPrintIds(new Set());
-    } catch (err) {
-      alert(err.message || 'Error al imprimir remitos');
-    } finally {
-      setPrintingRemitos(false);
-    }
-  };
-
-    const toggleEtiqueta = (orderId) => {
-    setEtiquetaIds(prev => {
+  // ── Selección de impresión ────────────────────────────────────────────────
+  const togglePrint = (orderId) => {
+    setPrintIds(prev => {
       const next = new Set(prev);
       next.has(orderId) ? next.delete(orderId) : next.add(orderId);
       return next;
@@ -141,33 +110,48 @@ const LogisticsPanel = () => {
       const token = localStorage.getItem('auth_token');
       const base  = import.meta.env.VITE_API_URL || 'https://easypy-backend-430520813248.us-central1.run.app';
       const res   = await fetch(`${base}/orders/etiquetas`, {
-        method:  'POST',
+        method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body:    JSON.stringify({ order_ids: [...printIds] }),
+        body: JSON.stringify({ order_ids: [...printIds] }),
       });
       if (!res.ok) throw new Error('Error al obtener etiquetas');
       const blob = await res.blob();
       const url  = URL.createObjectURL(blob);
       const a    = document.createElement('a');
-      a.href     = url;
-      a.download = 'etiquetas.pdf';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      a.href = url; a.download = 'etiquetas.pdf';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 5000);
-      setPrintIds(new Set());
-    } catch (err) {
-      alert(err.message || 'Error al imprimir etiquetas');
-    } finally {
-      setPrintingBulk(false);
-    }
+    } catch (err) { alert(err.message || 'Error'); }
+    finally { setPrintingBulk(false); }
   };
 
+  const handleBulkRemitos = async () => {
+    if (printIds.size === 0) return;
+    setPrintingRemitos(true);
+    try {
+      const token = localStorage.getItem('auth_token');
+      const base  = import.meta.env.VITE_API_URL || 'https://easypy-backend-430520813248.us-central1.run.app';
+      const res   = await fetch(`${base}/orders/remitos`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ order_ids: [...printIds] }),
+      });
+      if (!res.ok) throw new Error('Error al generar remitos');
+      const blob = await res.blob();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href = url; a.download = 'remitos.pdf';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    } catch (err) { alert(err.message || 'Error'); }
+    finally { setPrintingRemitos(false); }
+  };
+
+  // ── Selección de estado ───────────────────────────────────────────────────
   const toggleSelect = (orderId) => {
     setSelected(prev => {
       const next = new Set(prev);
-      if (next.has(orderId)) next.delete(orderId);
-      else next.add(orderId);
+      next.has(orderId) ? next.delete(orderId) : next.add(orderId);
       return next;
     });
   };
@@ -182,6 +166,7 @@ const LogisticsPanel = () => {
     setBulkUpdating(false);
   };
 
+  // ── Acciones individuales ─────────────────────────────────────────────────
   const update = async (orderId, fn, newStatus) => {
     setUpdating(orderId);
     try {
@@ -231,7 +216,7 @@ const LogisticsPanel = () => {
     }
   };
 
-  // Descarga etiqueta
+  // ── Downloads ─────────────────────────────────────────────────────────────
   const downloadLabel = async (order) => {
     try {
       const token = localStorage.getItem('auth_token');
@@ -244,15 +229,10 @@ const LogisticsPanel = () => {
       const blob = await res.blob();
       const url  = URL.createObjectURL(blob);
       const a    = document.createElement('a');
-      a.href     = url;
-      a.download = `guia-${order.order_id}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      a.href = url; a.download = `guia-${order.order_id}.pdf`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 5000);
-    } catch {
-      alert('No se pudo descargar la etiqueta');
-    }
+    } catch { alert('No se pudo descargar la etiqueta'); }
   };
 
   const downloadRemito = async (orderId) => {
@@ -264,15 +244,10 @@ const LogisticsPanel = () => {
       const blob  = await res.blob();
       const url   = URL.createObjectURL(blob);
       const a     = document.createElement('a');
-      a.href      = url;
-      a.download  = `remito-${orderId}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      a.href = url; a.download = `remito-${orderId}.pdf`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 5000);
-    } catch {
-      alert('No se pudo generar el remito');
-    }
+    } catch { alert('No se pudo generar el remito'); }
   };
 
   const formatCurrency = (v) =>
@@ -285,7 +260,6 @@ const LogisticsPanel = () => {
   };
 
   const filtered = filter === 'all' ? orders : orders.filter(o => o.status === filter);
-
   const stats = {
     ready_for_pickup: orders.filter(o => o.status === 'ready_for_pickup').length,
     picked_up:        orders.filter(o => o.status === 'picked_up').length,
@@ -294,6 +268,9 @@ const LogisticsPanel = () => {
   };
 
   if (loading) return <div className="lp-loading">Cargando panel...</div>;
+
+  const printable = filtered.filter(o => !['pending','cancelled'].includes(o.status));
+  const allPrint  = printable.length > 0 && printIds.size === printable.length;
 
   return (
     <div className="lp-page">
@@ -316,9 +293,7 @@ const LogisticsPanel = () => {
             </select>
             {redeliveryReason === 'Otro' && (
               <input style={{ width: '100%', padding: '9px 12px', border: '1.5px solid #e5e7eb', borderRadius: '8px', fontSize: '13px', marginBottom: '10px' }}
-                placeholder="Describí el motivo..."
-                onChange={e => setRedeliveryReason(e.target.value === 'Otro' ? '' : e.target.value)}
-                onInput={e => setRedeliveryReason(e.target.value)} />
+                placeholder="Describí el motivo..." onInput={e => setRedeliveryReason(e.target.value)} />
             )}
             <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
               <button onClick={() => { setRedeliveryModal(null); setRedeliveryReason(''); }}
@@ -352,8 +327,7 @@ const LogisticsPanel = () => {
             </select>
             {returnReason === 'Otro' && (
               <input style={{ width: '100%', padding: '9px 12px', border: '1.5px solid #e5e7eb', borderRadius: '8px', fontSize: '13px', marginBottom: '10px' }}
-                placeholder="Describí el motivo..."
-                onInput={e => setReturnReason(e.target.value)} />
+                placeholder="Describí el motivo..." onInput={e => setReturnReason(e.target.value)} />
             )}
             <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
               <button onClick={() => { setReturnModal(null); setReturnReason(''); }}
@@ -391,10 +365,10 @@ const LogisticsPanel = () => {
           </div>
           <div style={{ display: 'flex', gap: '16px' }}>
             {[
-              { label: 'Entregadas', value: efectividad.completed, color: '#16a34a' },
-              { label: 'Reagendadas', value: efectividad.redelivery, color: '#f97316' },
-              { label: 'Canceladas', value: efectividad.cancelled, color: '#dc2626' },
-              { label: 'Total', value: efectividad.total, color: '#6b7280' },
+              { label: 'Entregadas',  value: efectividad.completed,  color: '#16a34a' },
+              { label: 'Reagendadas', value: efectividad.redelivery,  color: '#f97316' },
+              { label: 'Canceladas',  value: efectividad.cancelled,   color: '#dc2626' },
+              { label: 'Total',       value: efectividad.total,       color: '#6b7280' },
             ].map((s, i) => (
               <div key={i} style={{ textAlign: 'center' }}>
                 <p style={{ fontSize: '18px', fontWeight: '800', color: s.color }}>{s.value}</p>
@@ -423,59 +397,22 @@ const LogisticsPanel = () => {
         ))}
       </div>
 
-      {/* Barra de etiquetas — órdenes activas que no están en pending/cancelled */}
-      {(() => {
-        const printable = filtered.filter(o => !['pending','cancelled'].includes(o.status));
-        const allEtiq = printable.length > 0 && printIds.size === printable.length;
-        return printable.length > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: '10px', padding: '10px 14px', marginBottom: '10px', flexWrap: 'wrap' }}>
-            <button onClick={() => {
-              if (allEtiq) setPrintIds(new Set());
-              else setPrintIds(new Set(printable.map(o => o.order_id)));
-            }} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', cursor: 'pointer', fontWeight: '700', fontSize: '13px', color: '#16a34a' }}>
-              <svg width="16" height="16" fill={allEtiq ? '#16a34a' : 'none'} stroke="#16a34a" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3" strokeWidth="2"/>{allEtiq && <path d="M7 12l4 4 6-6" strokeWidth="2.5" stroke="white"/>}</svg>
-              {allEtiq ? 'Deseleccionar todo' : `Seleccionar ${printable.length} etiqueta${printable.length !== 1 ? 's' : ''}`}
-            </button>
-            {printIds.size > 0 && (
-              <>
-                <span style={{ fontSize: '12px', color: '#16a34a', fontWeight: '700' }}>{printIds.size} seleccionada{printIds.size !== 1 ? 's' : ''}</span>
-                <button onClick={handleBulkEtiquetas} disabled={printingBulk}
-                  style={{ marginLeft: 'auto', padding: '7px 14px', background: '#16a34a', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}>
-                  {printingBulk ? 'Descargando...' : `Descargar ${printIds.size} etiqueta${printIds.size !== 1 ? 's' : ''}`}
-                </button>
-              </>
-            )}
-          </div>
-        );
-      })()}
+      {/* Barra de selección de impresión */}
+      {printable.length > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#f9fafb', border: '1.5px solid #e5e7eb', borderRadius: '10px', padding: '10px 14px', marginBottom: '10px' }}>
+          <button onClick={() => allPrint ? setPrintIds(new Set()) : setPrintIds(new Set(printable.map(o => o.order_id)))}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', cursor: 'pointer', fontWeight: '700', fontSize: '13px', color: '#374151' }}>
+            <svg width="16" height="16" fill={allPrint ? '#374151' : 'none'} stroke="#374151" viewBox="0 0 24 24">
+              <rect x="3" y="3" width="18" height="18" rx="3" strokeWidth="2"/>
+              {allPrint && <path d="M7 12l4 4 6-6" strokeWidth="2.5" stroke="white"/>}
+            </svg>
+            {allPrint ? 'Deseleccionar todo' : `Seleccionar ${printable.length} para imprimir`}
+          </button>
+          {printIds.size > 0 && <span style={{ fontSize: '12px', color: '#6b7280', fontWeight: '700' }}>{printIds.size} seleccionada{printIds.size !== 1 ? 's' : ''}</span>}
+        </div>
+      )}
 
-      {/* Barra de remitos */}
-      {(() => {
-        const remitoable = filtered.filter(o => !['pending','cancelled'].includes(o.status));
-        const allRem = remitoable.length > 0 && printIds.size === remitoable.length;
-        return remitoable.length > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#f5f3ff', border: '1.5px solid #c4b5fd', borderRadius: '10px', padding: '10px 14px', marginBottom: '10px', flexWrap: 'wrap' }}>
-            <button onClick={() => {
-              if (allRem) setPrintIds(new Set());
-              else setPrintIds(new Set(remitoable.map(o => o.order_id)));
-            }} style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', cursor: 'pointer', fontWeight: '700', fontSize: '13px', color: '#7c3aed' }}>
-              <svg width="16" height="16" fill={allRem ? '#7c3aed' : 'none'} stroke="#7c3aed" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3" strokeWidth="2"/>{allRem && <path d="M7 12l4 4 6-6" strokeWidth="2.5" stroke="white"/>}</svg>
-              {allRem ? 'Deseleccionar remitos' : `Seleccionar ${remitoable.length} remito${remitoable.length !== 1 ? 's' : ''}`}
-            </button>
-            {printIds.size > 0 && (
-              <>
-                <span style={{ fontSize: '12px', color: '#7c3aed', fontWeight: '700' }}>{printIds.size} seleccionado{printIds.size !== 1 ? 's' : ''}</span>
-                <button onClick={handleBulkRemitos} disabled={printingRemitos}
-                  style={{ marginLeft: 'auto', padding: '7px 14px', background: '#7c3aed', color: 'white', border: 'none', borderRadius: '8px', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}>
-                  {printingRemitos ? 'Generando...' : `Imprimir ${printIds.size} remito${printIds.size !== 1 ? 's' : ''}`}
-                </button>
-              </>
-            )}
-          </div>
-        );
-      })()}
-
-      {/* Barra de selección masiva */}
+      {/* Barra de selección masiva de estado */}
       {selected.size > 0 && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: '#056EB7', color: 'white', padding: '12px 16px', borderRadius: '10px', marginBottom: '12px', flexWrap: 'wrap' }}>
           <span style={{ fontWeight: '700', fontSize: '13px' }}>{selected.size} orden{selected.size > 1 ? 'es' : ''} seleccionada{selected.size > 1 ? 's' : ''}</span>
@@ -510,14 +447,19 @@ const LogisticsPanel = () => {
 
             return (
               <div key={order.order_id} className="lp-order" style={{ position: 'relative' }}>
+
+                {/* Checkbox estado (azul) */}
                 <input type="checkbox" checked={selected.has(order.order_id)} onChange={() => toggleSelect(order.order_id)}
                   style={{ position: 'absolute', top: '12px', left: '12px', width: '16px', height: '16px', cursor: 'pointer', zIndex: 1 }}
                   onClick={e => e.stopPropagation()} />
+
+                {/* Checkbox impresión (verde) */}
                 {!['pending','cancelled'].includes(order.status) && (
                   <input type="checkbox" checked={printIds.has(order.order_id)} onChange={() => togglePrint(order.order_id)}
                     style={{ position: 'absolute', top: '12px', left: '34px', width: '16px', height: '16px', cursor: 'pointer', zIndex: 1, accentColor: '#16a34a' }}
                     onClick={e => e.stopPropagation()} />
                 )}
+
                 <div className="lp-order-info">
                   <div className="lp-order-top">
                     <span className="lp-order-id">Orden #{order.order_id}</span>
@@ -546,7 +488,6 @@ const LogisticsPanel = () => {
                     <p className="lp-order-field"><strong>Fecha:</strong> {formatDate(order.created_at)}</p>
                     <p className="lp-order-field full"><strong>Dirección:</strong> {order.recipient_address || '—'} {order.recipient_address_complement || ''}</p>
 
-                    {/* Ubicación destinatario */}
                     {order.recipient_lat && order.recipient_lng && (
                       <p className="lp-order-field full">
                         <a href={`https://www.google.com/maps?q=${order.recipient_lat},${order.recipient_lng}`}
@@ -556,22 +497,17 @@ const LogisticsPanel = () => {
                       </p>
                     )}
 
-                    {/* Ubicación proveedor */}
                     {order.supplier_city && (
                       <p className="lp-order-field full" style={{ marginTop: '4px' }}>
                         <strong>Retiro:</strong>{' '}
                         <a href={`https://www.google.com/maps/search/${encodeURIComponent([order.supplier_address, order.supplier_height, order.supplier_city, 'Paraguay'].filter(Boolean).join(' '))}`}
-                          target="_blank" rel="noopener noreferrer"
-                          style={{ color: '#8b5cf6', fontWeight: '600', textDecoration: 'none' }}>
+                          target="_blank" rel="noopener noreferrer" style={{ color: '#8b5cf6', fontWeight: '600', textDecoration: 'none' }}>
                           {[order.supplier_address, order.supplier_height, order.supplier_city].filter(Boolean).join(', ')}
                         </a>
-                        {order.supplier_phone && (
-                          <span style={{ marginLeft: '8px', color: '#6b7280' }}>· {order.supplier_phone}</span>
-                        )}
+                        {order.supplier_phone && <span style={{ marginLeft: '8px', color: '#6b7280' }}>· {order.supplier_phone}</span>}
                       </p>
                     )}
 
-                    {/* Estado Fixy detallado */}
                     {isFixy && fixyStatuses[order.order_id]?.eventos?.length > 0 && (
                       <div style={{ marginTop: '8px', padding: '8px 12px', background: '#f0fdf4', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
                         <p style={{ fontSize: '11px', fontWeight: '700', color: '#16a34a', marginBottom: '4px' }}>HISTORIAL FIXY</p>
@@ -583,7 +519,6 @@ const LogisticsPanel = () => {
                       </div>
                     )}
 
-                    {/* Motivo reagendamiento */}
                     {order.redelivery_reason && (
                       <p className="lp-order-field full" style={{ marginTop: '4px' }}>
                         <span style={{ fontSize: '12px', color: '#f97316', fontWeight: '600' }}>
@@ -600,27 +535,20 @@ const LogisticsPanel = () => {
                     <p className="lp-price-value">{formatCurrency(order.final_price)}</p>
                   </div>
 
-                  {/* Etiqueta — siempre disponible si la orden está activa */}
                   {!['pending','cancelled'].includes(order.status) && (
                     <button className="lp-btn" onClick={() => downloadLabel(order)} disabled={isUpdating}
                       style={{ background: '#f3f4f6', color: '#374151', border: '1.5px solid #e5e7eb', fontSize: '12px' }}>
                       Etiqueta
                     </button>
                   )}
-                  {/* Remito */}
+
                   {!['pending','cancelled'].includes(order.status) && (
-                    <>
-                      <input type="checkbox" checked={printIds.has(order.order_id)} onChange={() => togglePrint(order.order_id)}
-                        style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#7c3aed' }}
-                        onClick={e => e.stopPropagation()} />
-                      <button className="lp-btn" onClick={() => downloadRemito(order.order_id)} disabled={isUpdating}
-                        style={{ background: '#f5f3ff', color: '#7c3aed', border: '1.5px solid #c4b5fd', fontSize: '12px' }}>
-                        Remito
-                      </button>
-                    </>
+                    <button className="lp-btn" onClick={() => downloadRemito(order.order_id)} disabled={isUpdating}
+                      style={{ background: '#f5f3ff', color: '#7c3aed', border: '1.5px solid #c4b5fd', fontSize: '12px' }}>
+                      Remito
+                    </button>
                   )}
 
-                  {/* Flujo de estados */}
                   {order.status === 'ready_for_pickup' && (
                     <button className="lp-btn pickup" onClick={() => update(order.order_id, pickedUpOrder, 'picked_up')} disabled={isUpdating}>
                       {isUpdating ? 'Procesando...' : 'Retirar del proveedor'}
@@ -664,7 +592,6 @@ const LogisticsPanel = () => {
           })}
         </div>
       )}
-    </div>
 
       {/* Barra flotante de impresión */}
       {printIds.size > 0 && (
@@ -687,6 +614,7 @@ const LogisticsPanel = () => {
           </button>
         </div>
       )}
+
     </div>
   );
 };
