@@ -114,8 +114,9 @@ export default function LandingPage() {
                 <div className="hero-card">
                   <div className="hero-card-img">
                     <img
-                      src="https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=680&q=80&auto=format&fit=crop"
-                      alt="Paquete listo para envío"
+                      src="/smartwatch.jpeg"
+                      alt="Smart Watch Pro"
+
                     />
                   </div>
                   <div className="hero-card-body">
