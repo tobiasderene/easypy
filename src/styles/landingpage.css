@@ -140,18 +140,30 @@
 
 /* ── Benefits: imagen primero, cards después ── */
 .lp-benefits-parallax {
-  height: 340px;
+  height: 520px;
   position: relative;
   background-color: #0f172a;
-  background-image: url('/logistics-bg.jpg.jpg');
+  background-image: url('/logistics-bg.jpg');
   background-size: cover;
   background-position: center 40%;
   overflow: hidden;
+  width: 100%;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .lp-benefits-parallax {
     background-attachment: fixed;
+    background-size: cover;
+  }
+}
+
+/* Portrait / móvil vertical — imagen horizontal recortada al centro */
+@media (max-aspect-ratio: 3/4) {
+  .lp-benefits-parallax {
+    height: 56vw;
+    min-height: 260px;
+    background-position: center center;
+    background-attachment: scroll;
   }
 }
 
