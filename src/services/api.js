@@ -132,7 +132,7 @@ export const outForDeliveryOrder = (id) => api(`/orders/${id}/out-for-delivery`,
 export const redeliveryWithReason = (id, reason) => api(`/orders/${id}/redelivery-reason`, { method: 'POST', body: JSON.stringify({ reason }) });
 export const retryDeliveryOrder  = (id) => api(`/orders/${id}/retry-delivery`,  { method: 'POST' });
 export const getMyProducts    = (skip = 0, limit = 500) => api(`/products/my-products?skip=${skip}&limit=${limit}`);
-export const getProductsByUser = (userId, skip = 0, limit = 50)  => api(`/products/user/${userId}?skip=${skip}&limit=${limit}`);
+export const getProductsByUser = (userId, skip = 0, limit = 500)  => api(`/products/user/${userId}?skip=${skip}&limit=${limit}`);
 export const getProduct    = (productId)             => api(`/products/${productId}`);
 export const createProduct = (data)                  => api("/products", { method: "POST", body: JSON.stringify(data) });
 export const updateProduct = (productId, data)       => api(`/products/${productId}`, { method: "PATCH", body: JSON.stringify(data) });
@@ -164,7 +164,7 @@ export const uploadProfileImage = (file) => {
 
 // ─── Orders ───────────────────────────────────────────
 export const getOrders           = (skip = 0, limit = 50)  => api(`/orders?skip=${skip}&limit=${limit}`);
-export const getAllOrdersAdmin = (dateFrom = null, dateTo = null, skip = 0, limit = 50, logisticId = null, status = null) => {
+export const getAllOrdersAdmin = (dateFrom = null, dateTo = null, skip = 0, limit = 500, logisticId = null, status = null) => {
   const params = new URLSearchParams({ skip, limit });
   if (dateFrom)   params.append('date_from',   dateFrom);
   if (dateTo)     params.append('date_to',     dateTo);
