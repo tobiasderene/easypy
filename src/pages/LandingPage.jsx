@@ -25,16 +25,19 @@ const BenefitIcons = [
 ];
 
 const benefits = [
-  { title: "Sin Stock Propio",       desc: "Vendé productos sin necesidad de tener inventario. El proveedor se encarga de todo." },
-  { title: "Logística Integrada",    desc: "Fixy, Legex y más transportadoras disponibles. Tu pedido sale sin que muevas un dedo." },
+  { title: "Sin Stock Propio",         desc: "Vendé productos sin necesidad de tener inventario. El proveedor se encarga de todo." },
+  { title: "Logística Integrada",      desc: "Fixy, Legex y más transportadoras disponibles. Tu pedido sale sin que muevas un dedo." },
+  { title: "Ganancias Claras",         desc: "Fijás tu precio de venta, nosotros mostramos tu ganancia estimada en tiempo real." },
   { title: "Analytics en Tiempo Real", desc: "Seguí tus ventas, unidades y rentabilidad desde un panel centralizado." },
+  { title: "Pagos Seguros",            desc: "Wallet propio con recaudo o sin recaudo. Tu dinero siempre claro y disponible." },
+  { title: "Alta en Minutos",          desc: "Registrate, elegí productos y empezá a vender el mismo día. Sin burocracia." },
 ];
 
 const stats = [
   { value: "500+", label: "Productos disponibles" },
   { value: "3",    label: "Logísticas integradas" },
-  { value: "100%", label: "Digital y sin stock" },
-  { value: "24h",  label: "Soporte al vendedor" },
+  { value: "100%", label: "Digital y sin stock"   },
+  { value: "24h",  label: "Soporte al vendedor"   },
 ];
 
 export default function LandingPage() {
@@ -54,92 +57,79 @@ export default function LandingPage() {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
 
   return (
-    <div style={{ fontFamily: "'Inter', sans-serif", background: "#f8fafc", color: "#111827", overflowX: "hidden" }}>
+    <div className="lp-root">
 
-      {/* ── HEADER ── */}
+      {/* HEADER */}
       <header className={`lp-header ${scrolled ? "scrolled" : ""}`}>
         <div className="lp-header-inner">
-          <div style={{ cursor: "pointer" }} onClick={() => scrollTo("hero")}>
-            <img src="/full-logo.png" alt="EasyPy" style={{ height: 36, objectFit: "contain" }} />
+          <div className="lp-logo" onClick={() => scrollTo("hero")}>
+            <img src="/full-logo.png" alt="EasyPy" />
           </div>
           <nav className="lp-nav">
-            {[["Beneficios","benefits"],["Nosotros","about"]].map(([label, id]) => (
-              <button key={id} className="nav-link" onClick={() => scrollTo(id)}>{label}</button>
-            ))}
+            <button className="nav-link" onClick={() => scrollTo("benefits")}>Beneficios</button>
+            <button className="nav-link" onClick={() => scrollTo("about")}>Nosotros</button>
           </nav>
-          <button className="btn-primary" style={{ padding: "9px 24px", fontSize: 14 }} onClick={() => window.location.href="/login"}>
+          <button className="btn-primary btn-sm" onClick={() => window.location.href="/login"}>
             Conectate
           </button>
         </div>
       </header>
 
-      {/* ── HERO ── */}
+      {/* HERO */}
       <section id="hero" className="lp-hero" ref={heroRef}>
-        <div className="hero-blob" style={{ width: 500, height: 500, background: "#056EB7", top: -100, right: -100 }} />
-        <div className="hero-blob" style={{ width: 300, height: 300, background: "#22d3ee", bottom: 50, left: -80 }} />
-
-        <div className="lp-container" style={{ width: "100%" }}>
+        <div className="hero-blob hero-blob-1" />
+        <div className="hero-blob hero-blob-2" />
+        <div className="lp-container">
           <div className="hero-grid">
-
-            {/* Left */}
             <div className="hero-left">
               <h1 className={`hero-title fade-up d1 ${heroVisible ? "visible" : ""}`}>
-                Vendé sin stock.<br />
-                <span>Ganá en serio.</span>
+                Vendé sin stock.<br /><span>Ganá en serio.</span>
               </h1>
               <p className={`hero-sub fade-up d2 ${heroVisible ? "visible" : ""}`}>
-                EasyPy es la plataforma que conecta vendedores con proveedores locales. Sin inventario, sin complicaciones. Solo ventas.
+                EasyPy conecta vendedores con proveedores locales. Sin inventario, sin complicaciones. Solo ventas.
               </p>
               <div className={`hero-cta fade-up d3 ${heroVisible ? "visible" : ""}`}>
-                <button className="btn-primary" style={{ padding: "14px 32px", fontSize: 16, marginTop: 20 }} onClick={() => window.location.href="/signup"}>
+                <button className="btn-primary btn-lg" onClick={() => window.location.href="/signup"}>
                   Empezar gratis
                 </button>
               </div>
               <div className={`hero-stats fade-up d4 ${heroVisible ? "visible" : ""}`}>
                 {[["500+","Productos"],["3","Logísticas"],["0 stock","Requerido"]].map(([val, label]) => (
-                  <div key={label} style={{ textAlign: "center" }}>
-                    <div className="hero-stat-val">{val}</div>
-                    <div className="hero-stat-lbl">{label}</div>
+                  <div key={label} className="hero-stat">
+                    <span className="hero-stat-val">{val}</span>
+                    <span className="hero-stat-lbl">{label}</span>
                   </div>
                 ))}
               </div>
             </div>
-
-            {/* Right — card flotante */}
             <div className={`hero-right fade-up d2 ${heroVisible ? "visible" : ""}`}>
               <div className="hero-float">
                 <div className="hero-card">
                   <div className="hero-card-img">
-                    <img
-                      src="https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=680&q=80&auto=format&fit=crop"
-                      alt="Paquete listo para envío"
-                    />
+                    <img src="/smartwatch.jpeg" alt="Smart Watch Pro" />
                   </div>
                   <div className="hero-card-body">
-                    <span style={{ fontSize: 10, fontWeight: 700, color: "#056EB7", textTransform: "uppercase", letterSpacing: 0.5 }}>Electrónica</span>
-                    <h3 style={{ fontSize: 18, fontWeight: 700, marginTop: 6, marginBottom: 8 }}>Smart Watch Pro</h3>
-                    <div style={{ fontSize: 13, color: "#64748b", marginBottom: 14 }}>Precio de compra</div>
-                    <div style={{ fontSize: 26, fontWeight: 800, color: "#056EB7", marginBottom: 4 }}>Gs. 800.000</div>
-                    <div style={{ fontSize: 13, color: "#16a34a", fontWeight: 600 }}>Venta sugerida: Gs. 1.200.000</div>
+                    <span className="hero-card-cat">Electrónica</span>
+                    <h3 className="hero-card-name">Smart Watch Pro</h3>
+                    <p className="hero-card-label">Precio de compra</p>
+                    <p className="hero-card-price">Gs. 800.000</p>
+                    <p className="hero-card-suggested">Venta sugerida: Gs. 1.200.000</p>
                   </div>
                 </div>
                 <div className="hero-badge-gain">+Gs. 400k ganancia</div>
                 <div className="hero-badge-ship">Envío en 24hs</div>
               </div>
             </div>
-
           </div>
         </div>
       </section>
 
-      {/* ── BENEFITS ── */}
+      {/* BENEFITS */}
       <section id="benefits" className="lp-benefits" ref={benefitsRef}>
         <div className="lp-benefits-inner">
           <div className={`benefits-header fade-up ${benefitsVisible ? "visible" : ""}`}>
             <h2 className="benefits-title">Todo lo que necesitás<br />para empezar a vender</h2>
-            <p style={{ fontSize: 17, color: "rgba(255,255,255,0.8)", maxWidth: 520, margin: "0 auto" }}>
-              Una plataforma completa diseñada para vendedores que quieren crecer sin complicaciones.
-            </p>
+            <p className="benefits-sub">Una plataforma completa diseñada para vendedores que quieren crecer sin complicaciones.</p>
           </div>
           <div className="benefits-grid">
             {benefits.map((b, i) => (
@@ -153,28 +143,22 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── ABOUT ── */}
+      {/* ABOUT */}
       <section id="about" className="lp-about" ref={aboutRef}>
         <div className="lp-container">
           <div className="about-grid">
             <div className={`about-left fade-up ${aboutVisible ? "visible" : ""}`}>
-              <h2 className="about-title">
-                Nació en Paraguay<br />para Paraguay
-              </h2>
-              <p className="about-text">
-                EasyPy es una plataforma local que conecta proveedores con vendedores de todo el país. Creemos que cualquier persona puede construir un negocio online sin necesidad de capital para stock.
-              </p>
-              <p className="about-text">
-                Integramos logísticas reales, procesamos pagos con recaudo o sin recaudo, y te damos las herramientas para escalar tu negocio con datos claros.
-              </p>
-              <button className="btn-primary" style={{ padding: "13px 28px", fontSize: 15, marginTop: 20 }} onClick={() => window.location.href="/signup"}>
+              <h2 className="about-title">Nació en Paraguay<br />para Paraguay</h2>
+              <p className="about-text">EasyPy es una plataforma local que conecta proveedores con vendedores de todo el país. Creemos que cualquier persona puede construir un negocio online sin necesidad de capital para stock.</p>
+              <p className="about-text">Integramos logísticas reales, procesamos pagos con recaudo o sin recaudo, y te damos las herramientas para escalar tu negocio con datos claros.</p>
+              <button className="btn-primary btn-md" onClick={() => window.location.href="/signup"}>
                 Unirme a EasyPy
               </button>
             </div>
             <div className={`about-right fade-up d2 ${aboutVisible ? "visible" : ""}`}>
               <div className="stats-grid-2x2">
                 {stats.map((s, i) => (
-                  <div key={i} className="stat-item" style={{ background: i % 2 === 0 ? "#f0f7ff" : "white" }}>
+                  <div key={i} className={`stat-item ${i % 2 === 0 ? "stat-item-alt" : ""}`}>
                     <div className="stat-val">{s.value}</div>
                     <div className="stat-lbl">{s.label}</div>
                   </div>
@@ -185,35 +169,27 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ── CTA ── */}
+      {/* CTA */}
       <section className="lp-cta" ref={ctaRef}>
-        <div className="cta-blob1" />
-        <div className="cta-blob2" />
+        <div className="cta-blob cta-blob-1" />
+        <div className="cta-blob cta-blob-2" />
         <div className="cta-inner">
           <div className={`fade-up ${ctaVisible ? "visible" : ""}`}>
-            <h2 className="cta-title">
-              Empezá a vender hoy.<br />Sin stock. Sin excusas.
-            </h2>
-            <p className="cta-sub">
-              Registrate gratis, elegí productos del catálogo y empezá a generar ingresos desde el primer día.
-            </p>
+            <h2 className="cta-title">Empezá a vender hoy.<br />Sin stock. Sin excusas.</h2>
+            <p className="cta-sub">Registrate gratis, elegí productos del catálogo y empezá a generar ingresos desde el primer día.</p>
             <div className="cta-btns">
-              <button className="cta-btn-white" onClick={() => window.location.href="/signup"}>
-                Crear cuenta gratis
-              </button>
-              <button className="cta-btn-ghost" onClick={() => window.location.href="/login"}>
-                Ya tengo cuenta
-              </button>
+              <button className="cta-btn-white" onClick={() => window.location.href="/signup"}>Crear cuenta gratis</button>
+              <button className="cta-btn-ghost"  onClick={() => window.location.href="/login"}>Ya tengo cuenta</button>
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── FOOTER ── */}
+      {/* FOOTER */}
       <footer className="lp-footer">
         <div className="lp-footer-inner">
           <img src="/full-logo.png" alt="EasyPy" />
-          <p style={{ fontSize: 14 }}>© 2026 EasyPy. Todos los derechos reservados.</p>
+          <p>© 2026 EasyPy. Todos los derechos reservados.</p>
         </div>
       </footer>
 
