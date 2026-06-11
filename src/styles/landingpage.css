@@ -159,7 +159,7 @@
 .lp-benefits-inner {
   position: relative; z-index: 1;
   max-width: 1200px; margin: 0 auto;
-  padding: 96px 24px;
+  padding: 80px 24px 100px;
 }
 
 .benefits-grid {
@@ -168,14 +168,19 @@
   gap: 20px;
 }
 .benefit-card {
-  background: white; border-radius: 16px;
-  padding: 28px 24px; border: 1.5px solid var(--border);
+  background: rgba(255,255,255,0.96);
+  backdrop-filter: blur(8px);
+  border-radius: 18px;
+  padding: 32px 24px;
+  border: 1px solid rgba(255,255,255,0.6);
   transition: all 0.3s; text-align: center;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.12);
 }
 .benefit-card:hover {
+  background: white;
   border-color: var(--brand);
-  box-shadow: 0 8px 32px rgba(5,110,183,0.1);
-  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(5,110,183,0.18);
+  transform: translateY(-5px);
 }
 .benefit-icon {
   width: 52px; height: 52px; background: #eff6ff;
